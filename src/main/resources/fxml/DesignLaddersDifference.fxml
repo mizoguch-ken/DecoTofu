@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TreeTableColumn?>
+<?import javafx.scene.control.TreeTableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox fx:id="paneRoot" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="480.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ken.mizoguch.ladders.DesignLaddersDifferenceController">
+   <children>
+      <VBox fx:id="vboxIoLadderRevised" HBox.hgrow="SOMETIMES">
+         <children>
+            <Label fx:id="labelIoLadderRevised" text="LadderRevised" textOverrun="CENTER_ELLIPSIS" />
+            <SplitPane fx:id="splitIoLadderRevised" dividerPositions="0.382" VBox.vgrow="ALWAYS">
+               <items>
+                  <TreeTableView fx:id="treeTableIoRevised" editable="true" prefHeight="200.0" prefWidth="200.0" showRoot="false">
+                    <columns>
+                      <TreeTableColumn fx:id="treeTableIoAddressRevised" prefWidth="75.0" sortable="false" text="Address" />
+                      <TreeTableColumn fx:id="treeTableIoCommentRevised" prefWidth="75.0" sortable="false" text="Comment" />
+                    </columns>
+                     <columnResizePolicy>
+                        <TreeTableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                     </columnResizePolicy>
+                  </TreeTableView>
+                  <TabPane fx:id="tabLadderRevised" tabClosingPolicy="UNAVAILABLE" />
+               </items>
+            </SplitPane>
+         </children>
+      </VBox>
+      <Separator orientation="VERTICAL" />
+      <VBox fx:id="vboxIoLadderOriginal" HBox.hgrow="SOMETIMES">
+         <children>
+            <Label fx:id="labelIoLadderOriginal" text="LadderOriginal" textOverrun="CENTER_ELLIPSIS" />
+            <SplitPane fx:id="splitIoLadderOriginal" dividerPositions="0.382" VBox.vgrow="ALWAYS">
+               <items>
+                  <TreeTableView fx:id="treeTableIoOriginal" editable="true" prefHeight="200.0" prefWidth="200.0" showRoot="false">
+                    <columns>
+                      <TreeTableColumn fx:id="treeTableIoAddressOriginal" prefWidth="75.0" sortable="false" text="Address" />
+                      <TreeTableColumn fx:id="treeTableIoCommentOriginal" prefWidth="75.0" sortable="false" text="Comment" />
+                    </columns>
+                     <columnResizePolicy>
+                        <TreeTableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                     </columnResizePolicy>
+                  </TreeTableView>
+                  <TabPane fx:id="tabLadderOriginal" tabClosingPolicy="UNAVAILABLE" />
+               </items>
+            </SplitPane>
+         </children>
+      </VBox>
+   </children>
+</HBox>
