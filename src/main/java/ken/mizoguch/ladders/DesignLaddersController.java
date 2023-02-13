@@ -938,19 +938,6 @@ public class DesignLaddersController implements Initializable {
 
     /**
      *
-     */
-    public void showStage() {
-        if (Platform.isFxApplicationThread()) {
-            stage_.show();
-        } else {
-            Platform.runLater(() -> {
-                stage_.show();
-            });
-        }
-    }
-
-    /**
-     *
      * @return
      */
     public Ladders getLadders() {
