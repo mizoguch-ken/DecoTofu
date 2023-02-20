@@ -176,7 +176,7 @@ public class WebViewer implements WebViewerPlugin {
             if (workerState_ == Worker.State.SUCCEEDED) {
                 try {
                     JSObject window = (JSObject) webEngine_.executeScript("window");
-                    stage_.setTitle(webEngine_.getTitle());
+                    stage_.setTitle((String) webEngine_.executeScript("document.title"));
                     for (int index = 0, size = plugins_.size(); index < size; index++) {
                         if (plugins_.get(index).functionName() != null) {
                             if (undefined_.equals(window.getMember(plugins_.get(index).functionName()))) {
