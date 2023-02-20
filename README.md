@@ -1,18 +1,30 @@
 # <u>DecoTofu</u>
-## <u>Overview 概要</u>
+### <u>Overview</u>
+
+### <u>概要</u>
+
  * tools for action
- 行動するためのツール
-## <u>Description 説明</u>
+ * 行動するためのツール
+### <u>Description</u>
+
+### <u>説明</u>
+
  * Display and control by WebViewer
- WebViewerを使った表示とコントロール
- * Plug-in function to WebViewer  
- WebViewerへのプラグイン機能
- * Unique ladder logic  
- 独特なラダーロジック
-## <u>Requirement 要件</u>
- * Java 17 or later  
- Java 17 以上  
-## <u>Dependency 依存</u>
+ * WebViewerを使った表示とコントロール
+ * Plug-in function to WebViewer
+ * WebViewerへのプラグイン機能
+ * Unique ladder logic
+ * 独特なラダーロジック
+### <u>Requirement</u>
+
+### <u>要件</u>
+
+ * Java 17 or later
+ * Java 17 以上  
+### <u>Dependency</u>
+
+### <u>依存</u>
+
     <dependency>
       <groupId>com.googlecode.java-diff-utils</groupId>
       <artifactId>diffutils</artifactId>
@@ -29,8 +41,12 @@
       <groupId>org.apache.pdfbox</groupId>
       <artifactId>pdfbox</artifactId>
     </dependency>
-## <u>JS Functions JS関数</u>
+### <u>JS Functions</u>
+
+### <u>JS関数</u>
+
 [stage]
+
 * void stage.showLicenses();
 * void stage.showVersion();
 * Boolean stage.isShowing();
@@ -143,10 +159,17 @@
 * Long soem.out(int slave, long bitsOffset, long bitsMask, long value);
 * String soem.find_adapters();
 * String soem.slaveinfo(boolean printSDO, boolean printMAP);
-## <u>Configuration 設定</u>
+### <u>Configuration</u>
+
+### <u>設定</u>
 
 - [Ladders](https://github.com/mizoguch-ken/GcodeFX/wiki/Ladders)
-
 - [EtherCAT](https://github.com/mizoguch-ken/GcodeFX/wiki/EtherCAT)
   - [Example](https://github.com/mizoguch-ken/GcodeFX/wiki/EtherCAT#example)
+
+### <u>Example</u>
+
+### <u>例</u>
+
+- [Serial Test](https://github.com/mizoguch-ken/DecoTofu/wiki/SerialTest)
 
