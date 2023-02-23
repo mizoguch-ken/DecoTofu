@@ -20,7 +20,7 @@
 ### <u>要件</u>
 
  * Java 17 or later
- * Java 17 以上  
+ * Java 17 以上
 ### <u>Dependency</u>
 
 ### <u>依存</u>
