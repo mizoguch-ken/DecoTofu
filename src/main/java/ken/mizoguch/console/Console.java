@@ -90,7 +90,13 @@ public class Console {
      * @param err
      */
     public static void write(final String name, String msg, final boolean err) {
-        if (printStream_ != null) {
+        if (printStream_ == null) {
+            if (err) {
+                Logger.getLogger(name).log(Level.WARNING, msg);
+            } else {
+                Logger.getLogger(name).log(Level.INFO, msg);
+            }
+        } else {
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy'/'MM'/'dd' 'HH':'mm':'ss");
             if (err) {
                 printStream_.println(simpleDateFormat.format(new Date()) + " :: " + name + " Error :: " + msg);
