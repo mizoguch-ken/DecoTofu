@@ -42,6 +42,7 @@ import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
@@ -136,6 +137,8 @@ public class DesignLaddersController implements Initializable {
     private MenuItem menuViewTabSelectNext;
     @FXML
     private MenuItem menuViewTabSelectPrevious;
+    @FXML
+    private MenuItem menuViewFindBlocks;
     // menu tools
     @FXML
     private Menu menuTools;
@@ -590,7 +593,7 @@ public class DesignLaddersController implements Initializable {
             if (tab != null) {
                 pane = (LadderPane) ((ScrollPane) tab.getContent()).getContent();
             }
-            undo(tab, pane);
+            ladders_.undo(tab, pane);
         });
         menuEditRedo.setOnAction((ActionEvent event) -> {
             Tab tab = tabLadder.getSelectionModel().getSelectedItem();
@@ -599,56 +602,130 @@ public class DesignLaddersController implements Initializable {
             if (tab != null) {
                 pane = (LadderPane) ((ScrollPane) tab.getContent()).getContent();
             }
-            redo(tab, pane);
+            ladders_.redo(tab, pane);
         });
         menuEditCut.setOnAction((ActionEvent event) -> {
+            Tab tab = tabLadder.getSelectionModel().getSelectedItem();
+            ScrollPane scrollPane = null;
+            LadderPane pane = null;
+
+            if (tab != null) {
+                scrollPane = (ScrollPane) tab.getContent();
+                pane = (LadderPane) scrollPane.getContent();
+            }
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "X", "X", KeyCode.X, false, true, false, false), scrollPane);
         });
         menuEditCopy.setOnAction((ActionEvent event) -> {
+            Tab tab = tabLadder.getSelectionModel().getSelectedItem();
+            ScrollPane scrollPane = null;
+            LadderPane pane = null;
+
+            if (tab != null) {
+                scrollPane = (ScrollPane) tab.getContent();
+                pane = (LadderPane) scrollPane.getContent();
+            }
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "C", "C", KeyCode.C, false, true, false, false), scrollPane);
         });
         menuEditPaste.setOnAction((ActionEvent event) -> {
+            Tab tab = tabLadder.getSelectionModel().getSelectedItem();
+            ScrollPane scrollPane = null;
+            LadderPane pane = null;
+
+            if (tab != null) {
+                scrollPane = (ScrollPane) tab.getContent();
+                pane = (LadderPane) scrollPane.getContent();
+            }
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "V", "V", KeyCode.V, false, true, false, false), scrollPane);
         });
         menuEditSelectLeft.setOnAction((ActionEvent event) -> {
+            Tab tab = tabLadder.getSelectionModel().getSelectedItem();
+            ScrollPane scrollPane = null;
+            LadderPane pane = null;
+
+            if (tab != null) {
+                scrollPane = (ScrollPane) tab.getContent();
+                pane = (LadderPane) scrollPane.getContent();
+            }
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, null, "Left", KeyCode.LEFT, true, false, false, false), scrollPane);
         });
         menuEditSelectUp.setOnAction((ActionEvent event) -> {
+            Tab tab = tabLadder.getSelectionModel().getSelectedItem();
+            ScrollPane scrollPane = null;
+            LadderPane pane = null;
+
+            if (tab != null) {
+                scrollPane = (ScrollPane) tab.getContent();
+                pane = (LadderPane) scrollPane.getContent();
+            }
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, null, "Up", KeyCode.UP, true, false, false, false), scrollPane);
         });
         menuEditSelectRight.setOnAction((ActionEvent event) -> {
+            Tab tab = tabLadder.getSelectionModel().getSelectedItem();
+            ScrollPane scrollPane = null;
+            LadderPane pane = null;
+
+            if (tab != null) {
+                scrollPane = (ScrollPane) tab.getContent();
+                pane = (LadderPane) scrollPane.getContent();
+            }
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, null, "Right", KeyCode.RIGHT, true, false, false, false), scrollPane);
         });
         menuEditSelectDown.setOnAction((ActionEvent event) -> {
+            Tab tab = tabLadder.getSelectionModel().getSelectedItem();
+            ScrollPane scrollPane = null;
+            LadderPane pane = null;
+
+            if (tab != null) {
+                scrollPane = (ScrollPane) tab.getContent();
+                pane = (LadderPane) scrollPane.getContent();
+            }
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, null, "Down", KeyCode.DOWN, true, false, false, false), scrollPane);
         });
         menuEditTabNew.setOnAction((ActionEvent event) -> {
-            tabNew();
+            ladders_.ladderNewTab();
         });
         menuEditTabClose.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                tabClose();
+                ladders_.ladderRemoveTab(tabLadder.getSelectionModel().getSelectedIndex());
             }
         });
         menuEditTabRename.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                tabRename((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent());
+                ladders_.ladderChangeTabName((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent());
             }
         });
         menuEditTabMoveLeft.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                tabMoveLeft((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent());
+                ladders_.ladderMoveLeft(((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent()).getLadder());
             }
         });
         menuEditTabMoveRight.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                tabMoveRight((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent());
+                ladders_.ladderMoveRight(((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent()).getLadder());
             }
         });
 
         // menu view
         menuViewTabSelectNext.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                tabSelectNext();
+                ladders_.ladderChangeSelectNext(tabLadder);
             }
         });
         menuViewTabSelectPrevious.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                tabSelectPrevious();
+                ladders_.ladderChangeSelectPrevious(tabLadder);
             }
+        });
+        menuViewFindBlocks.setOnAction((ActionEvent event) -> {
+            Tab tab = tabLadder.getSelectionModel().getSelectedItem();
+            ScrollPane scrollPane = null;
+            LadderPane pane = null;
+
+            if (tab != null) {
+                scrollPane = (ScrollPane) tab.getContent();
+                pane = (LadderPane) scrollPane.getContent();
+            }
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "F", "F", KeyCode.F, false, true, false, false), scrollPane);
         });
 
         // menu tools
@@ -916,6 +993,7 @@ public class DesignLaddersController implements Initializable {
         menuView.setText("View");
         menuViewTabSelectNext.setText("Tab Select Next");
         menuViewTabSelectPrevious.setText("Tab Select Previous");
+        menuViewFindBlocks.setText("Find Blocks");
 
         // menu tool
         menuTools.setText("Tools");
@@ -1140,42 +1218,6 @@ public class DesignLaddersController implements Initializable {
         menuFileRecentFile8.setVisible(!menuFileRecentFile8.getText().isEmpty());
         menuFileRecentFile9.setVisible(!menuFileRecentFile9.getText().isEmpty());
         menuFileRecentFile10.setVisible(!menuFileRecentFile10.getText().isEmpty());
-    }
-
-    private void undo(Tab tab, LadderPane pane) {
-        ladders_.undo(tab, pane);
-    }
-
-    private void redo(Tab tab, LadderPane pane) {
-        ladders_.redo(tab, pane);
-    }
-
-    private void tabNew() {
-        ladders_.ladderNewTab();
-    }
-
-    private void tabClose() {
-        ladders_.ladderRemoveTab(tabLadder.getSelectionModel().getSelectedIndex());
-    }
-
-    private void tabRename(LadderPane pane) {
-        ladders_.ladderChangeTabName(pane);
-    }
-
-    private void tabMoveLeft(LadderPane pane) {
-        ladders_.ladderMoveLeft(pane.getLadder());
-    }
-
-    private void tabMoveRight(LadderPane pane) {
-        ladders_.ladderMoveRight(pane.getLadder());
-    }
-
-    private void tabSelectNext() {
-        ladders_.ladderChangeSelectNext(tabLadder);
-    }
-
-    private void tabSelectPrevious() {
-        ladders_.ladderChangeSelectPrevious(tabLadder);
     }
 
     private void initProperties() {

@@ -144,6 +144,11 @@
                         <KeyCodeCombination alt="UP" code="TAB" control="UP" meta="UP" shift="DOWN" shortcut="DOWN" />
                      </accelerator>
                   </MenuItem>
+                  <MenuItem fx:id="menuViewFindBlocks" mnemonicParsing="false" text="Find Blocks">
+                     <accelerator>
+                        <KeyCodeCombination alt="UP" code="F" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+                     </accelerator>
+                  </MenuItem>
                </items>
             </Menu>
             <Menu fx:id="menuTools" mnemonicParsing="false" text="Tools">
