@@ -104,52 +104,60 @@ public class DesignLaddersDifferenceController implements Initializable {
         });
 
         // split
-        splitIoLadderOriginal.getDividers().get(0).positionProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (newValue != null) {
-                splitIoLadderRevised.setDividerPositions(newValue.doubleValue());
-            }
-        });
-        splitIoLadderRevised.getDividers().get(0).positionProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (newValue != null) {
-                splitIoLadderOriginal.setDividerPositions(newValue.doubleValue());
-            }
-        });
+        splitIoLadderOriginal.getDividers().get(0).positionProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (newValue != null) {
+                        splitIoLadderRevised.setDividerPositions(newValue.doubleValue());
+                    }
+                });
+        splitIoLadderRevised.getDividers().get(0).positionProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (newValue != null) {
+                        splitIoLadderOriginal.setDividerPositions(newValue.doubleValue());
+                    }
+                });
 
         // io
-        treeTableIoAddressOriginal.setCellValueFactory((TreeTableColumn.CellDataFeatures<LadderTreeTableIo, String> param) -> {
-            return param.getValue().getValue().addressProperty();
-        });
-        treeTableIoCommentOriginal.setCellValueFactory((TreeTableColumn.CellDataFeatures<LadderTreeTableIo, String> param) -> {
-            return param.getValue().getValue().commentProperty();
-        });
-        treeTableIoAddressRevised.setCellValueFactory((TreeTableColumn.CellDataFeatures<LadderTreeTableIo, String> param) -> {
-            return param.getValue().getValue().addressProperty();
-        });
-        treeTableIoCommentRevised.setCellValueFactory((TreeTableColumn.CellDataFeatures<LadderTreeTableIo, String> param) -> {
-            return param.getValue().getValue().commentProperty();
-        });
+        treeTableIoAddressOriginal
+                .setCellValueFactory((TreeTableColumn.CellDataFeatures<LadderTreeTableIo, String> param) -> {
+                    return param.getValue().getValue().addressProperty();
+                });
+        treeTableIoCommentOriginal
+                .setCellValueFactory((TreeTableColumn.CellDataFeatures<LadderTreeTableIo, String> param) -> {
+                    return param.getValue().getValue().commentProperty();
+                });
+        treeTableIoAddressRevised
+                .setCellValueFactory((TreeTableColumn.CellDataFeatures<LadderTreeTableIo, String> param) -> {
+                    return param.getValue().getValue().addressProperty();
+                });
+        treeTableIoCommentRevised
+                .setCellValueFactory((TreeTableColumn.CellDataFeatures<LadderTreeTableIo, String> param) -> {
+                    return param.getValue().getValue().commentProperty();
+                });
 
         // tabpane
-        tabLadderOriginal.getSelectionModel().selectedIndexProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (newValue != null) {
-                String name = tabLadderOriginal.getTabs().get(newValue.intValue()).getText();
-                if (deltabs_.containsKey(name)) {
-                    if (deltabs_.get(name).tabRevised != null) {
-                        tabLadderRevised.getSelectionModel().select(deltabs_.get(name).indexRevised);
+        tabLadderOriginal.getSelectionModel().selectedIndexProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (newValue != null) {
+                        String name = tabLadderOriginal.getTabs().get(newValue.intValue()).getText();
+                        if (deltabs_.containsKey(name)) {
+                            if (deltabs_.get(name).tabRevised != null) {
+                                tabLadderRevised.getSelectionModel().select(deltabs_.get(name).indexRevised);
+                            }
+                        }
                     }
-                }
-            }
-        });
-        tabLadderRevised.getSelectionModel().selectedIndexProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (newValue != null) {
-                String name = tabLadderRevised.getTabs().get(newValue.intValue()).getText();
-                if (deltabs_.containsKey(name)) {
-                    if (deltabs_.get(name).tabOriginal != null) {
-                        tabLadderOriginal.getSelectionModel().select(deltabs_.get(name).indexOriginal);
+                });
+        tabLadderRevised.getSelectionModel().selectedIndexProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (newValue != null) {
+                        String name = tabLadderRevised.getTabs().get(newValue.intValue()).getText();
+                        if (deltabs_.containsKey(name)) {
+                            if (deltabs_.get(name).tabOriginal != null) {
+                                tabLadderOriginal.getSelectionModel().select(deltabs_.get(name).indexOriginal);
+                            }
+                        }
                     }
-                }
-            }
-        });
+                });
     }
 
     private void runInitDesign() {
@@ -181,7 +189,8 @@ public class DesignLaddersDifferenceController implements Initializable {
      * @param ladderJsonRevised
      * @param pathRevised
      */
-    public void diffarence(LadderJson ladderJsonOriginal, Path pathOriginal, LadderJson ladderJsonRevised, Path pathRevised) {
+    public void diffarence(LadderJson ladderJsonOriginal, Path pathOriginal, LadderJson ladderJsonRevised,
+            Path pathRevised) {
         if ((ladderJsonOriginal.getLadders() != null) && (ladderJsonRevised.getLadders() != null)) {
             int columnIndex, columnSize, rowIndex, rowSize;
             int index, size, index2, size2;
@@ -193,7 +202,8 @@ public class DesignLaddersDifferenceController implements Initializable {
             List<String> jsonOriginal = new ArrayList<>();
 
             // original global
-            treeTableIoOriginal.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX, new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
+            treeTableIoOriginal.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
+                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
             ioMapOriginal.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
             commentMapOriginal.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
 
@@ -208,14 +218,17 @@ public class DesignLaddersDifferenceController implements Initializable {
             List<String> jsonRevised = new ArrayList<>();
 
             // revised global
-            treeTableIoRevised.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX, new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
+            treeTableIoRevised.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
+                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
             ioMapRevised.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
             commentMapRevised.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
 
             // connect
-            ladders_.ladderJsonLoad(null, tabLadderOriginal, treeTableIoOriginal, ioMapOriginal, commentMapOriginal, null, ladderJsonOriginal);
+            ladders_.ladderJsonLoad(null, tabLadderOriginal, treeTableIoOriginal, ioMapOriginal, commentMapOriginal,
+                    null, ladderJsonOriginal);
             ladders_.checkConnectLadder(tabLadderOriginal, treeTableIoOriginal, ioMapOriginal);
-            ladders_.ladderJsonLoad(null, tabLadderRevised, treeTableIoRevised, ioMapRevised, commentMapRevised, null, ladderJsonRevised);
+            ladders_.ladderJsonLoad(null, tabLadderRevised, treeTableIoRevised, ioMapRevised, commentMapRevised, null,
+                    ladderJsonRevised);
             ladders_.checkConnectLadder(tabLadderRevised, treeTableIoRevised, ioMapRevised);
 
             // diff
@@ -255,33 +268,44 @@ public class DesignLaddersDifferenceController implements Initializable {
                     LadderPane paneRevised = (LadderPane) scrollPaneRevised.getContent();
 
                     // scroll synchronization
-                    scrollPaneOriginal.vvalueProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-                        if (newValue != null) {
-                            scrollPaneRevised.setVvalue(newValue.doubleValue());
-                        }
-                    });
-                    scrollPaneOriginal.hvalueProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-                        if (newValue != null) {
-                            scrollPaneRevised.setHvalue(newValue.doubleValue());
-                        }
-                    });
-                    scrollPaneRevised.vvalueProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-                        if (newValue != null) {
-                            scrollPaneOriginal.setVvalue(newValue.doubleValue());
-                        }
-                    });
-                    scrollPaneRevised.hvalueProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-                        if (newValue != null) {
-                            scrollPaneOriginal.setHvalue(newValue.doubleValue());
-                        }
-                    });
+                    scrollPaneOriginal.vvalueProperty().addListener(
+                            (ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                                if (newValue != null) {
+                                    scrollPaneRevised.setVvalue(newValue.doubleValue());
+                                }
+                            });
+                    scrollPaneOriginal.hvalueProperty().addListener(
+                            (ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                                if (newValue != null) {
+                                    scrollPaneRevised.setHvalue(newValue.doubleValue());
+                                }
+                            });
+                    scrollPaneRevised.vvalueProperty().addListener(
+                            (ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                                if (newValue != null) {
+                                    scrollPaneOriginal.setVvalue(newValue.doubleValue());
+                                }
+                            });
+                    scrollPaneRevised.hvalueProperty().addListener(
+                            (ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                                if (newValue != null) {
+                                    scrollPaneOriginal.setHvalue(newValue.doubleValue());
+                                }
+                            });
 
                     // to match grid size
-                    if (ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getRow() < ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getRow()) {
-                        for (rowIndex = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getRow(), rowSize = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getRow(); rowIndex < rowSize; rowIndex++) {
-                            grid = paneOriginal.findGridPane(0, ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getRow() - 1).getLadderGrid();
+                    if (ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getRow() < ladderJsonRevised
+                            .getLadders().get(entry.getValue().indexRevised).getRow()) {
+                        for (rowIndex = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
+                                .getRow(), rowSize = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised)
+                                        .getRow(); rowIndex < rowSize; rowIndex++) {
+                            grid = paneOriginal.findGridPane(0,
+                                    ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getRow() - 1)
+                                    .getLadderGrid();
                             gridBuf = null;
-                            for (columnIndex = 0, columnSize = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getColumn(); columnIndex < columnSize; columnIndex++) {
+                            for (columnIndex = 0, columnSize = ladderJsonOriginal.getLadders()
+                                    .get(entry.getValue().indexOriginal)
+                                    .getColumn(); columnIndex < columnSize; columnIndex++) {
                                 gridPane = paneOriginal.addGrid(columnIndex, rowIndex);
                                 gridNew = gridPane.getLadderGrid();
                                 gridNew.setLeftLadderGrid(gridBuf);
@@ -304,11 +328,18 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 grid = grid.getRightLadderGrid();
                             }
                         }
-                    } else if (ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getRow() > ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getRow()) {
-                        for (rowIndex = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getRow(), rowSize = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getRow(); rowIndex < rowSize; rowIndex++) {
-                            grid = paneRevised.findGridPane(0, ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getRow() - 1).getLadderGrid();
+                    } else if (ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
+                            .getRow() > ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getRow()) {
+                        for (rowIndex = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised)
+                                .getRow(), rowSize = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
+                                        .getRow(); rowIndex < rowSize; rowIndex++) {
+                            grid = paneRevised.findGridPane(0,
+                                    ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getRow() - 1)
+                                    .getLadderGrid();
                             gridBuf = null;
-                            for (columnIndex = 0, columnSize = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getColumn(); columnIndex < columnSize; columnIndex++) {
+                            for (columnIndex = 0, columnSize = ladderJsonRevised.getLadders()
+                                    .get(entry.getValue().indexRevised)
+                                    .getColumn(); columnIndex < columnSize; columnIndex++) {
                                 gridPane = paneRevised.addGrid(columnIndex, rowIndex);
                                 gridNew = gridPane.getLadderGrid();
                                 gridNew.setLeftLadderGrid(gridBuf);
@@ -358,11 +389,13 @@ public class DesignLaddersDifferenceController implements Initializable {
                         switch (delta.getType()) {
                             case CHANGE:
                                 chunk = delta.getOriginal();
-                                blocks = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getBlocks();
+                                blocks = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
+                                        .getBlocks();
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
-                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex()).changeDifference(Delta.TYPE.CHANGE);
+                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
+                                                .changeDifference(Delta.TYPE.CHANGE);
                                     }
                                 }
                                 chunk = delta.getRevised();
@@ -370,18 +403,22 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
-                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex()).changeDifference(Delta.TYPE.CHANGE);
+                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
+                                                .changeDifference(Delta.TYPE.CHANGE);
                                     }
                                 }
                                 break;
                             case DELETE:
                                 chunk = delta.getOriginal();
-                                blocks = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getBlocks();
+                                blocks = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
+                                        .getBlocks();
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
-                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex()).changeDifference(Delta.TYPE.DELETE);
-                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex()).changeDifference(Delta.TYPE.INSERT);
+                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
+                                                .changeDifference(Delta.TYPE.DELETE);
+                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
+                                                .changeDifference(Delta.TYPE.INSERT);
                                     }
                                 }
                                 break;
@@ -391,8 +428,10 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
-                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex()).changeDifference(Delta.TYPE.INSERT);
-                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex()).changeDifference(Delta.TYPE.DELETE);
+                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
+                                                .changeDifference(Delta.TYPE.INSERT);
+                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
+                                                .changeDifference(Delta.TYPE.DELETE);
                                     }
                                 }
                                 break;
@@ -420,8 +459,8 @@ public class DesignLaddersDifferenceController implements Initializable {
         stage_ = stage;
         ladders_ = ladders;
 
-        treeTableIoOriginal.setRoot(new TreeItem());
-        treeTableIoRevised.setRoot(new TreeItem());
+        treeTableIoOriginal.setRoot(new TreeItem<>());
+        treeTableIoRevised.setRoot(new TreeItem<>());
 
         // design
         addEventDesign();

@@ -147,15 +147,18 @@ public class SoemEcatThread extends Service<Void> {
                 if (soem_.ecx_config_init(context_, SoemOsal.FALSE) > 0) {
                     context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_PRE_OP.intValue());
                     soem_.ecx_writestate(context_, 0);
-                    soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_PRE_OP.intValue(), SoemEtherCATType.EC_TIMEOUTSTATE);
+                    soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_PRE_OP.intValue(),
+                            SoemEtherCATType.EC_TIMEOUTSTATE);
                     if (context_.slavecount.get() > 0) {
                         for (index = 1, size = context_.slavecount.get(); index <= size; index++) {
                             if (po2so_.containsKey(index)) {
-                                if ((context_.slavelist[index].eep_man.get() == po2so_.get(index).eep_man) && (context_.slavelist[index].eep_id.get() == po2so_.get(index).eep_id)) {
+                                if ((context_.slavelist[index].eep_man.get() == po2so_.get(index).eep_man)
+                                        && (context_.slavelist[index].eep_id.get() == po2so_.get(index).eep_id)) {
                                     context_.slavelist[index].PO2SOconfig.PO2SOconfig.set((int slave) -> {
                                         if (po2so_ != null) {
                                             if (po2so_.containsKey(slave)) {
-                                                RunnableFuture<Integer> future = new FutureTask<>(po2so_.get(slave).func);
+                                                RunnableFuture<Integer> future = new FutureTask<>(
+                                                        po2so_.get(slave).func);
                                                 if (Platform.isFxApplicationThread()) {
                                                     try {
                                                         future.run();
@@ -176,7 +179,10 @@ public class SoemEcatThread extends Service<Void> {
                                         return 0;
                                     });
                                 } else {
-                                    writeLog("PO2SO: EEP_MAN[" + context_.slavelist[index].eep_man.get() + ":" + po2so_.get(index).eep_man + "] & EEP_ID[" + context_.slavelist[index].eep_id.get() + ":" + po2so_.get(index).eep_id + "] of Slave[" + index + "] are different ", true);
+                                    writeLog("PO2SO: EEP_MAN[" + context_.slavelist[index].eep_man.get() + ":"
+                                            + po2so_.get(index).eep_man + "] & EEP_ID["
+                                            + context_.slavelist[index].eep_id.get() + ":" + po2so_.get(index).eep_id
+                                            + "] of Slave[" + index + "] are different ", true);
                                     return false;
                                 }
                             }
@@ -186,15 +192,19 @@ public class SoemEcatThread extends Service<Void> {
                     soem_.ecx_configdc(context_);
                     context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue());
                     soem_.ecx_writestate(context_, 0);
-                    soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue(), SoemEtherCATType.EC_TIMEOUTSTATE * 4);
+                    soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue(),
+                            SoemEtherCATType.EC_TIMEOUTSTATE * 4);
                     ecatCheck_ = new SoemEcatCheck(eventListenerList_, soem_, parcel_, context_);
-                    ecatCheck_.setExpectedWKC((context_.grouplist[0].outputsWKC.get() * 2) + context_.grouplist[0].inputsWKC.get());
+                    ecatCheck_.setExpectedWKC(
+                            (context_.grouplist[0].outputsWKC.get() * 2) + context_.grouplist[0].inputsWKC.get());
                     context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue());
                     soem_.ecx_send_processdata(context_);
                     soem_.ecx_receive_processdata(context_, SoemEtherCATType.EC_TIMEOUTRET);
                     soem_.ecx_writestate(context_, 0);
-                    soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue(), SoemEtherCATType.EC_TIMEOUTSTATE);
-                    if (context_.slavelist[0].state.get() == SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue()) {
+                    soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue(),
+                            SoemEtherCATType.EC_TIMEOUTSTATE);
+                    if (context_.slavelist[0].state.get() == SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL
+                            .intValue()) {
                         ecatCheck_.init();
                         if (Platform.isFxApplicationThread()) {
                             runEcatCheck();
@@ -236,7 +246,8 @@ public class SoemEcatThread extends Service<Void> {
             init_ = false;
             context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_INIT.intValue());
             soem_.ecx_writestate(context_, 0);
-            soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_INIT.intValue(), SoemEtherCATType.EC_TIMEOUTSTATE);
+            soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_INIT.intValue(),
+                    SoemEtherCATType.EC_TIMEOUTSTATE);
         }
     }
 
@@ -263,7 +274,8 @@ public class SoemEcatThread extends Service<Void> {
     public Long out(int slave, long bitsOffset, long bitsMask, long value) {
         if (context_.slavelist[slave].outputs.get() != null) {
             Pointer pointer = context_.slavelist[0].outputs.get();
-            long address = context_.slavelist[slave].outputs.get().address() - context_.slavelist[0].outputs.get().address() + (bitsOffset / 8);
+            long address = context_.slavelist[slave].outputs.get().address()
+                    - context_.slavelist[0].outputs.get().address() + (bitsOffset / 8);
             int startbit = context_.slavelist[slave].Ostartbit.get() + ((int) (bitsOffset % 8));
             long bits = (context_.slavelist[slave].Obits.get() - bitsOffset);
             long notBitsMask;
@@ -302,8 +314,10 @@ public class SoemEcatThread extends Service<Void> {
                             out_.get(address + cnt).value |= (value >>> (cnt * Byte.SIZE)) & 0xff;
                         } else {
                             val = Byte.toUnsignedInt(pointer.getByte(address + cnt));
-                            if (val != (((val & (notBitsMask >>> (cnt * Byte.SIZE))) | (value >>> (cnt * Byte.SIZE))) & 0xff)) {
-                                out_.put(address + cnt, new EcatData((int) ((notBitsMask >>> (cnt * Byte.SIZE)) & 0xff), (int) ((value >>> (cnt * Byte.SIZE)) & 0xff)));
+                            if (val != (((val & (notBitsMask >>> (cnt * Byte.SIZE))) | (value >>> (cnt * Byte.SIZE)))
+                                    & 0xff)) {
+                                out_.put(address + cnt, new EcatData((int) ((notBitsMask >>> (cnt * Byte.SIZE)) & 0xff),
+                                        (int) ((value >>> (cnt * Byte.SIZE)) & 0xff)));
                             }
                         }
                     }
@@ -330,10 +344,12 @@ public class SoemEcatThread extends Service<Void> {
                             if (!out_.isEmpty()) {
                                 pointer = context_.slavelist[0].outputs.get();
                                 synchronized (lockOut_) {
-                                    for (Iterator<Map.Entry<Long, EcatData>> iterator = out_.entrySet().iterator(); iterator.hasNext();) {
+                                    for (Iterator<Map.Entry<Long, EcatData>> iterator = out_.entrySet()
+                                            .iterator(); iterator.hasNext();) {
                                         entry = iterator.next();
                                         value = pointer.getByte(entry.getKey());
-                                        pointer.putByte(entry.getKey(), (byte) ((value & entry.getValue().bitMask) | entry.getValue().value));
+                                        pointer.putByte(entry.getKey(),
+                                                (byte) ((value & entry.getValue().bitMask) | entry.getValue().value));
                                         iterator.remove();
                                     }
                                 }

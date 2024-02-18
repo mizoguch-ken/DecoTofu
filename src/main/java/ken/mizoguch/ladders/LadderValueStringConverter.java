@@ -19,7 +19,8 @@ public class LadderValueStringConverter extends StringConverter<Double> {
     private int radix;
     private Matcher mRealNumber;
 
-    private static final Pattern PATTERN_REAL_NUMBER = Pattern.compile("^[\\+\\-]?(?:((?:\\d*\\.\\d+|\\d+\\.?\\d*)(?:[eE][\\+\\-]?\\d+|))|0[xX]([0-9a-fA-F]+)|0[bB]([0-1]+))$");
+    private static final Pattern PATTERN_REAL_NUMBER = Pattern.compile(
+            "^[\\+\\-]?(?:((?:\\d*\\.\\d+|\\d+\\.?\\d*)(?:[eE][\\+\\-]?\\d+|))|0[xX]([0-9a-fA-F]+)|0[bB]([0-1]+))$");
 
     /**
      *

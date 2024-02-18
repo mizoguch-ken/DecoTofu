@@ -145,7 +145,8 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     public void setNotifyErrorSafeOpError(String func) {
         funcErrorSafeOpError_ = func;
         if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null) && (funcMessageAllSlavesResumedOperational_ == null)) {
+                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
+                && (funcMessageAllSlavesResumedOperational_ == null)) {
             soem_.setNotifyCheck(false);
         } else {
             soem_.setNotifyCheck(true);
@@ -159,7 +160,8 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     public void setNotifyErrorLost(String func) {
         funcErrorLost_ = func;
         if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null) && (funcMessageAllSlavesResumedOperational_ == null)) {
+                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
+                && (funcMessageAllSlavesResumedOperational_ == null)) {
             soem_.setNotifyCheck(false);
         } else {
             soem_.setNotifyCheck(true);
@@ -173,7 +175,8 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     public void setNotifyWarningSafeOp(String func) {
         funcWarningSafeOp_ = func;
         if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null) && (funcMessageAllSlavesResumedOperational_ == null)) {
+                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
+                && (funcMessageAllSlavesResumedOperational_ == null)) {
             soem_.setNotifyCheck(false);
         } else {
             soem_.setNotifyCheck(true);
@@ -187,7 +190,8 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     public void setNotifyMessageReconfigured(String func) {
         funcMessageReconfigured_ = func;
         if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null) && (funcMessageAllSlavesResumedOperational_ == null)) {
+                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
+                && (funcMessageAllSlavesResumedOperational_ == null)) {
             soem_.setNotifyCheck(false);
         } else {
             soem_.setNotifyCheck(true);
@@ -201,7 +205,8 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     public void setNotifyMessageRecovered(String func) {
         funcMessageRecovered_ = func;
         if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null) && (funcMessageAllSlavesResumedOperational_ == null)) {
+                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
+                && (funcMessageAllSlavesResumedOperational_ == null)) {
             soem_.setNotifyCheck(false);
         } else {
             soem_.setNotifyCheck(true);
@@ -215,7 +220,8 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     public void setNotifyMessageFound(String func) {
         funcMessageFound_ = func;
         if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null) && (funcMessageAllSlavesResumedOperational_ == null)) {
+                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
+                && (funcMessageAllSlavesResumedOperational_ == null)) {
             soem_.setNotifyCheck(false);
         } else {
             soem_.setNotifyCheck(true);
@@ -229,7 +235,8 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     public void setNotifyMessageAllSlavesResumedOperational(String func) {
         funcMessageAllSlavesResumedOperational_ = func;
         if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null) && (funcMessageAllSlavesResumedOperational_ == null)) {
+                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
+                && (funcMessageAllSlavesResumedOperational_ == null)) {
             soem_.setNotifyCheck(false);
         } else {
             soem_.setNotifyCheck(true);
@@ -297,16 +304,20 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         if (value instanceof Number) {
             switch (byteSize) {
                 case 1:
-                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN).put(((Number) value).byteValue()).array();
+                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
+                            .put(((Number) value).byteValue()).array();
                     break;
                 case 2:
-                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN).putShort(((Number) value).shortValue()).array();
+                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
+                            .putShort(((Number) value).shortValue()).array();
                     break;
                 case 4:
-                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN).putInt(((Number) value).intValue()).array();
+                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
+                            .putInt(((Number) value).intValue()).array();
                     break;
                 case 8:
-                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN).putLong(((Number) value).longValue()).array();
+                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
+                            .putLong(((Number) value).longValue()).array();
                     break;
             }
         } else if (value instanceof JSObject) {

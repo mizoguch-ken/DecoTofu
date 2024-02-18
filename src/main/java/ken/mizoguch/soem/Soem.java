@@ -202,7 +202,8 @@ public class Soem {
             Pointer p = Memory.allocate(runtime_, byteSize);
 
             psize.putInt(0, byteSize);
-            if (soem_.ecx_SDOread(context_, slave, index, subIndex, SoemOsal.FALSE, psize, p, SoemEtherCATType.EC_TIMEOUTRXM) > 0) {
+            if (soem_.ecx_SDOread(context_, slave, index, subIndex, SoemOsal.FALSE, psize, p,
+                    SoemEtherCATType.EC_TIMEOUTRXM) > 0) {
                 Byte[] result = new Byte[psize.getInt(0)];
                 for (int i = 0; i < result.length; i++) {
                     result[i] = p.getByte(i);
@@ -218,7 +219,8 @@ public class Soem {
             Pointer p = Memory.allocate(runtime_, value.length);
 
             p.put(0, value, 0, value.length);
-            return soem_.ecx_SDOwrite(context_, slave, index, subIndex, SoemOsal.FALSE, value.length, p, SoemEtherCATType.EC_TIMEOUTRXM);
+            return soem_.ecx_SDOwrite(context_, slave, index, subIndex, SoemOsal.FALSE, value.length, p,
+                    SoemEtherCATType.EC_TIMEOUTRXM);
         }
         return null;
     }
@@ -234,21 +236,37 @@ public class Soem {
                         }
 
                         if (bitsMask < 0xff) {
-                            return ((context_.slavelist[slave].inputs.get().getByte(bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].inputs.get().getByte(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffff) {
-                            return ((context_.slavelist[slave].inputs.get().getShort(bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].inputs.get().getShort(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffff) {
-                            return ((context_.slavelist[slave].inputs.get().getInt(bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].inputs.get().getInt(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffffff) {
-                            return ((context_.slavelist[slave].inputs.get().getInt(bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].inputs.get().getInt(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffffffffL) {
-                            return ((context_.slavelist[slave].inputs.get().getLong(bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].inputs.get().getLong(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffffffffffL) {
-                            return ((context_.slavelist[slave].inputs.get().getLong(bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].inputs.get().getLong(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffffffffffffL) {
-                            return ((context_.slavelist[slave].inputs.get().getLong(bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].inputs.get().getLong(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else {
-                            return ((context_.slavelist[slave].inputs.get().getLong(bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].inputs.get().getLong(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Istartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         }
                     }
                 }
@@ -268,21 +286,37 @@ public class Soem {
                         }
 
                         if (bitsMask < 0xff) {
-                            return ((context_.slavelist[slave].outputs.get().getByte(bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].outputs.get().getByte(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffff) {
-                            return ((context_.slavelist[slave].outputs.get().getShort(bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].outputs.get().getShort(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffff) {
-                            return ((context_.slavelist[slave].outputs.get().getInt(bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].outputs.get().getInt(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffffff) {
-                            return ((context_.slavelist[slave].outputs.get().getInt(bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].outputs.get().getInt(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffffffffL) {
-                            return ((context_.slavelist[slave].outputs.get().getLong(bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].outputs.get().getLong(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffffffffffL) {
-                            return ((context_.slavelist[slave].outputs.get().getLong(bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].outputs.get().getLong(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else if (bitsMask < 0xffffffffffffffL) {
-                            return ((context_.slavelist[slave].outputs.get().getLong(bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].outputs.get().getLong(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         } else {
-                            return ((context_.slavelist[slave].outputs.get().getLong(bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8))) & bitsMask);
+                            return ((context_.slavelist[slave].outputs.get().getLong(
+                                    bitsOffset / 8) >> (context_.slavelist[slave].Ostartbit.get() + (bitsOffset % 8)))
+                                    & bitsMask);
                         }
                     }
                 }

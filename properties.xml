@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>DecoTofu</comment>
+<entry key="STAGE_MAXIMIZED">false</entry>
+<entry key="STAGE_HEIGHT">480.0</entry>
+<entry key="STAGE_WIDTH">640.0</entry>
+</properties>

@@ -18,10 +18,10 @@ public class LadderJsonLadder {
     private final String name;
     private final Integer column;
     private final Integer row;
-    private final String address;           // *history
-    private final String comment;           // *history
-    private final Integer columnIndex;      // *history
-    private final Integer rowIndex;         // *history
+    private final String address; // *history
+    private final String comment; // *history
+    private final Integer columnIndex; // *history
+    private final Integer rowIndex; // *history
     private List<LadderJsonBlock> blocks;
 
     /**
@@ -205,7 +205,8 @@ public class LadderJsonLadder {
     public void sortBlocks(int column, int row) {
         if (blocks != null) {
             blocks.sort((o1, o2) -> {
-                return (o1.getColumnIndex() + (o1.getRowIndex() * column)) - (o2.getColumnIndex() + (o2.getRowIndex() * column));
+                return (o1.getColumnIndex() + (o1.getRowIndex() * column))
+                        - (o2.getColumnIndex() + (o2.getRowIndex() * column));
             });
         }
     }

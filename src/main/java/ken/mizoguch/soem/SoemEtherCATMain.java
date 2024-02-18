@@ -674,7 +674,8 @@ public interface SoemEtherCATMain {
     /**
      * mailbox buffer array
      */
-//    public final SoemLibrary.Uint8[] ec_mbxbuft = new SoemLibrary.Uint8[EC_MAXMBX + 1];
+    // public final SoemLibrary.Uint8[] ec_mbxbuft = new SoemLibrary.Uint8[EC_MAXMBX
+    // + 1];
     /**
      * standard ethercat mailbox header
      */

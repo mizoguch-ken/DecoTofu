@@ -71,7 +71,8 @@ public class Console {
             PrintWriter printWriter = new PrintWriter(stringWriter, true);
             for (StackTraceElement ste : throwable.getStackTrace()) {
                 if (ste.getClassName().equals(name)) {
-                    stringWriter.append(simpleDateFormat.format(new Date()) + " " + name + " " + ste.getMethodName() + "\n");
+                    stringWriter.append(
+                            simpleDateFormat.format(new Date()) + " " + name + " " + ste.getMethodName() + "\n");
                     break;
                 }
             }

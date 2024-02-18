@@ -446,37 +446,42 @@ public class DesignLaddersController implements Initializable {
         stage_.setOnHidden((WindowEvent event) -> {
             isShown_ = false;
         });
-        stage_.maximizedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) -> {
-            if (newValue != null) {
-                stageSettings_.setStageMaximized(newValue, false);
-                if (!newValue) {
-                    stageSettings_.setStageWidth(stageSettings_.getStageWidth(), false);
-                    stageSettings_.setStageHeight(stageSettings_.getStageHeight(), false);
-                }
-            }
-        });
-        stage_.widthProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (!stageSettings_.isStageMaximized()) {
-                stageSettings_.setStageWidth(stage_.getWidth(), false);
-                stageSettings_.setRootWidth(paneRoot.getWidth(), false);
-            }
-        });
-        stage_.heightProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (!stageSettings_.isStageMaximized()) {
-                stageSettings_.setStageHeight(stage_.getHeight(), false);
-                stageSettings_.setRootHeight(paneRoot.getHeight(), false);
-            }
-        });
-        splitIoLadder.getDividers().get(0).positionProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (newValue != null) {
-                stageSettings_.setIoLadderDividerPositions(newValue.doubleValue(), false);
-            }
-        });
-        splitIoIo.getDividers().get(0).positionProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (newValue != null) {
-                stageSettings_.setIoIoDividerPositions(newValue.doubleValue(), false);
-            }
-        });
+        stage_.maximizedProperty()
+                .addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) -> {
+                    if (newValue != null) {
+                        stageSettings_.setStageMaximized(newValue, false);
+                        if (!newValue) {
+                            stageSettings_.setStageWidth(stageSettings_.getStageWidth(), false);
+                            stageSettings_.setStageHeight(stageSettings_.getStageHeight(), false);
+                        }
+                    }
+                });
+        stage_.widthProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (!stageSettings_.isStageMaximized()) {
+                        stageSettings_.setStageWidth(stage_.getWidth(), false);
+                        stageSettings_.setRootWidth(paneRoot.getWidth(), false);
+                    }
+                });
+        stage_.heightProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (!stageSettings_.isStageMaximized()) {
+                        stageSettings_.setStageHeight(stage_.getHeight(), false);
+                        stageSettings_.setRootHeight(paneRoot.getHeight(), false);
+                    }
+                });
+        splitIoLadder.getDividers().get(0).positionProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (newValue != null) {
+                        stageSettings_.setIoLadderDividerPositions(newValue.doubleValue(), false);
+                    }
+                });
+        splitIoIo.getDividers().get(0).positionProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (newValue != null) {
+                        stageSettings_.setIoIoDividerPositions(newValue.doubleValue(), false);
+                    }
+                });
 
         // menu file
         menuFileNew.setOnAction((ActionEvent event) -> {
@@ -518,15 +523,18 @@ public class DesignLaddersController implements Initializable {
                     Path file = fcfile.toPath();
 
                     Stage stage = new Stage(StageStyle.DECORATED);
-                    FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/DesignLaddersDifference.fxml"));
+                    FXMLLoader loader = new FXMLLoader(
+                            this.getClass().getClassLoader().getResource("fxml/DesignLaddersDifference.fxml"));
                     Parent root = (Parent) loader.load();
-                    DesignLaddersDifferenceController ladderDifferenceController = (DesignLaddersDifferenceController) loader.getController();
+                    DesignLaddersDifferenceController ladderDifferenceController = (DesignLaddersDifferenceController) loader
+                            .getController();
                     stage.setScene(new Scene(root));
                     if (!icons_.isEmpty()) {
                         stage.getIcons().addAll(icons_);
                     }
                     ladderDifferenceController.startUp(stage, ladders_);
-                    ladderDifferenceController.diffarence(ladders_.ladderJsonOpen(file), file, ladders_.ladderJsonSave(tabLadder), ladders_.getFilePath());
+                    ladderDifferenceController.diffarence(ladders_.ladderJsonOpen(file), file,
+                            ladders_.ladderJsonSave(tabLadder), ladders_.getFilePath());
                     stage.setTitle("Difference");
                     stage.showAndWait();
                 }
@@ -613,7 +621,8 @@ public class DesignLaddersController implements Initializable {
                 scrollPane = (ScrollPane) tab.getContent();
                 pane = (LadderPane) scrollPane.getContent();
             }
-            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "X", "X", KeyCode.X, false, true, false, false), scrollPane);
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "X",
+                    "X", KeyCode.X, false, true, false, false), scrollPane);
         });
         menuEditCopy.setOnAction((ActionEvent event) -> {
             Tab tab = tabLadder.getSelectionModel().getSelectedItem();
@@ -624,7 +633,8 @@ public class DesignLaddersController implements Initializable {
                 scrollPane = (ScrollPane) tab.getContent();
                 pane = (LadderPane) scrollPane.getContent();
             }
-            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "C", "C", KeyCode.C, false, true, false, false), scrollPane);
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "C",
+                    "C", KeyCode.C, false, true, false, false), scrollPane);
         });
         menuEditPaste.setOnAction((ActionEvent event) -> {
             Tab tab = tabLadder.getSelectionModel().getSelectedItem();
@@ -635,7 +645,8 @@ public class DesignLaddersController implements Initializable {
                 scrollPane = (ScrollPane) tab.getContent();
                 pane = (LadderPane) scrollPane.getContent();
             }
-            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "V", "V", KeyCode.V, false, true, false, false), scrollPane);
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "V",
+                    "V", KeyCode.V, false, true, false, false), scrollPane);
         });
         menuEditSelectLeft.setOnAction((ActionEvent event) -> {
             Tab tab = tabLadder.getSelectionModel().getSelectedItem();
@@ -646,7 +657,8 @@ public class DesignLaddersController implements Initializable {
                 scrollPane = (ScrollPane) tab.getContent();
                 pane = (LadderPane) scrollPane.getContent();
             }
-            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, null, "Left", KeyCode.LEFT, true, false, false, false), scrollPane);
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED,
+                    null, "Left", KeyCode.LEFT, true, false, false, false), scrollPane);
         });
         menuEditSelectUp.setOnAction((ActionEvent event) -> {
             Tab tab = tabLadder.getSelectionModel().getSelectedItem();
@@ -657,7 +669,8 @@ public class DesignLaddersController implements Initializable {
                 scrollPane = (ScrollPane) tab.getContent();
                 pane = (LadderPane) scrollPane.getContent();
             }
-            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, null, "Up", KeyCode.UP, true, false, false, false), scrollPane);
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED,
+                    null, "Up", KeyCode.UP, true, false, false, false), scrollPane);
         });
         menuEditSelectRight.setOnAction((ActionEvent event) -> {
             Tab tab = tabLadder.getSelectionModel().getSelectedItem();
@@ -668,7 +681,8 @@ public class DesignLaddersController implements Initializable {
                 scrollPane = (ScrollPane) tab.getContent();
                 pane = (LadderPane) scrollPane.getContent();
             }
-            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, null, "Right", KeyCode.RIGHT, true, false, false, false), scrollPane);
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED,
+                    null, "Right", KeyCode.RIGHT, true, false, false, false), scrollPane);
         });
         menuEditSelectDown.setOnAction((ActionEvent event) -> {
             Tab tab = tabLadder.getSelectionModel().getSelectedItem();
@@ -679,7 +693,8 @@ public class DesignLaddersController implements Initializable {
                 scrollPane = (ScrollPane) tab.getContent();
                 pane = (LadderPane) scrollPane.getContent();
             }
-            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, null, "Down", KeyCode.DOWN, true, false, false, false), scrollPane);
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED,
+                    null, "Down", KeyCode.DOWN, true, false, false, false), scrollPane);
         });
         menuEditTabNew.setOnAction((ActionEvent event) -> {
             ladders_.ladderNewTab();
@@ -691,17 +706,23 @@ public class DesignLaddersController implements Initializable {
         });
         menuEditTabRename.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                ladders_.ladderChangeTabName((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent());
+                ladders_.ladderChangeTabName(
+                        (LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent())
+                                .getContent());
             }
         });
         menuEditTabMoveLeft.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                ladders_.ladderMoveLeft(((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent()).getLadder());
+                ladders_.ladderMoveLeft(
+                        ((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent())
+                                .getContent()).getLadder());
             }
         });
         menuEditTabMoveRight.setOnAction((ActionEvent event) -> {
             if (tabLadder.getSelectionModel().getSelectedItem() != null) {
-                ladders_.ladderMoveRight(((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent()).getContent()).getLadder());
+                ladders_.ladderMoveRight(
+                        ((LadderPane) ((ScrollPane) tabLadder.getSelectionModel().getSelectedItem().getContent())
+                                .getContent()).getLadder());
             }
         });
 
@@ -725,7 +746,8 @@ public class DesignLaddersController implements Initializable {
                 scrollPane = (ScrollPane) tab.getContent();
                 pane = (LadderPane) scrollPane.getContent();
             }
-            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "F", "F", KeyCode.F, false, true, false, false), scrollPane);
+            ladders_.onKeyPressed(pane, new KeyEvent(event.getEventType(), event.getTarget(), KeyEvent.KEY_PRESSED, "F",
+                    "F", KeyCode.F, false, true, false, false), scrollPane);
         });
 
         // menu tools
@@ -760,12 +782,16 @@ public class DesignLaddersController implements Initializable {
                             address = treTableIo.getAddress();
                             if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 for (index = 0, size = tabLadder.getTabs().size(); index < size; index++) {
-                                    pane = (LadderPane) ((ScrollPane) tabLadder.getTabs().get(index).getContent()).getContent();
+                                    pane = (LadderPane) ((ScrollPane) tabLadder.getTabs().get(index).getContent())
+                                            .getContent();
                                     if (pane.getLadder().getName().equals(treTableIoParent.getAddress())) {
                                         for (index2 = 0, size2 = pane.getChildren().size(); index2 < size2; index2++) {
                                             grid = ((LadderGridPane) pane.getChildren().get(index2)).getLadderGrid();
                                             if (address.equals(grid.getAddress())) {
-                                                tableIo.getItems().add(new LadderTableIo(treTableIoParent.getAddress(), address, grid.getBlock().toString(), grid.getColumnIndex(), grid.getRowIndex()));
+                                                tableIo.getItems()
+                                                        .add(new LadderTableIo(treTableIoParent.getAddress(), address,
+                                                                grid.getBlock().toString(), grid.getColumnIndex(),
+                                                                grid.getRowIndex()));
                                             }
                                         }
                                         break;
@@ -773,16 +799,22 @@ public class DesignLaddersController implements Initializable {
                                 }
                             } else {
                                 for (idx = 0, siz = tabLadder.getTabs().size(); idx < siz; idx++) {
-                                    pane = (LadderPane) ((ScrollPane) tabLadder.getTabs().get(idx).getContent()).getContent();
+                                    pane = (LadderPane) ((ScrollPane) tabLadder.getTabs().get(idx).getContent())
+                                            .getContent();
                                     for (index = 0, size = pane.getChildren().size(); index < size; index++) {
                                         grid = ((LadderGridPane) pane.getChildren().get(index)).getLadderGrid();
                                         if (address.equals(grid.getAddress())) {
-                                            tableIo.getItems().add(new LadderTableIo(pane.getLadder().getName(), address, grid.getBlock().toString(), grid.getColumnIndex(), grid.getRowIndex()));
+                                            tableIo.getItems()
+                                                    .add(new LadderTableIo(pane.getLadder().getName(), address,
+                                                            grid.getBlock().toString(), grid.getColumnIndex(),
+                                                            grid.getRowIndex()));
                                         }
                                     }
                                 }
                             }
                         }
+                        break;
+                    default:
                         break;
                 }
             }
@@ -801,7 +833,8 @@ public class DesignLaddersController implements Initializable {
                     if (parent == event.getTreeTableView().getRoot()) {
                         // tab name
                         int idx;
-                        ObservableList<TreeItem<LadderTreeTableIo>> ovTreeTable = event.getTreeTableView().getRoot().getChildren();
+                        ObservableList<TreeItem<LadderTreeTableIo>> ovTreeTable = event.getTreeTableView().getRoot()
+                                .getChildren();
                         for (idx = 0; idx < ovTreeTable.size(); idx++) {
                             if (ovTreeTable.get(idx) == event.getRowValue()) {
                                 break;
@@ -813,7 +846,8 @@ public class DesignLaddersController implements Initializable {
                     } else {
                         // address
                         int idx;
-                        ObservableList<TreeItem<LadderTreeTableIo>> ovTreeTable = event.getTreeTableView().getRoot().getChildren();
+                        ObservableList<TreeItem<LadderTreeTableIo>> ovTreeTable = event.getTreeTableView().getRoot()
+                                .getChildren();
                         for (idx = 0; idx < ovTreeTable.size(); idx++) {
                             if (ovTreeTable.get(idx) == parent) {
                                 break;
@@ -850,14 +884,16 @@ public class DesignLaddersController implements Initializable {
                     if (parent != event.getTreeTableView().getRoot()) {
                         // comment
                         int idx;
-                        ObservableList<TreeItem<LadderTreeTableIo>> ovTreeTable = event.getTreeTableView().getRoot().getChildren();
+                        ObservableList<TreeItem<LadderTreeTableIo>> ovTreeTable = event.getTreeTableView().getRoot()
+                                .getChildren();
                         for (idx = 0; idx < ovTreeTable.size(); idx++) {
                             if (ovTreeTable.get(idx) == parent) {
                                 break;
                             }
                         }
                         if (idx < ovTreeTable.size()) {
-                            ladders_.changeComment(idx, event.getRowValue().getValue().getAddress(), event.getNewValue());
+                            ladders_.changeComment(idx, event.getRowValue().getValue().getAddress(),
+                                    event.getNewValue());
                         }
                     }
                 }
@@ -894,10 +930,13 @@ public class DesignLaddersController implements Initializable {
                             gridPane = pane.findGridPane(tblIo.getColumn(), tblIo.getRow());
                             if (gridPane != null) {
                                 tabLadder.getSelectionModel().select(index);
-                                ladders_.getLadderCommand().blockChangeSelect(scrollPane, pane, gridPane.getLadderGrid(), false);
+                                ladders_.getLadderCommand().blockChangeSelect(scrollPane, pane,
+                                        gridPane.getLadderGrid(), false);
                             }
                         }
                     }
+                    break;
+                default:
                     break;
             }
         });
@@ -919,7 +958,8 @@ public class DesignLaddersController implements Initializable {
                                 gridPane = pane.findGridPane(tblIo.getColumn(), tblIo.getRow());
                                 if (gridPane != null) {
                                     tabLadder.getSelectionModel().select(index);
-                                    ladders_.getLadderCommand().blockChangeSelect(scrollPane, pane, gridPane.getLadderGrid(), false);
+                                    ladders_.getLadderCommand().blockChangeSelect(scrollPane, pane,
+                                            gridPane.getLadderGrid(), false);
                                 }
                             }
                         }
@@ -1130,12 +1170,15 @@ public class DesignLaddersController implements Initializable {
 
                 // tree table refresh
                 ovTreeTable_ = treeTableIo.getRoot().getChildren();
-                for (treeTableIndex_ = 0, treeTableSize_ = ovTreeTable_.size(); treeTableIndex_ < treeTableSize_; treeTableIndex_++) {
+                for (treeTableIndex_ = 0, treeTableSize_ = ovTreeTable_
+                        .size(); treeTableIndex_ < treeTableSize_; treeTableIndex_++) {
                     ovTreeTableChild_ = ovTreeTable_.get(treeTableIndex_).getChildren();
                     if (ovTreeTable_.get(treeTableIndex_).isExpanded()) {
-                        for (treeTableChildIndex_ = 0, treeTableChildSize_ = ovTreeTableChild_.size(); treeTableChildIndex_ < treeTableChildSize_; treeTableChildIndex_++) {
+                        for (treeTableChildIndex_ = 0, treeTableChildSize_ = ovTreeTableChild_
+                                .size(); treeTableChildIndex_ < treeTableChildSize_; treeTableChildIndex_++) {
                             ladderTreeTableIo_ = ovTreeTableChild_.get(treeTableChildIndex_).getValue();
-                            treeTableValue_ = ioMap_.get(treeTableIndex_).get(ladderTreeTableIo_.getAddress()).getValue();
+                            treeTableValue_ = ioMap_.get(treeTableIndex_).get(ladderTreeTableIo_.getAddress())
+                                    .getValue();
                             if (treeTableValue_ != ladderTreeTableIo_.getValue()) {
                                 ladderTreeTableIo_.setValue(treeTableValue_);
                             }
@@ -1256,13 +1299,19 @@ public class DesignLaddersController implements Initializable {
                 properties.loadFromXML(Files.newInputStream(propertyFile));
 
                 // stage
-                stageSettings_.setStageMaximized((Boolean.parseBoolean(properties.getProperty("STAGE_MAXIMIZED", "false"))), true);
+                stageSettings_.setStageMaximized(
+                        (Boolean.parseBoolean(properties.getProperty("STAGE_MAXIMIZED", "false"))), true);
                 stageSettings_.setStageWidth(Double.parseDouble(properties.getProperty("STAGE_WIDTH", "640.0")), true);
-                stageSettings_.setStageHeight(Double.parseDouble(properties.getProperty("STAGE_HEIGHT", "480.0")), true);
-                stageSettings_.setRootWidth(Double.parseDouble(properties.getProperty("PANE_ROOT_WIDTH", "640.0")), true);
-                stageSettings_.setRootHeight(Double.parseDouble(properties.getProperty("PANE_ROOT_HEIGHT", "480.0")), true);
-                stageSettings_.setIoLadderDividerPositions(Double.parseDouble(properties.getProperty("SPLIT_DIVIDER_IO_LADDER", "0.382")), true);
-                stageSettings_.setIoIoDividerPositions(Double.parseDouble(properties.getProperty("SPLIT_DIVIDER_IO_IO", "0.618")), true);
+                stageSettings_.setStageHeight(Double.parseDouble(properties.getProperty("STAGE_HEIGHT", "480.0")),
+                        true);
+                stageSettings_.setRootWidth(Double.parseDouble(properties.getProperty("PANE_ROOT_WIDTH", "640.0")),
+                        true);
+                stageSettings_.setRootHeight(Double.parseDouble(properties.getProperty("PANE_ROOT_HEIGHT", "480.0")),
+                        true);
+                stageSettings_.setIoLadderDividerPositions(
+                        Double.parseDouble(properties.getProperty("SPLIT_DIVIDER_IO_LADDER", "0.382")), true);
+                stageSettings_.setIoIoDividerPositions(
+                        Double.parseDouble(properties.getProperty("SPLIT_DIVIDER_IO_IO", "0.618")), true);
                 ladders_.setWorkFilePath(properties.getProperty("WORK_FILE_PATH", ""));
 
                 // history generation
@@ -1315,8 +1364,10 @@ public class DesignLaddersController implements Initializable {
                 properties.setProperty("STAGE_HEIGHT", Double.toString(stageSettings_.getStageHeight()));
                 properties.setProperty("PANE_ROOT_WIDTH", Double.toString(stageSettings_.getRootWidth()));
                 properties.setProperty("PANE_ROOT_HEIGHT", Double.toString(stageSettings_.getRootHeight()));
-                properties.setProperty("SPLIT_DIVIDER_IO_LADDER", Double.toString(stageSettings_.getIoLadderDividerPositions()));
-                properties.setProperty("SPLIT_DIVIDER_IO_IO", Double.toString(stageSettings_.getIoIoDividerPositions()));
+                properties.setProperty("SPLIT_DIVIDER_IO_LADDER",
+                        Double.toString(stageSettings_.getIoLadderDividerPositions()));
+                properties.setProperty("SPLIT_DIVIDER_IO_IO",
+                        Double.toString(stageSettings_.getIoIoDividerPositions()));
                 properties.setProperty("WORK_FILE_PATH", ladders_.getWorkFilePath());
 
                 // history generation

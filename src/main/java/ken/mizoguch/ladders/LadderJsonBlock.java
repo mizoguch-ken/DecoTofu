@@ -72,7 +72,8 @@ public class LadderJsonBlock {
      * @param blockFunctions
      * @param blockScript
      */
-    public LadderJsonBlock(Integer columnIndex, Integer rowIndex, String block, Boolean vertical, Boolean verticalOr, String address, String comment, List<LadderGrid.BlockFunction> blockFunctions, String blockScript) {
+    public LadderJsonBlock(Integer columnIndex, Integer rowIndex, String block, Boolean vertical, Boolean verticalOr,
+            String address, String comment, List<LadderGrid.BlockFunction> blockFunctions, String blockScript) {
         this.columnIndex = columnIndex;
         this.rowIndex = rowIndex;
         this.block = block;
@@ -83,8 +84,10 @@ public class LadderJsonBlock {
         if (blockFunctions != null) {
             this.blockFunctions = new ArrayList<>();
             for (int i = 0, size = blockFunctions.size(); i < size; i++) {
-                if (blockFunctions.get(i).isNumber() && (blockFunctions.get(i).getRadix() != LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_RADIX)) {
-                    this.blockFunctions.add(new JsonBlockFunction(blockFunctions.get(i).getValue(), blockFunctions.get(i).getRadix()));
+                if (blockFunctions.get(i).isNumber()
+                        && (blockFunctions.get(i).getRadix() != LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_RADIX)) {
+                    this.blockFunctions.add(
+                            new JsonBlockFunction(blockFunctions.get(i).getValue(), blockFunctions.get(i).getRadix()));
                 } else if (blockFunctions.get(i).getAddress() != null) {
                     this.blockFunctions.add(new JsonBlockFunction(blockFunctions.get(i).getAddress()));
                 } else {

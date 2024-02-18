@@ -131,7 +131,9 @@ public class JavaLibrary {
             if (!zipPath.isEmpty()) {
                 zipName = removeFileExtension(Paths.get(zipPath).getFileName());
                 for (int i = 0; i < 10; i++) {
-                    local = Paths.get(System.getProperty("java.io.tmpdir"), getClassName() + "_" + getUserName() + "_" + i).resolve(zipName);
+                    local = Paths
+                            .get(System.getProperty("java.io.tmpdir"), getClassName() + "_" + getUserName() + "_" + i)
+                            .resolve(zipName);
                     // library paths check
                     if (isLibraryPath(local)) {
                         return true;
@@ -198,7 +200,8 @@ public class JavaLibrary {
                     return true;
                 } else {
                     for (int i = 0; i < 10; i++) {
-                        local = Paths.get(System.getProperty("java.io.tmpdir"), getClassName() + "_" + getUserName() + "_" + i);
+                        local = Paths.get(System.getProperty("java.io.tmpdir"),
+                                getClassName() + "_" + getUserName() + "_" + i);
                         if (addResourceLibraryPath(classLoader, resourcePath, local, libraryName, systemLoad)) {
                             return true;
                         }
@@ -218,7 +221,8 @@ public class JavaLibrary {
      * @param systemLoad
      * @return
      */
-    public static boolean addResourceLibraryPath(ClassLoader classLoader, String resourcePath, Path localPath, String libraryName, boolean systemLoad) {
+    public static boolean addResourceLibraryPath(ClassLoader classLoader, String resourcePath, Path localPath,
+            String libraryName, boolean systemLoad) {
         String prefix, suffix;
 
         try {
@@ -241,7 +245,8 @@ public class JavaLibrary {
                 suffix = "";
             }
             // copy file
-            Files.copy(classLoader.getResourceAsStream(resourcePath), localPath.resolve(prefix + libraryName + suffix), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(classLoader.getResourceAsStream(resourcePath), localPath.resolve(prefix + libraryName + suffix),
+                    StandardCopyOption.REPLACE_EXISTING);
             // library paths check
             if (isLibraryPath(localPath)) {
                 return loadLibrary(libraryName, systemLoad);

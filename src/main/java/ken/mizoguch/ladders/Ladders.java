@@ -210,7 +210,7 @@ public class Ladders extends Service<Void> {
         ladderController_ = ladderController;
         tabLadder_ = ladderController_.getTabLadder();
         treeTableIo_ = ladderController_.getTreeTableIo();
-        treeTableIo_.setRoot(new TreeItem());
+        treeTableIo_.setRoot(new TreeItem<>());
         tableIo_ = ladderController.getTableIo();
 
         stage_ = null;
@@ -383,7 +383,8 @@ public class Ladders extends Service<Void> {
     public void setValueDirect(int idx, String address, double value) {
         if (!ioMap_.get(idx).containsKey(address)) {
             ioMap_.get(idx).put(address, new LadderIo(address));
-            treeTableIo_.getRoot().getChildren().get(idx).getChildren().add(new TreeItem<>(new LadderTreeTableIo(address, value)));
+            treeTableIo_.getRoot().getChildren().get(idx).getChildren()
+                    .add(new TreeItem<>(new LadderTreeTableIo(address, value)));
         }
 
         ovScript_ = treeTableIo_.getRoot().getChildren().get(idx).getChildren();
@@ -457,12 +458,15 @@ public class Ladders extends Service<Void> {
         allClear();
 
         // global
-        treeTableIo_.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX, new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
+        treeTableIo_.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
+                new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
         ioMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
         commentMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
         scriptIoMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
 
-        ladderCommand_.ladderCreate(LADDER_GLOBAL_ADDRESS_INDEX + 1, "Ladders", LADDER_DEFAULT_GRID_COLUMN, LADDER_DEFAULT_GRID_ROW, LADDER_DEFAULT_GRID_MIN_SIZE, LADDER_DEFAULT_GRID_MAX_SIZE, LADDER_DEFAULT_GRID_CONTENTS_WIDTH, LADDER_DEFAULT_GRID_CONTENTS_HIGHT);
+        ladderCommand_.ladderCreate(LADDER_GLOBAL_ADDRESS_INDEX + 1, "Ladders", LADDER_DEFAULT_GRID_COLUMN,
+                LADDER_DEFAULT_GRID_ROW, LADDER_DEFAULT_GRID_MIN_SIZE, LADDER_DEFAULT_GRID_MAX_SIZE,
+                LADDER_DEFAULT_GRID_CONTENTS_WIDTH, LADDER_DEFAULT_GRID_CONTENTS_HIGHT);
     }
 
     /**
@@ -481,7 +485,9 @@ public class Ladders extends Service<Void> {
             name.append("Ladders").append(" ").append(index + 1);
         }
         index = tabLadder_.getTabs().size() + 1;
-        LadderPane pane = ladderCommand_.ladderCreate(index, name.toString(), LADDER_DEFAULT_GRID_COLUMN, LADDER_DEFAULT_GRID_ROW, LADDER_DEFAULT_GRID_MIN_SIZE, LADDER_DEFAULT_GRID_MAX_SIZE, LADDER_DEFAULT_GRID_CONTENTS_WIDTH, LADDER_DEFAULT_GRID_CONTENTS_HIGHT);
+        LadderPane pane = ladderCommand_.ladderCreate(index, name.toString(), LADDER_DEFAULT_GRID_COLUMN,
+                LADDER_DEFAULT_GRID_ROW, LADDER_DEFAULT_GRID_MIN_SIZE, LADDER_DEFAULT_GRID_MAX_SIZE,
+                LADDER_DEFAULT_GRID_CONTENTS_WIDTH, LADDER_DEFAULT_GRID_CONTENTS_HIGHT);
         tabLadder_.getSelectionModel().select(pane.getLadder().getIdx() - 1);
         isChanged_ = true;
 
@@ -526,7 +532,8 @@ public class Ladders extends Service<Void> {
         if (result.isPresent()) {
             String name = result.get().trim();
             if (checkTabName(name)) {
-                treeTableIo_.getRoot().getChildren().get(pane.getLadder().getIdx()).getValue().setAddress(name.replace(" ", "_"));
+                treeTableIo_.getRoot().getChildren().get(pane.getLadder().getIdx()).getValue()
+                        .setAddress(name.replace(" ", "_"));
                 pane.setChanged(true);
                 ladderCommand_.ladderChangeName(pane, name);
                 isChanged_ = true;
@@ -574,7 +581,8 @@ public class Ladders extends Service<Void> {
 
             name = name.replace(" ", "_");
             for (index = 0, size = tabLadder_.getTabs().size(); index < size; index++) {
-                if (((LadderPane) ((ScrollPane) tabLadder_.getTabs().get(index).getContent()).getContent()).getLadder().getName().equals(name)) {
+                if (((LadderPane) ((ScrollPane) tabLadder_.getTabs().get(index).getContent()).getContent()).getLadder()
+                        .getName().equals(name)) {
                     return false;
                 }
             }
@@ -587,7 +595,9 @@ public class Ladders extends Service<Void> {
         return ladderOpen(tabPane, treeTableView, ioMap_, commentMap_, file);
     }
 
-    private Path ladderOpen(TabPane tabPane, TreeTableView<LadderTreeTableIo> treeTableView, CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap, Path file) {
+    private Path ladderOpen(TabPane tabPane, TreeTableView<LadderTreeTableIo> treeTableView,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap, Path file) {
         if (file == null) {
             FileChooser fileChooser = new FileChooser();
 
@@ -611,7 +621,8 @@ public class Ladders extends Service<Void> {
             allClear();
 
             // global
-            treeTableIo_.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX, new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
+            treeTableIo_.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
+                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
             ioMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
             commentMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
             scriptIoMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
@@ -639,7 +650,9 @@ public class Ladders extends Service<Void> {
 
     private Path ladderSave(Path file) {
         if (file != null) {
-            try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(Files.newOutputStream(file), "UTF-8"); BufferedReader bufferedReader = new BufferedReader(new StringReader(gson_.toJson(ladderJsonSave(tabLadder_, ioMap_, commentMap_))))) {
+            try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(Files.newOutputStream(file), "UTF-8");
+                    BufferedReader bufferedReader = new BufferedReader(
+                            new StringReader(gson_.toJson(ladderJsonSave(tabLadder_, ioMap_, commentMap_))))) {
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
                     outputStreamWriter.write(line);
@@ -690,8 +703,10 @@ public class Ladders extends Service<Void> {
         return page;
     }
 
-    private PDPageContentStream pdfPageBeginGrid(PDDocument doc, PDPage page, PDFont font, float fontSize, float lineWidth, float marginTop, float marginLeft) throws IOException {
-        PDPageContentStream contentStream = new PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, true, true);
+    private PDPageContentStream pdfPageBeginGrid(PDDocument doc, PDPage page, PDFont font, float fontSize,
+            float lineWidth, float marginTop, float marginLeft) throws IOException {
+        PDPageContentStream contentStream = new PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND,
+                true, true);
         contentStream.setFont(font, fontSize);
         contentStream.setLeading(font.getFontDescriptor().getFontBoundingBox().getHeight() / 1000f * fontSize);
         contentStream.setLineWidth(lineWidth);
@@ -704,7 +719,9 @@ public class Ladders extends Service<Void> {
 
     private Path ladderExportPdf(Path file) {
         if (file != null) {
-            try (PDDocument doc = new PDDocument(); TrueTypeCollection ttc = new TrueTypeCollection(getClass().getClassLoader().getResourceAsStream("font/MyricaM.TTC"))) {
+            try (PDDocument doc = new PDDocument();
+                    TrueTypeCollection ttc = new TrueTypeCollection(
+                        this.getClass().getClassLoader().getResourceAsStream("font/MyricaM.TTC"))) {
                 PDRectangle rectangle = PDRectangle.A4;
                 PDPage page;
                 PDPageContentStream contentStream;
@@ -744,18 +761,24 @@ public class Ladders extends Service<Void> {
                     page = pdfNewPage(doc, rectangle);
                     gridWidth = pageShowMinWidth + contentsSize;
                     gridHeight = rectangle.getHeight() - pageShowMinHeight - contentsSize;
-                    contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth, pageShowMinWidth, pageShowMinHeight);
+                    contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth, pageShowMinWidth,
+                            pageShowMinHeight);
                     if (getFileName() == null) {
                         // page header name & title
                         contentStream.beginText();
-                        contentStream.newLineAtOffset(((pageShowMaxWidth - (font.getStringWidth(name) / 1000f * fontSize)) / 2f) + pageShowMinWidth + fontWidth, pageShowMaxHeight - fontHeight);
+                        contentStream.newLineAtOffset(
+                                ((pageShowMaxWidth - (font.getStringWidth(name) / 1000f * fontSize)) / 2f)
+                                        + pageShowMinWidth + fontWidth,
+                                pageShowMaxHeight - fontHeight);
                         contentStream.showText(name);
                         contentStream.endText();
                         gridHeight += fontHeight;
                     } else {
                         // page header name
                         contentStream.beginText();
-                        contentStream.newLineAtOffset(((pageShowMaxWidth - (font.getStringWidth(name + " [" + getFileName() + "]") / 1000f * fontSize)) / 2f) + pageShowMinWidth + fontWidth, pageShowMaxHeight - fontHeight);
+                        contentStream.newLineAtOffset(((pageShowMaxWidth
+                                - (font.getStringWidth(name + " [" + getFileName() + "]") / 1000f * fontSize)) / 2f)
+                                + pageShowMinWidth + fontWidth, pageShowMaxHeight - fontHeight);
                         contentStream.showText(name + " [" + getFileName() + "]");
                         contentStream.endText();
                         gridHeight += fontHeight;
@@ -764,7 +787,8 @@ public class Ladders extends Service<Void> {
                     for (i = 1; i < LADDER_DEFAULT_GRID_COLUMN; i++) {
                         contentStream.beginText();
                         content = String.valueOf(i);
-                        contentStream.newLineAtOffset(gridWidth + (gridSize * (i - 1)) + gridSize2 + ((font.getStringWidth(content) / 1000f * fontSize) / 2f), gridHeight);
+                        contentStream.newLineAtOffset(gridWidth + (gridSize * (i - 1)) + gridSize2
+                                + ((font.getStringWidth(content) / 1000f * fontSize) / 2f), gridHeight);
                         contentStream.showText(content);
                         contentStream.endText();
                     }
@@ -783,13 +807,17 @@ public class Ladders extends Service<Void> {
                                 if (gridHeight < (pageShowMinHeight + gridSize)) {
                                     pdfPageEndGrid(contentStream);
                                     page = pdfNewPage(doc, rectangle);
-                                    contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth, pageShowMinWidth, pageShowMinHeight);
+                                    contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth,
+                                            pageShowMinWidth, pageShowMinHeight);
                                     gridHeight = rectangle.getHeight() - pageShowMinHeight - contentsSize;
 
                                     for (i = 1; i < LADDER_DEFAULT_GRID_COLUMN; i++) {
                                         contentStream.beginText();
                                         content = String.valueOf(i);
-                                        contentStream.newLineAtOffset(gridWidth + (gridSize * (i - 1)) + gridSize2 + ((font.getStringWidth(content) / 1000f * fontSize) / 2f), gridHeight);
+                                        contentStream.newLineAtOffset(
+                                                gridWidth + (gridSize * (i - 1)) + gridSize2
+                                                        + ((font.getStringWidth(content) / 1000f * fontSize) / 2f),
+                                                gridHeight);
                                         contentStream.showText(content);
                                         contentStream.endText();
                                     }
@@ -797,7 +825,9 @@ public class Ladders extends Service<Void> {
 
                                 contentStream.beginText();
                                 content = String.valueOf(row + 1);
-                                contentStream.newLineAtOffset(gridWidth + ((-contentsSize + (font.getStringWidth(content) / 1000f * fontSize)) / 2f), gridHeight - gridSize2);
+                                contentStream.newLineAtOffset(gridWidth
+                                        + ((-contentsSize + (font.getStringWidth(content) / 1000f * fontSize)) / 2f),
+                                        gridHeight - gridSize2);
                                 contentStream.showText(content);
                                 contentStream.endText();
                             }
@@ -878,8 +908,10 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -| |-
                                 contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
                                 contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
@@ -905,13 +937,16 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -| |-
                                 contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
                                 contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
                                 // -|/|-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 contentStream.stroke();
                                 break;
@@ -935,8 +970,10 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -| |-
                                 contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
                                 contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
@@ -944,9 +981,11 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12, gridHeight - gridSize2 + gridSize4 - gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
+                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12, gridHeight - gridSize2 + gridSize4 - gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
+                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
                                 contentStream.stroke();
                                 break;
                             case LOAD_RISING_NOT:
@@ -969,21 +1008,26 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -| |-
                                 contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
                                 contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
                                 // -|/|-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -|/↑|-
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12, gridHeight - gridSize2 + gridSize4 - gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
+                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12, gridHeight - gridSize2 + gridSize4 - gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
+                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
                                 contentStream.stroke();
                                 break;
                             case LOAD_FALLING:
@@ -1006,8 +1050,10 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -| |-
                                 contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
                                 contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
@@ -1015,9 +1061,11 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12, gridHeight - gridSize2 - gridSize4 + gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
+                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12, gridHeight - gridSize2 - gridSize4 + gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
+                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
                                 contentStream.stroke();
                                 break;
                             case LOAD_FALLING_NOT:
@@ -1040,21 +1088,26 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -| |-
                                 contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
                                 contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
                                 // -|/|-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -|/↓|-
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12, gridHeight - gridSize2 - gridSize4 + gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
+                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12, gridHeight - gridSize2 - gridSize4 + gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
+                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
                                 contentStream.stroke();
                                 break;
                             case OUT:
@@ -1075,10 +1128,13 @@ public class Ladders extends Service<Void> {
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
                                 // -(
                                 contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2, gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
+                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
                                 contentStream.stroke();
                                 break;
                             case OUT_NOT:
@@ -1099,12 +1155,16 @@ public class Ladders extends Service<Void> {
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
                                 // -(
                                 contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2, gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
+                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
                                 // -(/)
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
                                 contentStream.stroke();
                                 break;
@@ -1126,17 +1186,22 @@ public class Ladders extends Service<Void> {
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
                                 // -(
                                 contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2, gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
+                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
                                 // -(↑)
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12, gridHeight - gridSize2 + gridSize4 - gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
+                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12, gridHeight - gridSize2 + gridSize4 - gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
+                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
                                 contentStream.stroke();
                                 break;
                             case OUT_RISING_NOT:
@@ -1157,20 +1222,26 @@ public class Ladders extends Service<Void> {
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
                                 // -(
                                 contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2, gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
+                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
                                 // -(/)
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
                                 // -(/↑)
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12, gridHeight - gridSize2 + gridSize4 - gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
+                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12, gridHeight - gridSize2 + gridSize4 - gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
+                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
                                 contentStream.stroke();
                                 break;
                             case OUT_FALLING:
@@ -1191,17 +1262,22 @@ public class Ladders extends Service<Void> {
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
                                 // -(
                                 contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2, gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
+                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
                                 // -(↓)
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12, gridHeight - gridSize2 - gridSize4 + gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
+                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12, gridHeight - gridSize2 - gridSize4 + gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
+                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
                                 contentStream.stroke();
                                 break;
                             case OUT_FALLING_NOT:
@@ -1222,20 +1298,26 @@ public class Ladders extends Service<Void> {
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
                                 // -(
                                 contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2, gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
+                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
                                 // -(/)
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3, gridHeight - gridSize2 + gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
+                                        gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
                                 // -(/↓)
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12, gridHeight - gridSize2 - gridSize4 + gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
+                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
                                 contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12, gridHeight - gridSize2 - gridSize4 + gridSize12);
+                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
+                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
                                 contentStream.stroke();
                                 break;
                             case COMPARISON_EQUAL:
@@ -1267,13 +1349,16 @@ public class Ladders extends Service<Void> {
                                 } else {
                                     switch (jsonBlock.getBlockFunctions().get(0).radix) {
                                         case 10:
-                                            contentStream.showText(Double.toString(jsonBlock.getBlockFunctions().get(0).value));
+                                            contentStream.showText(
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
                                             break;
                                         case 16:
-                                            contentStream.showText("0x" + Long.toString(jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
+                                            contentStream.showText("0x" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
                                             break;
                                         case 2:
-                                            contentStream.showText("0b" + Long.toString(jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
+                                            contentStream.showText("0b" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
                                             break;
                                     }
                                 }
@@ -1285,15 +1370,18 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -| |-
                                 contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
                                 contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
                                 contentStream.stroke();
                                 // command
                                 contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize6);
+                                contentStream.newLineAtOffset(gridWidth + gridSize6,
+                                        gridHeight - gridSize2 + gridSize6);
                                 contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
                                 contentStream.endText();
                                 break;
@@ -1319,12 +1407,15 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 contentStream.stroke();
                                 // command
                                 contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize6);
+                                contentStream.newLineAtOffset(gridWidth + gridSize6,
+                                        gridHeight - gridSize2 + gridSize6);
                                 contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
                                 contentStream.endText();
                                 break;
@@ -1352,13 +1443,16 @@ public class Ladders extends Service<Void> {
                                 } else {
                                     switch (jsonBlock.getBlockFunctions().get(0).radix) {
                                         case 10:
-                                            contentStream.showText(Double.toString(jsonBlock.getBlockFunctions().get(0).value));
+                                            contentStream.showText(
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
                                             break;
                                         case 16:
-                                            contentStream.showText("0x" + Long.toString(jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
+                                            contentStream.showText("0x" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
                                             break;
                                         case 2:
-                                            contentStream.showText("0b" + Long.toString(jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
+                                            contentStream.showText("0b" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
                                             break;
                                     }
                                 }
@@ -1370,12 +1464,15 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 contentStream.stroke();
                                 // command
                                 contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize6);
+                                contentStream.newLineAtOffset(gridWidth + gridSize6,
+                                        gridHeight - gridSize2 + gridSize6);
                                 contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
                                 contentStream.endText();
                                 break;
@@ -1401,13 +1498,16 @@ public class Ladders extends Service<Void> {
                                 } else {
                                     switch (jsonBlock.getBlockFunctions().get(0).radix) {
                                         case 10:
-                                            contentStream.showText(Double.toString(jsonBlock.getBlockFunctions().get(0).value));
+                                            contentStream.showText(
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
                                             break;
                                         case 16:
-                                            contentStream.showText("0x" + Long.toString(jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
+                                            contentStream.showText("0x" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
                                             break;
                                         case 2:
-                                            contentStream.showText("0b" + Long.toString(jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
+                                            contentStream.showText("0b" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
                                             break;
                                     }
                                 }
@@ -1419,15 +1519,19 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 // -|/|
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 contentStream.stroke();
                                 // command
                                 contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize6);
+                                contentStream.newLineAtOffset(gridWidth + gridSize6,
+                                        gridHeight - gridSize2 + gridSize6);
                                 contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
                                 contentStream.endText();
                                 break;
@@ -1462,32 +1566,39 @@ public class Ladders extends Service<Void> {
                                 } else {
                                     switch (jsonBlock.getBlockFunctions().get(0).radix) {
                                         case 10:
-                                            contentStream.showText(Double.toString(jsonBlock.getBlockFunctions().get(0).value));
+                                            contentStream.showText(
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
                                             break;
                                         case 16:
-                                            contentStream.showText("0x" + Long.toString(jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
+                                            contentStream.showText("0x" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
                                             break;
                                         case 2:
-                                            contentStream.showText("0b" + Long.toString(jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
+                                            contentStream.showText("0b" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
                                             break;
                                     }
                                 }
                                 contentStream.endText();
                                 // address
                                 contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize6);
+                                contentStream.newLineAtOffset(gridWidth + gridSize6,
+                                        gridHeight - gridSize2 - gridSize6);
                                 if (jsonBlock.getBlockFunctions().get(1).address != null) {
                                     contentStream.showText(jsonBlock.getBlockFunctions().get(1).address);
                                 } else {
                                     switch (jsonBlock.getBlockFunctions().get(1).radix) {
                                         case 10:
-                                            contentStream.showText(Double.toString(jsonBlock.getBlockFunctions().get(1).value));
+                                            contentStream.showText(
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(1).value));
                                             break;
                                         case 16:
-                                            contentStream.showText("0x" + Long.toString(jsonBlock.getBlockFunctions().get(1).value.longValue(), 16));
+                                            contentStream.showText("0x" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(1).value.longValue(), 16));
                                             break;
                                         case 2:
-                                            contentStream.showText("0b" + Long.toString(jsonBlock.getBlockFunctions().get(1).value.longValue(), 2));
+                                            contentStream.showText("0b" + Long.toString(
+                                                    jsonBlock.getBlockFunctions().get(1).value.longValue(), 2));
                                             break;
                                     }
                                 }
@@ -1499,12 +1610,15 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 contentStream.stroke();
                                 // command
                                 contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize6);
+                                contentStream.newLineAtOffset(gridWidth + gridSize6,
+                                        gridHeight - gridSize2 + gridSize6);
                                 contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
                                 contentStream.endText();
                                 break;
@@ -1533,14 +1647,19 @@ public class Ladders extends Service<Void> {
                                 contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
                                 contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
                                 // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2 - gridSize4);
+                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 + gridSize4);
+                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
+                                        gridHeight - gridSize2 - gridSize4);
                                 contentStream.stroke();
                                 // command
                                 contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize6);
+                                contentStream.newLineAtOffset(gridWidth + gridSize6,
+                                        gridHeight - gridSize2 + gridSize6);
                                 contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
                                 contentStream.endText();
+                                break;
+                            default:
                                 break;
                         }
                     }
@@ -1550,9 +1669,12 @@ public class Ladders extends Service<Void> {
                 // page footer count
                 for (index = 0; index < doc.getNumberOfPages(); index++) {
                     line = (index + 1) + " / " + doc.getNumberOfPages();
-                    contentStream = pdfPageBeginGrid(doc, doc.getPage(index), font, fontSize, lineWidth, pageShowMinWidth, pageShowMinHeight);
+                    contentStream = pdfPageBeginGrid(doc, doc.getPage(index), font, fontSize, lineWidth,
+                            pageShowMinWidth, pageShowMinHeight);
                     contentStream.beginText();
-                    contentStream.newLineAtOffset(((pageShowMaxWidth - (font.getStringWidth(line) / 1000f * fontSize)) / 2f) + pageShowMinWidth + fontWidth, pageShowMinHeight);
+                    contentStream
+                            .newLineAtOffset(((pageShowMaxWidth - (font.getStringWidth(line) / 1000f * fontSize)) / 2f)
+                                    + pageShowMinWidth + fontWidth, pageShowMinHeight);
                     contentStream.showText(line);
                     contentStream.endText();
                     pdfPageEndGrid(contentStream);
@@ -1596,7 +1718,8 @@ public class Ladders extends Service<Void> {
     public LadderJson ladderJsonOpen(Path file) {
         if (file != null) {
             if (Files.exists(file)) {
-                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(Files.newInputStream(file), "UTF-8"))) {
+                try (BufferedReader bufferedReader = new BufferedReader(
+                        new InputStreamReader(Files.newInputStream(file), "UTF-8"))) {
                     StringBuilder builder = new StringBuilder();
                     String line;
                     while ((line = bufferedReader.readLine()) != null) {
@@ -1624,11 +1747,15 @@ public class Ladders extends Service<Void> {
      * @param ladderJson
      * @return
      */
-    public boolean ladderJsonLoad(Ladders ladders, TabPane tabPane, TreeTableView<LadderTreeTableIo> treeTableView, CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap, CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> scriptIoMap, LadderJson ladderJson) {
+    public boolean ladderJsonLoad(Ladders ladders, TabPane tabPane, TreeTableView<LadderTreeTableIo> treeTableView,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> scriptIoMap, LadderJson ladderJson) {
         ladderCommand_.setDisableHistory(true);
         try {
             // ladder
-            if (!ladderCommand_.restoreLadders(ladders, tabPane, treeTableView, ioMap, commentMap, scriptIoMap, ladderJson, false)) {
+            if (!ladderCommand_.restoreLadders(ladders, tabPane, treeTableView, ioMap, commentMap, scriptIoMap,
+                    ladderJson, false)) {
                 return false;
             }
 
@@ -1662,7 +1789,8 @@ public class Ladders extends Service<Void> {
         return ladderJsonSave(tabPane, ioMap_, commentMap_);
     }
 
-    private LadderJson ladderJsonSave(TabPane tabPane, CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap) {
+    private LadderJson ladderJsonSave(TabPane tabPane, CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap) {
         LadderJson ladderJson = new LadderJson();
 
         // ladder
@@ -1953,6 +2081,8 @@ public class Ladders extends Service<Void> {
                         return true;
                     }
                     break;
+                default:
+                    break;
             }
 
             if (pane.onKeyPressed(event, scrollPane)) {
@@ -2020,7 +2150,8 @@ public class Ladders extends Service<Void> {
                     Map.Entry<String, LadderIo> entry;
                     LadderRegisterSoemIo registerSoemIo;
                     Long registerSoemValue;
-                    long cycleTime, minCycleTime, maxCycleTime, cumulativeCycleTime, cumulativeCycleTimeCount, nanoTime, nanoTimeOld, waitTime;
+                    long cycleTime, minCycleTime, maxCycleTime, cumulativeCycleTime, cumulativeCycleTimeCount, nanoTime,
+                            nanoTimeOld, waitTime;
                     int index, size;
 
                     ladderController_.runViewRunning(true);
@@ -2038,13 +2169,17 @@ public class Ladders extends Service<Void> {
                             if (soem_ != null) {
                                 for (index = 0, size = registerSoemOut_.size(); index < size; index++) {
                                     registerSoemIo = registerSoemOut_.get(index);
-                                    soem_.out(registerSoemIo.getSlave(), registerSoemIo.getBitsOffset(), registerSoemIo.getBitsMask(), (long) ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).get(registerSoemIo.getAddress()).getValue());
+                                    soem_.out(registerSoemIo.getSlave(), registerSoemIo.getBitsOffset(),
+                                            registerSoemIo.getBitsMask(), (long) ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX)
+                                                    .get(registerSoemIo.getAddress()).getValue());
                                 }
                                 for (index = 0, size = registerSoemIn_.size(); index < size; index++) {
                                     registerSoemIo = registerSoemIn_.get(index);
-                                    registerSoemValue = soem_.in(registerSoemIo.getSlave(), registerSoemIo.getBitsOffset(), registerSoemIo.getBitsMask());
+                                    registerSoemValue = soem_.in(registerSoemIo.getSlave(),
+                                            registerSoemIo.getBitsOffset(), registerSoemIo.getBitsMask());
                                     if (registerSoemValue != null) {
-                                        ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).get(registerSoemIo.getAddress()).setValue(registerSoemValue);
+                                        ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).get(registerSoemIo.getAddress())
+                                                .setValue(registerSoemValue);
                                     }
                                 }
                             }
@@ -2052,7 +2187,8 @@ public class Ladders extends Service<Void> {
                             // script io
                             for (index = 0; index < scriptIoMap_.size(); index++) {
                                 if (!scriptIoMap_.get(index).isEmpty()) {
-                                    for (Iterator<Map.Entry<String, LadderIo>> iterator = scriptIoMap_.get(index).entrySet().iterator(); iterator.hasNext();) {
+                                    for (Iterator<Map.Entry<String, LadderIo>> iterator = scriptIoMap_.get(index)
+                                            .entrySet().iterator(); iterator.hasNext();) {
                                         entry = iterator.next();
                                         if (entry.getValue().isCycled()) {
                                             ioMap_.get(index).get(entry.getKey()).chehckEdge();
@@ -2162,7 +2298,9 @@ public class Ladders extends Service<Void> {
         if (objects != null) {
             switch (objects.length) {
                 case 5:
-                    if ((objects[0] instanceof Soem) && (objects[1] instanceof String) && (objects[2] instanceof Integer) && (objects[3] instanceof Long) && (objects[4] instanceof Long)) {
+                    if ((objects[0] instanceof Soem) && (objects[1] instanceof String)
+                            && (objects[2] instanceof Integer) && (objects[3] instanceof Long)
+                            && (objects[4] instanceof Long)) {
                         if (soem_ == null) {
                             soem_ = (Soem) objects[0];
                             if (registerSoemIn_ != null) {
@@ -2177,7 +2315,8 @@ public class Ladders extends Service<Void> {
                         if (!address.startsWith(LADDER_LOCAL_ADDRESS_PREFIX) && !address.contains(" ")) {
                             if (!ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).containsKey(address)) {
                                 ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).put(address, new LadderIo(address));
-                                treeTableIo_.getRoot().getChildren().get(LADDER_GLOBAL_ADDRESS_INDEX).getChildren().add(new TreeItem<>(new LadderTreeTableIo(address)));
+                                treeTableIo_.getRoot().getChildren().get(LADDER_GLOBAL_ADDRESS_INDEX).getChildren()
+                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
                             }
 
                             int slave = (int) objects[2];
@@ -2185,9 +2324,12 @@ public class Ladders extends Service<Void> {
                             long bitsMask = (long) objects[4];
                             for (int index = 0, size = registerSoemIn_.size(); index < size; index++) {
                                 if (registerSoemIn_.get(index).getAddress().equals(address)) {
-                                    if ((registerSoemIn_.get(index).getSlave() != slave) || (registerSoemIn_.get(index).getBitsOffset() != bitsOffset) || (registerSoemIn_.get(index).getBitsMask() != bitsMask)) {
+                                    if ((registerSoemIn_.get(index).getSlave() != slave)
+                                            || (registerSoemIn_.get(index).getBitsOffset() != bitsOffset)
+                                            || (registerSoemIn_.get(index).getBitsMask() != bitsMask)) {
                                         registerSoemIn_.remove(index);
-                                        registerSoemIn_.add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
+                                        registerSoemIn_
+                                                .add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
                                     }
                                     return true;
                                 }
@@ -2207,7 +2349,9 @@ public class Ladders extends Service<Void> {
         if (objects != null) {
             switch (objects.length) {
                 case 5:
-                    if ((objects[0] instanceof Soem) && (objects[1] instanceof String) && (objects[2] instanceof Integer) && (objects[3] instanceof Long) && (objects[4] instanceof Long)) {
+                    if ((objects[0] instanceof Soem) && (objects[1] instanceof String)
+                            && (objects[2] instanceof Integer) && (objects[3] instanceof Long)
+                            && (objects[4] instanceof Long)) {
                         if (soem_ == null) {
                             soem_ = (Soem) objects[0];
                             if (registerSoemIn_ != null) {
@@ -2222,7 +2366,8 @@ public class Ladders extends Service<Void> {
                         if (!address.startsWith(LADDER_LOCAL_ADDRESS_PREFIX) && !address.contains(" ")) {
                             if (!ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).containsKey(address)) {
                                 ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).put(address, new LadderIo(address));
-                                treeTableIo_.getRoot().getChildren().get(LADDER_GLOBAL_ADDRESS_INDEX).getChildren().add(new TreeItem<>(new LadderTreeTableIo(address)));
+                                treeTableIo_.getRoot().getChildren().get(LADDER_GLOBAL_ADDRESS_INDEX).getChildren()
+                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
                             }
 
                             int slave = (int) objects[2];
@@ -2230,14 +2375,18 @@ public class Ladders extends Service<Void> {
                             long bitsMask = (long) objects[4];
                             for (int index = 0, size = registerSoemOut_.size(); index < size; index++) {
                                 if (registerSoemOut_.get(index).getAddress().equals(address)) {
-                                    if ((registerSoemOut_.get(index).getSlave() != slave) || (registerSoemOut_.get(index).getBitsOffset() != bitsOffset) || (registerSoemOut_.get(index).getBitsMask() != bitsMask)) {
+                                    if ((registerSoemOut_.get(index).getSlave() != slave)
+                                            || (registerSoemOut_.get(index).getBitsOffset() != bitsOffset)
+                                            || (registerSoemOut_.get(index).getBitsMask() != bitsMask)) {
                                         registerSoemOut_.remove(index);
-                                        registerSoemOut_.add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
+                                        registerSoemOut_
+                                                .add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
                                     }
                                     return true;
                                 }
                             }
-                            registerSoemOut_.add(new LadderRegisterSoemIo(address, (int) objects[2], (long) objects[3], (long) objects[4]));
+                            registerSoemOut_.add(new LadderRegisterSoemIo(address, (int) objects[2], (long) objects[3],
+                                    (long) objects[4]));
                             return true;
                         }
                     }
@@ -2300,7 +2449,8 @@ public class Ladders extends Service<Void> {
     public void setValue(int idx, String address, double value) {
         if (!ioMap_.get(idx).containsKey(address)) {
             ioMap_.get(idx).put(address, new LadderIo(address));
-            treeTableIo_.getRoot().getChildren().get(idx).getChildren().add(new TreeItem(new LadderTreeTableIo(address, value)));
+            treeTableIo_.getRoot().getChildren().get(idx).getChildren()
+                    .add(new TreeItem<>(new LadderTreeTableIo(address, value)));
         }
 
         ovScript_ = treeTableIo_.getRoot().getChildren().get(idx).getChildren();
@@ -2347,7 +2497,8 @@ public class Ladders extends Service<Void> {
      * @param ioMap
      * @return
      */
-    public boolean checkConnectLadder(TabPane tabPane, TreeTableView<LadderTreeTableIo> ioTreeTable, CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap) {
+    public boolean checkConnectLadder(TabPane tabPane, TreeTableView<LadderTreeTableIo> ioTreeTable,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap) {
         LadderPane pane;
         int index, size;
 

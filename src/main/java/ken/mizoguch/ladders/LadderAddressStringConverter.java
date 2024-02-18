@@ -38,7 +38,8 @@ public class LadderAddressStringConverter extends StringConverter<String> {
         if (string != null) {
             string = string.trim();
             if ((!string.isEmpty()) && (!string.contains(" "))) {
-                if (!(value.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX) ^ string.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX))) {
+                if (!(value.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)
+                        ^ string.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX))) {
                     value = string;
                 }
             }

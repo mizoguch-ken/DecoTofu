@@ -137,44 +137,44 @@ public interface SoemEtherCATSoE {
     public class ec_SoEattributet extends Struct {
 
         public final Unsigned32 attribute;
-//        /**
-//         * evaluation factor for display purposes
-//         */
-//        public Unsigned32 evafactor;
-//        /**
-//         * length of IDN element(s)
-//         */
-//        public Unsigned32 length;
-//        /**
-//         * IDN is list
-//         */
-//        public Unsigned32 list;
-//        /**
-//         * IDN is command
-//         */
-//        public Unsigned32 command;
-//        /**
-//         * datatype
-//         */
-//        public Unsigned32 datatype;
-//        public Unsigned32 reserved1;
-//        /**
-//         * decimals to display if float datatype
-//         */
-//        public Unsigned32 decimals;
-//        /**
-//         * write protected in pre-op
-//         */
-//        public Unsigned32 wppreop;
-//        /**
-//         * write protected in safe-op
-//         */
-//        public Unsigned32 wpsafeop;
-//        /**
-//         * write protected in op
-//         */
-//        public Unsigned32 wpop;
-//        public Unsigned32 reserved2;
+        // /**
+        // * evaluation factor for display purposes
+        // */
+        // public Unsigned32 evafactor;
+        // /**
+        // * length of IDN element(s)
+        // */
+        // public Unsigned32 length;
+        // /**
+        // * IDN is list
+        // */
+        // public Unsigned32 list;
+        // /**
+        // * IDN is command
+        // */
+        // public Unsigned32 command;
+        // /**
+        // * datatype
+        // */
+        // public Unsigned32 datatype;
+        // public Unsigned32 reserved1;
+        // /**
+        // * decimals to display if float datatype
+        // */
+        // public Unsigned32 decimals;
+        // /**
+        // * write protected in pre-op
+        // */
+        // public Unsigned32 wppreop;
+        // /**
+        // * write protected in safe-op
+        // */
+        // public Unsigned32 wpsafeop;
+        // /**
+        // * write protected in op
+        // */
+        // public Unsigned32 wpop;
+        // public Unsigned32 reserved2;
 
         public ec_SoEattributet(jnr.ffi.Runtime runtime) {
             super(runtime, new Struct.Alignment(1));

@@ -6,6 +6,7 @@
 package ken.mizoguch.decotofu;
 
 import ken.mizoguch.webviewer.DesignWebController;
+
 import java.util.ArrayList;
 import java.util.List;
 import javafx.application.Application;
@@ -24,17 +25,16 @@ public class DecoTofu extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        JavaLibrary.setClassName(getClass().getSimpleName());
+        JavaLibrary.setClassName(this.getClass().getSimpleName());
 
         List<Image> icons = new ArrayList<>();
-        icons.add(new Image(getClass().getClassLoader().getResourceAsStream("icons/icon_016.png")));
-        icons.add(new Image(getClass().getClassLoader().getResourceAsStream("icons/icon_032.png")));
-        icons.add(new Image(getClass().getClassLoader().getResourceAsStream("icons/icon_048.png")));
-        icons.add(new Image(getClass().getClassLoader().getResourceAsStream("icons/icon_128.png")));
-        icons.add(new Image(getClass().getClassLoader().getResourceAsStream("icons/icon_256.png")));
-        icons.add(new Image(getClass().getClassLoader().getResourceAsStream("icons/icon_512.png")));
+        icons.add(new Image(this.getClass().getResourceAsStream("/icons/icon_032.png")));
+        icons.add(new Image(this.getClass().getResourceAsStream("/icons/icon_048.png")));
+        icons.add(new Image(this.getClass().getResourceAsStream("/icons/icon_128.png")));
+        icons.add(new Image(this.getClass().getResourceAsStream("/icons/icon_256.png")));
+        icons.add(new Image(this.getClass().getResourceAsStream("/icons/icon_512.png")));
 
-        FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/DesignWeb.fxml"));
+        FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/fxml/DesignWeb.fxml"));
         Parent root = (Parent) loader.load();
         DesignWebController controller = (DesignWebController) loader.getController();
         Scene scene = new Scene(root);

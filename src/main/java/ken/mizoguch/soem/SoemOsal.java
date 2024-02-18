@@ -19,10 +19,10 @@ public interface SoemOsal {
     public class ec_timet extends Struct {
 
         public final Unsigned32 sec;
-        /*< Seconds elapsed since the Epoch (Jan 1, 1970) */
+        /* < Seconds elapsed since the Epoch (Jan 1, 1970) */
         public final Unsigned32 usec;
 
-        /*< Microseconds elapsed since last second boundary */
+        /* < Microseconds elapsed since last second boundary */
         public ec_timet(jnr.ffi.Runtime runtime) {
             super(runtime);
 

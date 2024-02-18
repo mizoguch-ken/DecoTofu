@@ -45,7 +45,8 @@ public class StageSettingsPlugin implements WebViewerPlugin {
         TextArea textAera = new TextArea();
         StringBuilder stringBuilder = new StringBuilder();
 
-        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResourceAsStream("LICENSES"), "UTF-8"))) {
+        try (BufferedReader bufferedReader = new BufferedReader(
+                new InputStreamReader(this.getClass().getClassLoader().getResourceAsStream("LICENSES"), "UTF-8"))) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 stringBuilder.append(line);

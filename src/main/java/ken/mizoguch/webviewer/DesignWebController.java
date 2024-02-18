@@ -59,8 +59,7 @@ public class DesignWebController implements Initializable {
     private List<Image> icons_;
     private Path currentPath_, webPath_, logPath_;
     private WebViewer webViewer_;
-    private final String template_
-            = "<!DOCTYPE html>" + "\n"
+    private final String template_ = "<!DOCTYPE html>" + "\n"
             + "<html>" + "\n"
             + "<head>" + "\n"
             + "\t<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">" + "\n"
@@ -174,25 +173,28 @@ public class DesignWebController implements Initializable {
                 event.consume();
             }
         });
-        stage_.maximizedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) -> {
-            if (newValue != null) {
-                stageSettings_.setStageMaximized(newValue, false);
-                if (!newValue) {
-                    stageSettings_.setStageWidth(stageSettings_.getStageWidth(), false);
-                    stageSettings_.setStageHeight(stageSettings_.getStageHeight(), false);
-                }
-            }
-        });
-        stage_.widthProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (!stageSettings_.isStageMaximized()) {
-                stageSettings_.setStageWidth(stage_.getWidth(), false);
-            }
-        });
-        stage_.heightProperty().addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-            if (!stageSettings_.isStageMaximized()) {
-                stageSettings_.setStageHeight(stage_.getHeight(), false);
-            }
-        });
+        stage_.maximizedProperty()
+                .addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) -> {
+                    if (newValue != null) {
+                        stageSettings_.setStageMaximized(newValue, false);
+                        if (!newValue) {
+                            stageSettings_.setStageWidth(stageSettings_.getStageWidth(), false);
+                            stageSettings_.setStageHeight(stageSettings_.getStageHeight(), false);
+                        }
+                    }
+                });
+        stage_.widthProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (!stageSettings_.isStageMaximized()) {
+                        stageSettings_.setStageWidth(stage_.getWidth(), false);
+                    }
+                });
+        stage_.heightProperty()
+                .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
+                    if (!stageSettings_.isStageMaximized()) {
+                        stageSettings_.setStageHeight(stage_.getHeight(), false);
+                    }
+                });
     }
 
     private void initProperties() {
@@ -209,9 +211,11 @@ public class DesignWebController implements Initializable {
                 properties.loadFromXML(Files.newInputStream(propertyFile));
 
                 // stage
-                stageSettings_.setStageMaximized((Boolean.parseBoolean(properties.getProperty("STAGE_MAXIMIZED", "false"))), true);
+                stageSettings_.setStageMaximized(
+                        (Boolean.parseBoolean(properties.getProperty("STAGE_MAXIMIZED", "false"))), true);
                 stageSettings_.setStageWidth(Double.parseDouble(properties.getProperty("STAGE_WIDTH", "640.0")), true);
-                stageSettings_.setStageHeight(Double.parseDouble(properties.getProperty("STAGE_HEIGHT", "480.0")), true);
+                stageSettings_.setStageHeight(Double.parseDouble(properties.getProperty("STAGE_HEIGHT", "480.0")),
+                        true);
 
                 return true;
             } catch (FileNotFoundException ex) {
@@ -306,7 +310,7 @@ public class DesignWebController implements Initializable {
         // add Event
         addEventDesign();
 
-        //stage settings
+        // stage settings
         stageSettingsPlugin_ = new StageSettingsPlugin();
 
         // soem
@@ -316,7 +320,8 @@ public class DesignWebController implements Initializable {
         // ladder
         try {
             Stage stageLadder = new Stage(StageStyle.DECORATED);
-            FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/DesignLadders.fxml"));
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(this.getClass().getResource("/fxml/DesignLadders.fxml"));
             Parent root = (Parent) loader.load();
             DesignLaddersController laddersController = (DesignLaddersController) loader.getController();
             stageLadder.setScene(new Scene(root));

@@ -148,16 +148,25 @@ public class WebViewer implements WebViewerPlugin {
                             if (manifest != null) {
                                 String mainClass = manifest.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
                                 if (mainClass != null) {
-                                    URLClassLoader loader = URLClassLoader.newInstance(new URL[]{plugin.toUri().toURL()}, getClass().getClassLoader());
-                                    Class<WebViewerPlugin> clazz = (Class<WebViewerPlugin>) loader.loadClass(mainClass);
-                                    WebViewerPlugin webViewerPlugin = clazz.getDeclaredConstructor().newInstance();
-                                    webViewerPlugin.initialize(this);
-                                    plugins_.add(webViewerPlugin);
+                                    URLClassLoader loader = URLClassLoader.newInstance(
+                                            new URL[] { plugin.toUri().toURL() }, this.getClass().getClassLoader());
+                                    Class<?> clazz = loader.loadClass(mainClass);
+                                    if (WebViewerPlugin.class.isAssignableFrom(clazz)) {
+                                        Class<? extends WebViewerPlugin> pluginClass = clazz
+                                                .asSubclass(WebViewerPlugin.class);
+                                        WebViewerPlugin webViewerPlugin = pluginClass.getDeclaredConstructor()
+                                                .newInstance();
+                                        webViewerPlugin.initialize(this);
+                                        plugins_.add(webViewerPlugin);
+                                    }
                                 }
                             }
-                        } catch (MalformedURLException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
+                            jarFile.close();
+                        } catch (MalformedURLException | ClassNotFoundException | InstantiationException
+                                | IllegalAccessException ex) {
                             writeStackTrace(WebViewer.class.getName(), ex);
-                        } catch (IOException | NoSuchMethodException | SecurityException | IllegalArgumentException | InvocationTargetException ex) {
+                        } catch (IOException | NoSuchMethodException | SecurityException | IllegalArgumentException
+                                | InvocationTargetException ex) {
                             writeStackTrace(WebViewer.class.getName(), ex);
                         }
                     }
@@ -167,33 +176,35 @@ public class WebViewer implements WebViewerPlugin {
             writeStackTrace(WebViewer.class.getName(), ex);
         }
 
-        webEngine_.getLoadWorker().stateProperty().addListener((ObservableValue<? extends Worker.State> observable, Worker.State oldValue, Worker.State newValue) -> {
-            workerState_ = newValue;
+        webEngine_.getLoadWorker().stateProperty().addListener(
+                (ObservableValue<? extends Worker.State> observable, Worker.State oldValue, Worker.State newValue) -> {
+                    workerState_ = newValue;
 
-            for (int index = 0, size = plugins_.size(); index < size; index++) {
-                plugins_.get(index).state(workerState_);
-            }
-            if (workerState_ == Worker.State.SUCCEEDED) {
-                try {
-                    JSObject window = (JSObject) webEngine_.executeScript("window");
-                    stage_.setTitle((String) webEngine_.executeScript("document.title"));
                     for (int index = 0, size = plugins_.size(); index < size; index++) {
-                        if (plugins_.get(index).functionName() != null) {
-                            if (undefined_.equals(window.getMember(plugins_.get(index).functionName()))) {
-                                window.setMember(plugins_.get(index).functionName(), plugins_.get(index));
+                        plugins_.get(index).state(workerState_);
+                    }
+                    if (workerState_ == Worker.State.SUCCEEDED) {
+                        try {
+                            JSObject window = (JSObject) webEngine_.executeScript("window");
+                            stage_.setTitle((String) webEngine_.executeScript("document.title"));
+                            for (int index = 0, size = plugins_.size(); index < size; index++) {
+                                if (plugins_.get(index).functionName() != null) {
+                                    if (undefined_.equals(window.getMember(plugins_.get(index).functionName()))) {
+                                        window.setMember(plugins_.get(index).functionName(), plugins_.get(index));
+                                    }
+                                }
                             }
+                            if (!undefined_.equals(window.getMember("setup"))) {
+                                webEngine_.executeScript("setup();");
+                            }
+                        } catch (JSException | ClassCastException | SecurityException ex) {
+                            writeStackTrace(WebViewer.class.getName(), ex);
                         }
+                    } else if ((workerState_ == Worker.State.FAILED)
+                            && (webEngine_.getLoadWorker().getException() != null)) {
+                        write(WebViewer.class.getName(), webEngine_.getLoadWorker().getException().toString(), true);
                     }
-                    if (!undefined_.equals(window.getMember("setup"))) {
-                        webEngine_.executeScript("setup();");
-                    }
-                } catch (JSException | ClassCastException | SecurityException ex) {
-                    writeStackTrace(WebViewer.class.getName(), ex);
-                }
-            } else if ((workerState_ == Worker.State.FAILED) && (webEngine_.getLoadWorker().getException() != null)) {
-                write(WebViewer.class.getName(), webEngine_.getLoadWorker().getException().toString(), true);
-            }
-        });
+                });
     }
 
     /**

@@ -126,7 +126,8 @@ public class LadderGrid {
      * @param rightLadderGrid
      * @param downLadderGrid
      */
-    public LadderGrid(int columnIndex, int rowIndex, int colspan, int rowspan, LadderGrid leftLadderGrid, LadderGrid upLadderGrid, LadderGrid rightLadderGrid, LadderGrid downLadderGrid) {
+    public LadderGrid(int columnIndex, int rowIndex, int colspan, int rowspan, LadderGrid leftLadderGrid,
+            LadderGrid upLadderGrid, LadderGrid rightLadderGrid, LadderGrid downLadderGrid) {
         columnIndex_ = columnIndex;
         rowIndex_ = rowIndex;
         colspan_ = colspan;
@@ -180,7 +181,8 @@ public class LadderGrid {
     public LadderGrid copy() {
         int i;
 
-        LadderGrid grid = new LadderGrid(columnIndex_, rowIndex_, colspan_, rowspan_, leftLadderGrid_, upLadderGrid_, rightLadderGrid_, downLadderGrid_);
+        LadderGrid grid = new LadderGrid(columnIndex_, rowIndex_, colspan_, rowspan_, leftLadderGrid_, upLadderGrid_,
+                rightLadderGrid_, downLadderGrid_);
         grid.setInConnectNumber(inConnectNumber_);
         grid.setOutConnectNumber(outConnectNumber_);
         grid.setBlock(block_);

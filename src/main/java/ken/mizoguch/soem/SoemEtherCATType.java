@@ -108,7 +108,7 @@ public interface SoemEtherCATType {
     /**
      * definition for frame buffers
      */
-//    typedef uint8 ec_bufT[EC_BUFSIZE];
+    // typedef uint8 ec_bufT[EC_BUFSIZE];
     /**
      * ethernet header definition
      */
@@ -147,7 +147,7 @@ public interface SoemEtherCATType {
     /**
      * ethernet header size
      */
-//    #define ETH_HEADERSIZE      sizeof(ec_etherheadert)
+    // #define ETH_HEADERSIZE sizeof(ec_etherheadert)
     /**
      * EtherCAT datagram header definition
      */
@@ -448,6 +448,7 @@ public interface SoemEtherCATType {
          * Configured Read Multiple Write
          */
         EC_CMD_FRMW(0x0e);
+
         /**
          * Reserved
          */
