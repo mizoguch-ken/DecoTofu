@@ -10,6 +10,10 @@
 
     <name>DecoTofu</name>
 
+    <organization>
+        <name>mizoguch-ken</name>
+    </organization>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mainClass>ken.mizoguch.decotofu.DecoTofu</mainClass>
