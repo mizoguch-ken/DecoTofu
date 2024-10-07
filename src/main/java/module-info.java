@@ -20,7 +20,6 @@ module DecoTofu {
     requires jnr.x86asm;
     requires org.apache.pdfbox;
     requires org.apache.fontbox;
-    requires commons.logging;
 
     exports ken.mizoguch.decotofu to javafx.graphics;
     exports ken.mizoguch.ladders;
