@@ -18,13 +18,12 @@
 </head>
 <body>
 
-<script src="kitchen-sink/require.js"></script>
+<!-- load ace -->
+<script src="../src/ace.js"></script>
+<!-- load ace language_tools extension -->
+<script src="../src/ext-language_tools.js"></script>
 <script>
-// setup paths
-require.config({paths: { "ace" : "../src"}});
-// load ace and extensions
-require(["ace/ace", "ace/ext/language_tools"], function(ace) {
-    var buildDom = require("ace/lib/dom").buildDom;
+    var buildDom = ace.require("ace/lib/dom").buildDom;
     var editor = ace.edit();
     editor.setOptions({
         theme: "ace/theme/tomorrow_night_eighties",
@@ -87,8 +86,6 @@ require(["ace/ace", "ace/ext/language_tools"], function(ace) {
     document.body.appendChild(editor.container)
     
     window.editor = editor;
-});
-
 </script>
 
 </body>

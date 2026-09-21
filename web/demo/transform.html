@@ -78,12 +78,11 @@
 <div class="scrollmargin">
 </div>
 
-<script src="kitchen-sink/require.js"></script>
+<!-- load ace -->
+<script src="../src/ace.js"></script>
+<!-- load ace language_tools extension -->
+<script src="../src/ext-language_tools.js"></script>
 <script>
-// setup paths
-require.config({paths: { "ace" : "../src"}});
-// load ace and extensions
-require(["ace/ace", "ace/ext/language_tools"], function(ace) {
 
     var editor1 = ace.edit("editor1");
     editor1.setOptions({
@@ -134,7 +133,6 @@ require(["ace/ace", "ace/ext/language_tools"], function(ace) {
     checkbox.onchange();
     window.editor = editor;
     window.editor4 = editor4;
-});
 </script>
 
 <script src="./show_own_source.js"></script>

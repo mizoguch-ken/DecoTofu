@@ -8,6 +8,7 @@ on:
       - v*
   workflow_dispatch:
 permissions:
+  id-token: write  # Required for OIDC
   contents: read # to fetch code (actions/checkout)
 jobs:
   build:
@@ -15,12 +16,21 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     # Setup .npmrc file to publish to npm
-    - uses: actions/setup-node@v1
+    - uses: actions/setup-node@v4
       with:
-        node-version: '16.x'
+        node-version: '24'
         registry-url: 'https://registry.npmjs.org'
-    - run: npm install
-    - run: npm run test
+    - run: node -p "json=require('./package.json');if (json.dependencies || json.devDependencies) throw new Error()"
+    - run: node -p "window={}; require('./src-noconflict/ace.js').config.all"
+    - run: | 
+        # echo testing themes
+        for dir in src*; do 
+            for theme in $dir/theme-*; do 
+                node -e 'window = global;require("./'$dir'/ace.js");
+                var theme = require("'./$theme'");
+                if (!theme.cssClass || !theme.cssText) {
+                    throw new Error("Broken theme ./'$theme'")
+                } '
+            done
+        done
     - run: npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_SECRET }}

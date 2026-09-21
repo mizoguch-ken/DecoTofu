@@ -1,20 +1,22 @@
 [ace.js][ace/keyboard/textinput]
-    var handleClipboardData = function(e, data, forceIEMime) {
--        var clipboardData = e.clipboardData || window.clipboardData;
+    TextInput.prototype.handleClipboardData = function (e, data, forceIEMime) {
+        var clipboardData = e.clipboardData || window["clipboardData"];
 -        if (!clipboardData || BROKEN_SETDATA)
-+        if (!(e.clipboardData || window.clipboardData) || BROKEN_SETDATA)
++        if (!(clipboardData || window.clipboardData) || BROKEN_SETDATA)
             return;
         var mime = USE_IE_MIME_TYPE || forceIEMime ? "Text" : "text/plain";
         try {
             if (data) {
 -                return clipboardData.setData(mime, data) !== false;
-+                return (e.clipboardData.setData(mime, data) || window.clipboardData.setData(mime, data)) !== false;
-            } else {
--                return clipboardData.getData(mime);
-+                return (e.clipboardData.getData(mime) || window.clipboardData.getData(mime));
++                return (clipboardData.setData(mime, data) || window.clipboardData.setData(mime, data)) !== false;
             }
-        } catch(e) {
+            else {
+-                return clipboardData.getData(mime);
++                return (clipboardData.getData(mime) || window.clipboardData.getData(mime));
+            }
+        }
+        catch (e) {
             if (!forceIEMime)
-                return handleClipboardData(e, data, true);
+                return this.handleClipboardData(e, data, true);
         }
     };
