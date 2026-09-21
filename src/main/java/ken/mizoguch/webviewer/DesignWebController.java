@@ -5,8 +5,9 @@
  */
 package ken.mizoguch.webviewer;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.nio.file.Files;
@@ -207,8 +208,8 @@ public class DesignWebController implements Initializable {
     private boolean loadProperties(Path propertyFile) {
         if (Files.exists(propertyFile) && Files.isRegularFile(propertyFile) && Files.isReadable(propertyFile)) {
             Properties properties = new Properties();
-            try {
-                properties.loadFromXML(Files.newInputStream(propertyFile));
+            try (InputStream inputStream = Files.newInputStream(propertyFile)) {
+                properties.loadFromXML(inputStream);
 
                 // stage
                 stageSettings_.setStageMaximized(
@@ -218,8 +219,6 @@ public class DesignWebController implements Initializable {
                         true);
 
                 return true;
-            } catch (FileNotFoundException ex) {
-                Console.writeStackTrace(DesignWebController.class.getName(), ex);
             } catch (IOException ex) {
                 Console.writeStackTrace(DesignWebController.class.getName(), ex);
             }
@@ -245,7 +244,9 @@ public class DesignWebController implements Initializable {
                 properties.setProperty("STAGE_WIDTH", Double.toString(stageSettings_.getStageWidth()));
                 properties.setProperty("STAGE_HEIGHT", Double.toString(stageSettings_.getStageHeight()));
 
-                properties.storeToXML(Files.newOutputStream(propertyFile), JavaLibrary.getClassName());
+                try (OutputStream outputStream = Files.newOutputStream(propertyFile)) {
+                    properties.storeToXML(outputStream, JavaLibrary.getClassName());
+                }
                 return true;
             }
         } catch (IOException ex) {
@@ -350,15 +351,27 @@ public class DesignWebController implements Initializable {
     public boolean cleanUp() {
         if (!stageSettings_.isExit()) {
             // ladder
-            if (!ladders_.getDesignController().cleanUp()) {
-                return false;
-            }
-            if (ladders_.getDesignController().getStage().isShowing()) {
-                ladders_.getDesignController().getStage().close();
+            if (ladders_ != null) {
+                if (!ladders_.getDesignController().cleanUp()) {
+                    return false;
+                }
+                Stage ladderStage = ladders_.getDesignController().getStage();
+                if ((ladderStage != null) && ladderStage.isShowing()) {
+                    ladderStage.close();
+                }
             }
 
-            webViewer_.cleanUp();
-            webViewer_ = null;
+            // wait the end of the ladder cycle before to clean up the plugins
+            final long cycleWaitMillis = 2000;
+            if ((ladders_ != null) && !ladders_.awaitCycleStop(cycleWaitMillis)) {
+                Console.write(DesignWebController.class.getName(),
+                        "the ladder cycle is still running : the native memory may be still used", true);
+            }
+
+            if (webViewer_ != null) {
+                webViewer_.cleanUp();
+                webViewer_ = null;
+            }
 
             // save properties
             saveProperties(currentPath_.resolve("properties.xml"));

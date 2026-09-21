@@ -36,6 +36,8 @@ public class Soem {
 
     private final Gson gson_ = new Gson();
 
+    private static final long ECAT_TERMINATION_WAIT_MILLIS = 3000;
+
     /**
      *
      */
@@ -140,10 +142,20 @@ public class Soem {
 
     public Boolean close(SoemPluginListener listener) {
         if (soem_ != null) {
+            if ((ecatThread_ != null) && (parcel_ != null)) {
+                // stop the cyclic process before to wait the end of the native calls
+                parcel_.dorun.set(SoemOsal.FALSE);
+            }
             if (ecatThread_ != null) {
                 ecatThread_.exit();
                 ecatThread_.cancel();
                 ecatThread_.removeSoemEcatListener(listener);
+                if (!ecatThread_.awaitTermination(ECAT_TERMINATION_WAIT_MILLIS)) {
+                    // the native calls are still running : keep the native memory to avoid a crash
+                    Console.write(Soem.class.getName(),
+                            "the ecat thread is still running : the native memory is not freed", true);
+                    return false;
+                }
                 ecatThread_ = null;
             }
             if (parcel_ != null) {
@@ -151,6 +163,7 @@ public class Soem {
                 try {
                     TimeUnit.MILLISECONDS.sleep(10);
                 } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
                 }
                 soem_.ec_free_parcel(parcel_);
                 parcel_ = null;
@@ -175,15 +188,26 @@ public class Soem {
         return null;
     }
 
+    /**
+     * check the slave index against the slave list of the context
+     *
+     * @param slave
+     * @return
+     */
+    private boolean checkSlave(int slave) {
+        return (context_ != null) && (slave >= 0) && (slave <= context_.slavecount.get())
+                && (slave < context_.slavelist.length);
+    }
+
     public Integer state(int slave) {
-        if (context_ != null) {
+        if (checkSlave(slave)) {
             return context_.slavelist[slave].state.get();
         }
         return null;
     }
 
     public Boolean islost(int slave) {
-        if (context_ != null) {
+        if (checkSlave(slave)) {
             return (context_.slavelist[slave].islost.get() == SoemOsal.TRUE);
         }
         return null;
@@ -197,14 +221,20 @@ public class Soem {
     }
 
     public Byte[] sdoRead(int slave, int index, int subIndex, int byteSize) {
-        if (context_ != null) {
+        if (checkSlave(slave) && (byteSize > 0)) {
             Pointer psize = Memory.allocate(runtime_, Integer.BYTES);
             Pointer p = Memory.allocate(runtime_, byteSize);
 
             psize.putInt(0, byteSize);
             if (soem_.ecx_SDOread(context_, slave, index, subIndex, SoemOsal.FALSE, psize, p,
                     SoemEtherCATType.EC_TIMEOUTRXM) > 0) {
-                Byte[] result = new Byte[psize.getInt(0)];
+                int size = psize.getInt(0);
+                if ((size < 0) || (size > byteSize)) {
+                    Console.write(Soem.class.getName(), "SDOread : slave[" + slave + "] index[0x"
+                            + Integer.toHexString(index) + "] size[" + size + "] byteSize[" + byteSize + "]", true);
+                    return null;
+                }
+                Byte[] result = new Byte[size];
                 for (int i = 0; i < result.length; i++) {
                     result[i] = p.getByte(i);
                 }
@@ -215,7 +245,7 @@ public class Soem {
     }
 
     public Integer sdoWrite(int slave, int index, int subIndex, byte[] value) {
-        if (context_ != null) {
+        if (checkSlave(slave) && (value != null)) {
             Pointer p = Memory.allocate(runtime_, value.length);
 
             p.put(0, value, 0, value.length);
@@ -226,7 +256,7 @@ public class Soem {
     }
 
     public Long in(int slave, long bitsOffset, long bitsMask) {
-        if (context_ != null) {
+        if (checkSlave(slave)) {
             if ((bitsOffset >= 0) && (bitsOffset < context_.slavelist[slave].Ibits.get())) {
                 if (context_.slavelist[slave].inputs.get() != null) {
                     long bits = (context_.slavelist[slave].Ibits.get() - bitsOffset);
@@ -276,7 +306,7 @@ public class Soem {
     }
 
     public Long out(int slave, long bitsOffset, long bitsMask) {
-        if (context_ != null) {
+        if (checkSlave(slave)) {
             if ((bitsOffset >= 0) && (bitsOffset < context_.slavelist[slave].Obits.get())) {
                 if (context_.slavelist[slave].outputs.get() != null) {
                     long bits = (context_.slavelist[slave].Obits.get() - bitsOffset);
@@ -326,7 +356,7 @@ public class Soem {
     }
 
     public Long out(int slave, long bitsOffset, long bitsMask, long value) {
-        if ((context_ != null) && (ecatThread_ != null)) {
+        if (checkSlave(slave) && (ecatThread_ != null)) {
             if ((bitsOffset >= 0) && (bitsOffset < context_.slavelist[slave].Obits.get())) {
                 return ecatThread_.out(slave, bitsOffset, bitsMask, value);
             }

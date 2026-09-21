@@ -7,7 +7,7 @@ module DecoTofu {
     requires transitive javafx.web;
     requires javafx.swing;
 
-    requires diffutils;
+    requires io.github.javadiffutils;
     requires com.google.gson;
     requires transitive org.jnrproject.ffi;
     requires org.jnrproject.jffi;

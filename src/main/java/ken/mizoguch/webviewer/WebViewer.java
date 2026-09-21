@@ -7,8 +7,6 @@ package ken.mizoguch.webviewer;
 
 import ken.mizoguch.webviewer.plugin.WebViewerPlugin;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -19,6 +17,7 @@ import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.scene.Scene;
@@ -56,7 +55,9 @@ public class WebViewer implements WebViewerPlugin {
     private StageSettingsPlugin stageSettingsPlugin_;
     private SoemPlugin soemPlugin_;
     private LaddersPlugin laddersPlugin_;
-    private final List<WebViewerPlugin> plugins_;
+    private final List<WebViewerPlugin> plugins_ = new ArrayList<>();
+
+    private boolean ownsPlugins_;
 
     private final String undefined_ = "undefined";
 
@@ -138,50 +139,88 @@ public class WebViewer implements WebViewerPlugin {
             }
 
             // web plugins
-            Path pluginPath = webPath_.resolve("plugins");
-            if (Files.exists(pluginPath)) {
-                Files.list(pluginPath).forEach((plugin) -> {
-                    if (Files.isRegularFile(plugin)) {
-                        try {
-                            JarFile jarFile = new JarFile(plugin.toFile());
-                            Manifest manifest = jarFile.getManifest();
-                            if (manifest != null) {
-                                String mainClass = manifest.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-                                if (mainClass != null) {
-                                    URLClassLoader loader = URLClassLoader.newInstance(
-                                            new URL[] { plugin.toUri().toURL() }, this.getClass().getClassLoader());
-                                    Class<?> clazz = loader.loadClass(mainClass);
-                                    if (WebViewerPlugin.class.isAssignableFrom(clazz)) {
-                                        Class<? extends WebViewerPlugin> pluginClass = clazz
-                                                .asSubclass(WebViewerPlugin.class);
-                                        WebViewerPlugin webViewerPlugin = pluginClass.getDeclaredConstructor()
-                                                .newInstance();
-                                        webViewerPlugin.initialize(this);
-                                        plugins_.add(webViewerPlugin);
-                                    }
-                                }
-                            }
-                            jarFile.close();
-                        } catch (MalformedURLException | ClassNotFoundException | InstantiationException
-                                | IllegalAccessException ex) {
-                            writeStackTrace(WebViewer.class.getName(), ex);
-                        } catch (IOException | NoSuchMethodException | SecurityException | IllegalArgumentException
-                                | InvocationTargetException ex) {
-                            writeStackTrace(WebViewer.class.getName(), ex);
-                        }
-                    }
-                });
-            }
+            addWebPlugins();
+            ownsPlugins_ = true;
         } catch (IOException ex) {
             writeStackTrace(WebViewer.class.getName(), ex);
         }
 
+        addLoadWorkerListener();
+    }
+
+    /**
+     *
+     * @param stage
+     * @param icons
+     * @param webPath
+     * @param parentPlugins
+     */
+    public void startUpPopup(Stage stage, List<Image> icons, Path webPath, List<WebViewerPlugin> parentPlugins) {
+        stage_ = stage;
+        icons_ = icons;
+        webPath_ = webPath;
+
+        // plugin instances belong to the parent view : re-initializing them would redirect
+        // their stage and web viewer references to the popup and break the parent view
+        plugins_.addAll(parentPlugins);
+
+        addLoadWorkerListener();
+    }
+
+    /**
+     *
+     * @throws IOException
+     */
+    private void addWebPlugins() throws IOException {
+        Path pluginPath = webPath_.resolve("plugins");
+        if (!Files.exists(pluginPath)) {
+            return;
+        }
+        try (Stream<Path> pluginFiles = Files.list(pluginPath)) {
+            pluginFiles.filter(Files::isRegularFile).forEach(this::addWebPlugin);
+        }
+    }
+
+    /**
+     *
+     * @param pluginFile
+     */
+    private void addWebPlugin(Path pluginFile) {
+        try (JarFile jarFile = new JarFile(pluginFile.toFile())) {
+            Manifest manifest = jarFile.getManifest();
+            if (manifest == null) {
+                return;
+            }
+            String mainClass = manifest.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+            if (mainClass == null) {
+                return;
+            }
+            URLClassLoader loader = URLClassLoader.newInstance(
+                    new URL[] { pluginFile.toUri().toURL() }, getClass().getClassLoader());
+            Class<?> clazz = loader.loadClass(mainClass);
+            if (WebViewerPlugin.class.isAssignableFrom(clazz)) {
+                Class<? extends WebViewerPlugin> pluginClass = clazz.asSubclass(WebViewerPlugin.class);
+                WebViewerPlugin webViewerPlugin = pluginClass.getDeclaredConstructor().newInstance();
+                webViewerPlugin.initialize(this);
+                plugins_.add(webViewerPlugin);
+            }
+        } catch (IOException | ReflectiveOperationException ex) {
+            writeStackTrace(WebViewer.class.getName(), ex);
+        }
+    }
+
+    /**
+     *
+     */
+    private void addLoadWorkerListener() {
         webEngine_.getLoadWorker().stateProperty().addListener(
                 (ObservableValue<? extends Worker.State> observable, Worker.State oldValue, Worker.State newValue) -> {
                     workerState_ = newValue;
 
-                    for (int index = 0, size = plugins_.size(); index < size; index++) {
-                        plugins_.get(index).state(workerState_);
+                    if (ownsPlugins_) {
+                        for (int index = 0, size = plugins_.size(); index < size; index++) {
+                            plugins_.get(index).state(workerState_);
+                        }
                     }
                     if (workerState_ == Worker.State.SUCCEEDED) {
                         try {
@@ -211,8 +250,11 @@ public class WebViewer implements WebViewerPlugin {
      *
      */
     public void cleanUp() {
-        for (int index = 0, size = plugins_.size(); index < size; index++) {
-            plugins_.get(index).close();
+        if (ownsPlugins_) {
+            for (int index = 0, size = plugins_.size(); index < size; index++) {
+                plugins_.get(index).close();
+            }
+            ownsPlugins_ = false;
         }
         plugins_.clear();
     }
@@ -238,10 +280,7 @@ public class WebViewer implements WebViewerPlugin {
             stage.setOnCloseRequest((WindowEvent event) -> {
                 viewer.cleanUp();
             });
-            viewer.setStageSettings(stageSettingsPlugin_);
-            viewer.setLadders(laddersPlugin_);
-            viewer.setSoem(soemPlugin_);
-            viewer.startUp(stage, icons_, webPath_);
+            viewer.startUpPopup(stage, icons_, webPath_, plugins_);
 
             stage.show();
             return view.getEngine();
@@ -269,7 +308,7 @@ public class WebViewer implements WebViewerPlugin {
             alert.getDialogPane().setHeaderText(null);
             alert.getDialogPane().setContentText(param);
             Optional<ButtonType> result = alert.showAndWait();
-            return (result.get() == ButtonType.OK);
+            return result.isPresent() && (result.get() == ButtonType.OK);
         });
 
         webEngine_.setPromptHandler((PromptData param) -> {
@@ -294,7 +333,6 @@ public class WebViewer implements WebViewerPlugin {
         });
 
         workerState_ = Worker.State.READY;
-        plugins_ = new ArrayList<>();
     }
 
     @Override

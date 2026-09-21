@@ -7,7 +7,7 @@ package ken.mizoguch.decotofu;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import static java.nio.file.FileVisitResult.CONTINUE;
@@ -71,6 +71,7 @@ public class JavaLibrary {
     }
 
     private static String className = "";
+    private static final String DEFAULT_LIBRARY_PATH = System.getProperty("java.library.path", "");
     private static final List<Path> PATHS = new ArrayList<>();
     private static final List<String> LIBS = new ArrayList<>();
 
@@ -95,14 +96,16 @@ public class JavaLibrary {
      * @param root
      * @param pattern
      */
-    public static void findFile(Path root, String pattern) {
+    public static List<Path> findFile(Path root, String pattern) {
+        List<Path> matches = new ArrayList<>();
         try {
             Finder finder = new Finder(pattern);
             Files.walkFileTree(root, finder);
-            finder.done();
+            matches.addAll(finder.done());
         } catch (IOException ex) {
             Console.writeStackTrace(JavaLibrary.class.getName(), ex);
         }
+        return matches;
     }
 
     /**
@@ -122,48 +125,75 @@ public class JavaLibrary {
      * @return
      */
     public static boolean extractResourceZip(ClassLoader classLoader, String zipPath, boolean systemLoad) {
-        ZipInputStream zipInputStream;
-        ZipEntry zipEntry;
-        Path local, file;
         String zipName;
 
-        if (zipPath != null) {
-            if (!zipPath.isEmpty()) {
-                zipName = removeFileExtension(Paths.get(zipPath).getFileName());
-                for (int i = 0; i < 10; i++) {
-                    local = Paths
-                            .get(System.getProperty("java.io.tmpdir"), getClassName() + "_" + getUserName() + "_" + i)
-                            .resolve(zipName);
-                    // library paths check
-                    if (isLibraryPath(local)) {
-                        return true;
-                    }
-                    try {
-                        // copy file
-                        zipInputStream = new ZipInputStream(classLoader.getResourceAsStream(zipPath));
-                        zipEntry = zipInputStream.getNextEntry();
-                        while (zipEntry != null) {
-                            file = local.resolve(zipEntry.getName());
-                            if (!Files.exists(file.getParent())) {
-                                Files.createDirectories(file);
-                            }
-                            Files.copy(zipInputStream, file, StandardCopyOption.REPLACE_EXISTING);
-                            zipInputStream.closeEntry();
-                            zipEntry = zipInputStream.getNextEntry();
-                        }
-                        zipInputStream.closeEntry();
-                        zipInputStream.close();
-                        // add PATHS
-                        PATHS.add(local);
-                        // set java.library.path
-                        return setLibraryPath(local.toString(), systemLoad);
-                    } catch (IOException ex) {
-                        Console.writeStackTrace(JavaLibrary.class.getName(), ex);
-                    }
-                }
+        if (zipPath == null) {
+            return false;
+        }
+        if (zipPath.isEmpty()) {
+            return false;
+        }
+
+        zipName = removeFileExtension(Paths.get(zipPath).getFileName());
+        for (int i = 0; i < 10; i++) {
+            Path local = Paths.get(System.getProperty("java.io.tmpdir"), getClassName() + "_" + getUserName() + "_" + i)
+                    .resolve(zipName);
+            // library paths check
+            if (isLibraryPath(local)) {
+                return true;
             }
+
+            InputStream resourceStream = classLoader.getResourceAsStream(zipPath);
+            if (resourceStream == null) {
+                Console.write(JavaLibrary.class.getName(), "resource not found : " + zipPath, true);
+                return false;
+            }
+            try (ZipInputStream zipInputStream = new ZipInputStream(resourceStream)) {
+                ZipEntry zipEntry = zipInputStream.getNextEntry();
+                while (zipEntry != null) {
+                    Path file = resolveZipEntry(local, zipEntry);
+                    if (file != null) {
+                        if (zipEntry.isDirectory()) {
+                            Files.createDirectories(file);
+                        } else {
+                            Files.createDirectories(file.getParent());
+                            Files.copy(zipInputStream, file, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
+                    zipInputStream.closeEntry();
+                    zipEntry = zipInputStream.getNextEntry();
+                }
+            } catch (IOException ex) {
+                Console.writeStackTrace(JavaLibrary.class.getName(), ex);
+                continue;
+            }
+
+            // add PATHS
+            PATHS.add(local);
+            // set java.library.path
+            refreshLibraryPath();
+            return true;
         }
         return false;
+    }
+
+    /**
+     * resolve an entry of a zip archive inside the destination directory
+     *
+     * @param targetDir
+     * @param zipEntry
+     * @return null when the entry would escape the destination directory
+     */
+    private static Path resolveZipEntry(Path targetDir, ZipEntry zipEntry) {
+        Path destination = targetDir.normalize();
+        Path file = destination.resolve(zipEntry.getName()).normalize();
+
+        if (!file.startsWith(destination)) {
+            Console.write(JavaLibrary.class.getName(),
+                    "zip entry outside of destination directory : " + zipEntry.getName(), true);
+            return null;
+        }
+        return file;
     }
 
     /**
@@ -174,42 +204,53 @@ public class JavaLibrary {
      * @return
      */
     public static boolean extractResourceLibrary(ClassLoader classLoader, String resourcePath, boolean systemLoad) {
-        Path resource, local;
+        Path resource;
         String libraryName;
 
-        if (resourcePath != null) {
-            if (!resourcePath.isEmpty()) {
-                resource = Paths.get(resourcePath);
+        if (resourcePath == null) {
+            return false;
+        }
+        if (resourcePath.isEmpty()) {
+            return false;
+        }
 
-                // library name
-                libraryName = removeFileExtension(resource.getFileName());
-                if (isWindows()) {
-                } else if (isLinux()) {
-                    libraryName = libraryName.substring(libraryName.indexOf("lib") + 3);
-                } else if (isMac()) {
-                    libraryName = libraryName.substring(libraryName.indexOf("lib") + 3);
-                } else {
-                }
-                // library load check local
-                if (isLibrary(libraryName)) {
-                    return false;
-                }
+        resource = Paths.get(resourcePath);
 
-                // library load check system
-                if (systemLoad && loadLibrary(libraryName, systemLoad)) {
-                    return true;
-                } else {
-                    for (int i = 0; i < 10; i++) {
-                        local = Paths.get(System.getProperty("java.io.tmpdir"),
-                                getClassName() + "_" + getUserName() + "_" + i);
-                        if (addResourceLibraryPath(classLoader, resourcePath, local, libraryName, systemLoad)) {
-                            return true;
-                        }
-                    }
-                }
+        // library name
+        libraryName = removeFileExtension(resource.getFileName());
+        if (isLinux() || isMac()) {
+            libraryName = stripLibraryPrefix(libraryName);
+        }
+
+        // library load check local
+        if (isLibrary(libraryName)) {
+            return false;
+        }
+
+        // library load check system
+        if (systemLoad && loadLibrary(libraryName, systemLoad)) {
+            return true;
+        }
+
+        for (int i = 0; i < 10; i++) {
+            Path local = Paths.get(System.getProperty("java.io.tmpdir"), getClassName() + "_" + getUserName() + "_" + i);
+            if (addResourceLibraryPath(classLoader, resourcePath, local, libraryName, systemLoad)) {
+                return true;
             }
         }
         return false;
+    }
+
+    /**
+     *
+     * @param libraryName
+     * @return the library name without the "lib" prefix when it has one
+     */
+    private static String stripLibraryPrefix(String libraryName) {
+        if (libraryName.startsWith("lib")) {
+            return libraryName.substring("lib".length());
+        }
+        return libraryName;
     }
 
     /**
@@ -225,40 +266,47 @@ public class JavaLibrary {
             String libraryName, boolean systemLoad) {
         String prefix, suffix;
 
-        try {
+        // set prefix suffix
+        if (isWindows()) {
+            prefix = "";
+            suffix = ".dll";
+        } else if (isLinux()) {
+            prefix = "lib";
+            suffix = ".so";
+        } else if (isMac()) {
+            prefix = "lib";
+            suffix = ".dylib";
+        } else {
+            prefix = "";
+            suffix = "";
+        }
+
+        try (InputStream resourceStream = classLoader.getResourceAsStream(resourcePath)) {
+            if (resourceStream == null) {
+                Console.write(JavaLibrary.class.getName(), "resource not found : " + resourcePath, true);
+                return false;
+            }
+
             // mkdir
             if (!Files.exists(localPath)) {
                 Files.createDirectories(localPath);
             }
-            // set prefix suffix
-            if (isWindows()) {
-                prefix = "";
-                suffix = ".dll";
-            } else if (isLinux()) {
-                prefix = "lib";
-                suffix = ".so";
-            } else if (isMac()) {
-                prefix = "lib";
-                suffix = ".dylib";
-            } else {
-                prefix = "";
-                suffix = "";
-            }
             // copy file
-            Files.copy(classLoader.getResourceAsStream(resourcePath), localPath.resolve(prefix + libraryName + suffix),
+            Files.copy(resourceStream, localPath.resolve(prefix + libraryName + suffix),
                     StandardCopyOption.REPLACE_EXISTING);
-            // library paths check
-            if (isLibraryPath(localPath)) {
-                return loadLibrary(libraryName, systemLoad);
-            }
-            // add PATHS
-            PATHS.add(localPath);
-            // set java.library.path
-            return setLibraryPath(libraryName, systemLoad);
         } catch (IOException ex) {
             Console.writeStackTrace(JavaLibrary.class.getName(), ex);
+            return false;
         }
-        return false;
+
+        // library paths check
+        if (isLibraryPath(localPath)) {
+            return loadLibrary(libraryName, systemLoad);
+        }
+        // add PATHS
+        PATHS.add(localPath);
+        // set java.library.path
+        return setLibraryPath(libraryName, systemLoad);
     }
 
     /**
@@ -293,28 +341,8 @@ public class JavaLibrary {
      */
     public static boolean setLibraryPath(String libraryName, boolean systemLoad) {
         if (!PATHS.isEmpty()) {
-            StringBuilder pathString = new StringBuilder(System.getProperty("java.library.path"));
-            PATHS.stream().forEach((p) -> {
-                pathString.append(File.pathSeparator);
-                try {
-                    pathString.append(p.toRealPath().toString());
-                } catch (IOException ex) {
-                    Console.writeStackTrace(JavaLibrary.class.getName(), ex);
-                }
-            });
-
-            try {
-                try {
-                    System.setProperty("java.library.path", pathString.toString());
-                    Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
-                    fieldSysPath.setAccessible(true);
-                    fieldSysPath.set(null, null);
-                } catch (NoSuchFieldException ex) {
-                }
-                return loadLibrary(libraryName, systemLoad);
-            } catch (SecurityException | IllegalArgumentException | IllegalAccessException ex) {
-                Console.writeStackTrace(JavaLibrary.class.getName(), ex);
-            }
+            refreshLibraryPath();
+            return loadLibrary(libraryName, systemLoad);
         }
         return false;
     }
@@ -344,32 +372,97 @@ public class JavaLibrary {
      * @return
      */
     public static boolean loadLibrary(String libraryName, boolean systemLoad) {
-        if (libraryName != null) {
-            if (!libraryName.isEmpty()) {
-                try {
-                    if (isLibrary(libraryName)) {
-                        return false;
-                    }
-                    if (systemLoad) {
-                        System.loadLibrary(libraryName);
-                    }
-                    LIBS.add(libraryName);
-                    return true;
-                } catch (UnsatisfiedLinkError ex) {
-                } catch (SecurityException | NullPointerException ex) {
-                    Console.writeStackTrace(JavaLibrary.class.getName(), ex);
+        if ((libraryName == null) || libraryName.isEmpty()) {
+            return false;
+        }
+        if (isLibrary(libraryName)) {
+            return false;
+        }
+        try {
+            if (systemLoad) {
+                Path libraryFile = findLibraryFile(libraryName);
+                if (libraryFile != null) {
+                    // System.load() takes an absolute path, so it does not depend on the
+                    // library search path cached inside the class loader
+                    System.load(libraryFile.toAbsolutePath().toString());
+                } else {
+                    System.loadLibrary(libraryName);
+                }
+            }
+            LIBS.add(libraryName);
+            return true;
+        } catch (UnsatisfiedLinkError ex) {
+        } catch (SecurityException | NullPointerException ex) {
+            Console.writeStackTrace(JavaLibrary.class.getName(), ex);
+        }
+        return false;
+    }
+
+    /**
+     * search the collected library paths for a file matching the library name
+     *
+     * @param libraryName
+     * @return null when no library file was found
+     */
+    private static Path findLibraryFile(String libraryName) {
+        List<String> fileNames = new ArrayList<>();
+
+        if (isWindows()) {
+            fileNames.add(libraryName + ".dll");
+        } else if (isLinux()) {
+            fileNames.add("lib" + libraryName + ".so");
+            fileNames.add(libraryName + ".so");
+        } else if (isMac()) {
+            fileNames.add("lib" + libraryName + ".dylib");
+            fileNames.add(libraryName + ".dylib");
+        }
+        fileNames.add(libraryName);
+
+        for (Path path : PATHS) {
+            for (String fileName : fileNames) {
+                Path file = path.resolve(fileName);
+                if (Files.isRegularFile(file)) {
+                    return file;
                 }
             }
         }
-        return false;
+        return null;
     }
 
     /**
      *
      * @return
      */
+    /**
+     *
+     * @return
+     */
     public static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase(Locale.getDefault()).startsWith("windows");
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows");
+    }
+
+    /**
+     * rebuild java.library.path from the collected library directories
+     *
+     * @return
+     */
+    public static String refreshLibraryPath() {
+        StringBuilder pathString = new StringBuilder(DEFAULT_LIBRARY_PATH);
+        PATHS.stream().forEach((p) -> {
+            try {
+                pathString.append(File.pathSeparator);
+                pathString.append(p.toRealPath().toString());
+            } catch (IOException ex) {
+                Console.writeStackTrace(JavaLibrary.class.getName(), ex);
+            }
+        });
+
+        // Since JDK 12 the cached ClassLoader.sys_paths field does not exist any more
+        // (JDK-8190173): the search path is resolved from java.library.path on every
+        // lookup, so updating the system property is enough for System.loadLibrary and
+        // for jnr-ffi, which reads the property again when it builds its search list.
+        System.setProperty("java.library.path", pathString.toString());
+        return pathString.toString();
     }
 
     /**
@@ -377,7 +470,7 @@ public class JavaLibrary {
      * @return
      */
     public static boolean isLinux() {
-        return System.getProperty("os.name").toLowerCase(Locale.getDefault()).startsWith("linux");
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("linux");
     }
 
     /**
@@ -385,7 +478,7 @@ public class JavaLibrary {
      * @return
      */
     public static boolean isMac() {
-        return System.getProperty("os.name").toLowerCase(Locale.getDefault()).startsWith("mac");
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("mac");
     }
 
     /**

@@ -72,7 +72,17 @@ public class LadderCommand {
      *
      */
     public void clearHistoryManager() {
+        releaseBlockChange();
         historyManager_.clear();
+    }
+
+    /**
+     *
+     */
+    private void releaseBlockChange() {
+        blockChangingGridPane_.clear();
+        history_ = null;
+        isBlockChanging_ = false;
     }
 
     /**
@@ -1751,7 +1761,13 @@ public class LadderCommand {
      * @return
      */
     public boolean blockChangeStart() {
-        if (!isDisableHistory_ && !isBlockChanging_) {
+        if (!isDisableHistory_) {
+            if (isBlockChanging_) {
+                // a previous block change is still opened : it can only come from an exception or
+                // an early exit because a block change is never nested. It is released here to
+                // avoid to poison all the next history checks with isBlockChanging_.
+                releaseBlockChange();
+            }
             blockChangingGridPane_.clear();
             isBlockChanging_ = true;
             history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
@@ -1828,13 +1844,18 @@ public class LadderCommand {
                 }
             }
 
-            if (checkDelta()) {
+            boolean changed = checkDelta();
+
+            if (changed) {
                 historyManager_.push(history_, historyGeneration_);
                 for (int index = 0, size = blockChangingGridPane_.size(); index < size; index++) {
                     blockChangingGridPane_.get(index).setEditing(true);
                 }
-                return true;
             }
+
+            // release the block change : never keep an history which is not pushed
+            releaseBlockChange();
+            return changed;
         }
         return false;
     }

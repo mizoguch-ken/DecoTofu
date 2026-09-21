@@ -6,6 +6,7 @@
 package ken.mizoguch.soem;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javax.swing.event.EventListenerList;
@@ -23,9 +24,10 @@ public class SoemEcatCheck extends Service<Void> {
 
     private final SoemEtherCAT.ecx_parcelt parcel_;
     private final SoemEtherCATMain.ecx_contextt context_;
-    private int expectedWKC_;
-    private boolean isNotifyCheck_;
-    private boolean exit_;
+    private volatile int expectedWKC_;
+    private volatile boolean isNotifyCheck_;
+    private volatile boolean exit_;
+    private final AtomicBoolean finished_;
 
     private static final int EC_TIMEOUTMON = 500;
 
@@ -45,6 +47,7 @@ public class SoemEcatCheck extends Service<Void> {
         expectedWKC_ = 0;
         isNotifyCheck_ = false;
         exit_ = true;
+        finished_ = new AtomicBoolean(true);
     }
 
     /**
@@ -59,6 +62,30 @@ public class SoemEcatCheck extends Service<Void> {
      */
     public void exit() {
         exit_ = true;
+    }
+
+    /**
+     * wait the end of the check task : the native context and parcel are freed only when this task
+     * is out of the native calls
+     *
+     * @param timeoutMillis
+     * @return true when the task is no longer in the native calls
+     */
+    public boolean awaitTermination(long timeoutMillis) {
+        long deadline = System.currentTimeMillis() + Math.max(0, timeoutMillis);
+
+        while (!finished_.get()) {
+            if (System.currentTimeMillis() >= deadline) {
+                break;
+            }
+            try {
+                TimeUnit.MILLISECONDS.sleep(5);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return finished_.get();
     }
 
     /**
@@ -84,6 +111,7 @@ public class SoemEcatCheck extends Service<Void> {
         return new Task<Void>() {
             @Override
             protected Void call() {
+                finished_.set(false);
                 try {
                     int slave, docheckstate;
 
@@ -92,7 +120,8 @@ public class SoemEcatCheck extends Service<Void> {
                         if ((parcel_.wkc.get() < expectedWKC_) || (docheckstate == SoemOsal.TRUE)) {
                             context_.grouplist[0].docheckstate.set(SoemOsal.FALSE);
                             soem_.ecx_readstate(context_);
-                            for (slave = 1; slave <= context_.slavecount.get(); slave++) {
+                            for (slave = 1; (slave < context_.slavelist.length)
+                                    && (slave <= context_.slavecount.get()); slave++) {
                                 if ((context_.slavelist[slave].group.get() == 0) && (context_.slavelist[slave].state
                                         .get() != SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue())) {
                                     context_.grouplist[0].docheckstate.set(SoemOsal.TRUE);
@@ -183,10 +212,16 @@ public class SoemEcatCheck extends Service<Void> {
                         try {
                             TimeUnit.MICROSECONDS.sleep(10000);
                         } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
                         }
                     }
                 } catch (Exception ex) {
+                    if (ex instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
                     Console.writeStackTrace(SoemEcatCheck.class.getName(), ex);
+                } finally {
+                    finished_.set(true);
                 }
                 return null;
             }

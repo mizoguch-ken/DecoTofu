@@ -5,7 +5,7 @@
  */
 package ken.mizoguch.ladders;
 
-import difflib.Delta;
+import com.github.difflib.patch.DeltaType;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -3922,7 +3922,7 @@ public class LadderGridPane extends AnchorPane {
      *
      * @param type
      */
-    public void changeDifference(Delta.TYPE type) {
+    public void changeDifference(DeltaType type) {
         switch (type) {
             case CHANGE:
                 setBackground(new Background(

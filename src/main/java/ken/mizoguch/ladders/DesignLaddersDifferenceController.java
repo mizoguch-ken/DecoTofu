@@ -6,10 +6,11 @@
 package ken.mizoguch.ladders;
 
 import com.google.gson.Gson;
-import difflib.Chunk;
-import difflib.Delta;
-import difflib.DiffUtils;
-import difflib.Patch;
+import com.github.difflib.DiffUtils;
+import com.github.difflib.patch.AbstractDelta;
+import com.github.difflib.patch.Chunk;
+import com.github.difflib.patch.DeltaType;
+import com.github.difflib.patch.Patch;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -238,7 +239,7 @@ public class DesignLaddersDifferenceController implements Initializable {
             LadderGridPane gridPane;
             LadderGrid grid, gridNew, gridBuf;
             Patch<String> patch;
-            Delta<String> delta;
+            AbstractDelta<String> delta;
             Tab tab;
             Gson gson = new Gson();
 
@@ -318,7 +319,7 @@ public class DesignLaddersDifferenceController implements Initializable {
                                     grid.setBlock(Ladders.LADDER_BLOCK.CONTENTS);
                                     gridPane.changeBlock();
                                 } else {
-                                    gridPane.changeDifference(Delta.TYPE.DELETE);
+                                    gridPane.changeDifference(DeltaType.DELETE);
                                 }
                                 gridBuf = gridNew;
                                 if (grid.getUpLadderGrid() != null) {
@@ -352,7 +353,7 @@ public class DesignLaddersDifferenceController implements Initializable {
                                     grid.setBlock(Ladders.LADDER_BLOCK.CONTENTS);
                                     gridPane.changeBlock();
                                 } else {
-                                    gridPane.changeDifference(Delta.TYPE.DELETE);
+                                    gridPane.changeDifference(DeltaType.DELETE);
                                 }
                                 gridBuf = gridNew;
                                 if (grid.getUpLadderGrid() != null) {
@@ -388,50 +389,50 @@ public class DesignLaddersDifferenceController implements Initializable {
                         delta = patch.getDeltas().get(index);
                         switch (delta.getType()) {
                             case CHANGE:
-                                chunk = delta.getOriginal();
+                                chunk = delta.getSource();
                                 blocks = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
                                         .getBlocks();
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
                                         paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(Delta.TYPE.CHANGE);
+                                                .changeDifference(DeltaType.CHANGE);
                                     }
                                 }
-                                chunk = delta.getRevised();
+                                chunk = delta.getTarget();
                                 blocks = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getBlocks();
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
                                         paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(Delta.TYPE.CHANGE);
+                                                .changeDifference(DeltaType.CHANGE);
                                     }
                                 }
                                 break;
                             case DELETE:
-                                chunk = delta.getOriginal();
+                                chunk = delta.getSource();
                                 blocks = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
                                         .getBlocks();
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
                                         paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(Delta.TYPE.DELETE);
+                                                .changeDifference(DeltaType.DELETE);
                                         paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(Delta.TYPE.INSERT);
+                                                .changeDifference(DeltaType.INSERT);
                                     }
                                 }
                                 break;
                             case INSERT:
-                                chunk = delta.getRevised();
+                                chunk = delta.getTarget();
                                 blocks = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getBlocks();
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
                                         paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(Delta.TYPE.INSERT);
+                                                .changeDifference(DeltaType.INSERT);
                                         paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(Delta.TYPE.DELETE);
+                                                .changeDifference(DeltaType.DELETE);
                                     }
                                 }
                                 break;

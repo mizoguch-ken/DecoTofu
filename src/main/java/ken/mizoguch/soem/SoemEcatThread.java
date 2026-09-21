@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -58,8 +60,9 @@ public class SoemEcatThread extends Service<Void> {
     private final SoemEtherCATMain.ecx_contextt context_;
     private final ConcurrentMap<Integer, EcatPO2SO> po2so_;
     private final ConcurrentMap<Long, EcatData> out_;
+    private final AtomicBoolean finished_;
     private SoemEcatCheck ecatCheck_;
-    private boolean init_, exit_;
+    private volatile boolean init_, exit_;
 
     /**
      *
@@ -77,6 +80,7 @@ public class SoemEcatThread extends Service<Void> {
         ecatCheck_ = null;
         init_ = false;
         exit_ = true;
+        finished_ = new AtomicBoolean(true);
     }
 
     /**
@@ -150,7 +154,8 @@ public class SoemEcatThread extends Service<Void> {
                     soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_PRE_OP.intValue(),
                             SoemEtherCATType.EC_TIMEOUTSTATE);
                     if (context_.slavecount.get() > 0) {
-                        for (index = 1, size = context_.slavecount.get(); index <= size; index++) {
+                        for (index = 1, size = context_.slavecount.get(); (index < context_.slavelist.length)
+                                && (index <= size); index++) {
                             if (po2so_.containsKey(index)) {
                                 if ((context_.slavelist[index].eep_man.get() == po2so_.get(index).eep_man)
                                         && (context_.slavelist[index].eep_id.get() == po2so_.get(index).eep_id)) {
@@ -163,14 +168,20 @@ public class SoemEcatThread extends Service<Void> {
                                                     try {
                                                         future.run();
                                                         return future.get();
-                                                    } catch (InterruptedException | ExecutionException ex) {
+                                                    } catch (InterruptedException ex) {
+                                                        Thread.currentThread().interrupt();
+                                                        Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+                                                    } catch (ExecutionException ex) {
                                                         Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
                                                     }
                                                 } else {
                                                     try {
                                                         Platform.runLater(future);
                                                         return future.get();
-                                                    } catch (InterruptedException | ExecutionException ex) {
+                                                    } catch (InterruptedException ex) {
+                                                        Thread.currentThread().interrupt();
+                                                        Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+                                                    } catch (ExecutionException ex) {
                                                         Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
                                                     }
                                                 }
@@ -240,7 +251,6 @@ public class SoemEcatThread extends Service<Void> {
         if (ecatCheck_ != null) {
             ecatCheck_.exit();
             ecatCheck_.cancel();
-            ecatCheck_ = null;
         }
         if (init_ && (soem_ != null) && (context_ != null)) {
             init_ = false;
@@ -249,6 +259,38 @@ public class SoemEcatThread extends Service<Void> {
             soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_INIT.intValue(),
                     SoemEtherCATType.EC_TIMEOUTSTATE);
         }
+    }
+
+    /**
+     * wait the end of the check task and of the ec task : the native context and the native parcel
+     * are freed only when both tasks are out of the native calls
+     *
+     * @param timeoutMillis
+     * @return true when both tasks are no longer in the native calls
+     */
+    public boolean awaitTermination(long timeoutMillis) {
+        long deadline = System.currentTimeMillis() + Math.max(0, timeoutMillis);
+        boolean terminated = true;
+
+        if (ecatCheck_ != null) {
+            terminated = ecatCheck_.awaitTermination(remainingMillis(deadline));
+        }
+        while (!finished_.get()) {
+            if (System.currentTimeMillis() >= deadline) {
+                break;
+            }
+            try {
+                TimeUnit.MILLISECONDS.sleep(5);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return finished_.get() && terminated;
+    }
+
+    private long remainingMillis(long deadline) {
+        return Math.max(1, deadline - System.currentTimeMillis());
     }
 
     /**
@@ -333,12 +375,15 @@ public class SoemEcatThread extends Service<Void> {
         return new Task<Void>() {
             @Override
             protected Void call() {
+                finished_.set(false);
                 try {
                     Pointer pointer;
                     Map.Entry<Long, EcatData> entry;
                     int value;
 
-                    soem_.ec_run(parcel_);
+                    if (!exit_) {
+                        soem_.ec_run(parcel_);
+                    }
                     while (!exit_) {
                         if (parcel_.isprocess.get() == SoemOsal.FALSE) {
                             if (!out_.isEmpty()) {
@@ -355,10 +400,15 @@ public class SoemEcatThread extends Service<Void> {
                                 }
                             }
                             parcel_.isprocess.set(SoemOsal.TRUE);
+                        } else {
+                            // nothing to do : wait the next cycle without burning the cpu
+                            Thread.onSpinWait();
                         }
                     }
                 } catch (Exception ex) {
                     Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+                } finally {
+                    finished_.set(true);
                 }
                 return null;
             }

@@ -13,8 +13,8 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,27 +24,36 @@ import java.util.logging.Logger;
  */
 public class Console {
 
-    private static PrintStream printStream_ = null;
+    private static final DateTimeFormatter DATE_FORMAT
+            = DateTimeFormatter.ofPattern("yyyy'/'MM'/'dd' 'HH':'mm':'ss");
+    private static volatile PrintStream printStream_ = null;
 
     /**
      *
      * @param file
      * @return
      */
-    public static boolean setPrintStream(Path file) {
+    public static synchronized boolean setPrintStream(Path file) {
         if (file == null) {
             if (printStream_ != null) {
                 printStream_.close();
                 printStream_ = null;
             }
-        } else if (Files.exists(file.getParent())) {
-            try {
-                printStream_ = new PrintStream(Files.newOutputStream(file), true, "UTF-8");
-                return true;
-            } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-                Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
+        } else {
+            Path parent = file.getParent();
+            if ((parent != null) && Files.exists(parent)) {
+                try {
+                    PrintStream printStream = new PrintStream(Files.newOutputStream(file), true, "UTF-8");
+                    if (printStream_ != null) {
+                        printStream_.close();
+                    }
+                    printStream_ = printStream;
+                    return true;
+                } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+                    Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IOException ex) {
+                    Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
         return false;
@@ -63,24 +72,23 @@ public class Console {
      * @param throwable
      */
     public static void writeStackTrace(final String name, final Throwable throwable) {
-        if (printStream_ == null) {
+        PrintStream printStream = printStream_;
+
+        if (printStream == null) {
             Logger.getLogger(name).log(Level.SEVERE, null, throwable);
         } else {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy'/'MM'/'dd' 'HH':'mm':'ss");
             StringWriter stringWriter = new StringWriter();
             PrintWriter printWriter = new PrintWriter(stringWriter, true);
             for (StackTraceElement ste : throwable.getStackTrace()) {
                 if (ste.getClassName().equals(name)) {
                     stringWriter.append(
-                            simpleDateFormat.format(new Date()) + " " + name + " " + ste.getMethodName() + "\n");
+                            LocalDateTime.now().format(DATE_FORMAT) + " " + name + " " + ste.getMethodName() + "\n");
                     break;
                 }
             }
             throwable.printStackTrace(printWriter);
 
-            if (printStream_ != null) {
-                printStream_.println(stringWriter.getBuffer().toString());
-            }
+            printStream.println(stringWriter.getBuffer().toString());
         }
     }
 
@@ -91,18 +99,20 @@ public class Console {
      * @param err
      */
     public static void write(final String name, String msg, final boolean err) {
-        if (printStream_ == null) {
+        PrintStream printStream = printStream_;
+
+        if (printStream == null) {
             if (err) {
                 Logger.getLogger(name).log(Level.WARNING, msg);
             } else {
                 Logger.getLogger(name).log(Level.INFO, msg);
             }
         } else {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy'/'MM'/'dd' 'HH':'mm':'ss");
+            String timestamp = LocalDateTime.now().format(DATE_FORMAT);
             if (err) {
-                printStream_.println(simpleDateFormat.format(new Date()) + " :: " + name + " Error :: " + msg);
+                printStream.println(timestamp + " :: " + name + " Error :: " + msg);
             } else {
-                printStream_.println(simpleDateFormat.format(new Date()) + " :: " + name + " :: " + msg);
+                printStream.println(timestamp + " :: " + name + " :: " + msg);
             }
         }
     }

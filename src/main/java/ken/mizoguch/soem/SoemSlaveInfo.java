@@ -286,7 +286,7 @@ public class SoemSlaveInfo {
                 info.ExpectedWKC = (context_.grouplist[0].outputsWKC.get() * 2) + context_.grouplist[0].inputsWKC.get();
 
                 soem_.ecx_readstate(context_);
-                for (cnt = 1; cnt <= context_.slavecount.get(); cnt++) {
+                for (cnt = 1; (cnt < context_.slavelist.length) && (cnt <= context_.slavecount.get()); cnt++) {
                     slave = info.newSlave();
                     slave.Index = cnt;
                     slave.Name = context_.slavelist[cnt].name.get();

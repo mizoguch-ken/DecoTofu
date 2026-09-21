@@ -8,6 +8,7 @@ package ken.mizoguch.webviewer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 import javafx.concurrent.Worker;
@@ -45,18 +46,24 @@ public class StageSettingsPlugin implements WebViewerPlugin {
         TextArea textAera = new TextArea();
         StringBuilder stringBuilder = new StringBuilder();
 
-        try (BufferedReader bufferedReader = new BufferedReader(
-                new InputStreamReader(this.getClass().getClassLoader().getResourceAsStream("LICENSES"), "UTF-8"))) {
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                stringBuilder.append(line);
-                stringBuilder.append("\n");
+        try (InputStream licenseStream = this.getClass().getClassLoader().getResourceAsStream("LICENSES")) {
+            if (licenseStream != null) {
+                try (BufferedReader bufferedReader = new BufferedReader(
+                        new InputStreamReader(licenseStream, "UTF-8"))) {
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line);
+                        stringBuilder.append("\n");
+                    }
+                }
+            } else {
+                write(StageSettingsPlugin.class.getName(), "resource not found : LICENSES", true);
             }
         } catch (IOException ex) {
             writeStackTrace(StageSettingsPlugin.class.getName(), ex);
         }
         textAera.setText(stringBuilder.toString());
-        if (!webViewer_.icons().isEmpty()) {
+        if ((webViewer_ != null) && !webViewer_.icons().isEmpty()) {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(webViewer_.icons());
         }
         alert.setResizable(true);
@@ -77,7 +84,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
 
         version.append("VERSION").append(" ").append(DecoTofu.class.getPackage().getImplementationVersion());
 
-        if (!webViewer_.icons().isEmpty()) {
+        if ((webViewer_ != null) && !webViewer_.icons().isEmpty()) {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(webViewer_.icons());
         }
         alert.setResizable(true);
@@ -347,7 +354,8 @@ public class StageSettingsPlugin implements WebViewerPlugin {
 
     @Override
     public void close() {
-        stage_.close();
+        // The window is closed by its own close request handler. Closing the stage from
+        // here would re-enter the close request of the window that is already closing.
     }
 
     @Override
