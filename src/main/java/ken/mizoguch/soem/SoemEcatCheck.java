@@ -6,7 +6,7 @@
 package ken.mizoguch.soem;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javax.swing.event.EventListenerList;
@@ -27,7 +27,7 @@ public class SoemEcatCheck extends Service<Void> {
     private volatile int expectedWKC_;
     private volatile boolean isNotifyCheck_;
     private volatile boolean exit_;
-    private final AtomicBoolean finished_;
+    private final AtomicInteger runningTasks_;
 
     private static final int EC_TIMEOUTMON = 500;
 
@@ -47,7 +47,7 @@ public class SoemEcatCheck extends Service<Void> {
         expectedWKC_ = 0;
         isNotifyCheck_ = false;
         exit_ = true;
-        finished_ = new AtomicBoolean(true);
+        runningTasks_ = new AtomicInteger();
     }
 
     /**
@@ -74,7 +74,7 @@ public class SoemEcatCheck extends Service<Void> {
     public boolean awaitTermination(long timeoutMillis) {
         long deadline = System.currentTimeMillis() + Math.max(0, timeoutMillis);
 
-        while (!finished_.get()) {
+        while (runningTasks_.get() > 0) {
             if (System.currentTimeMillis() >= deadline) {
                 break;
             }
@@ -85,7 +85,7 @@ public class SoemEcatCheck extends Service<Void> {
                 break;
             }
         }
-        return finished_.get();
+        return runningTasks_.get() == 0;
     }
 
     /**
@@ -111,7 +111,7 @@ public class SoemEcatCheck extends Service<Void> {
         return new Task<Void>() {
             @Override
             protected Void call() {
-                finished_.set(false);
+                runningTasks_.incrementAndGet();
                 try {
                     int slave, docheckstate;
 
@@ -221,7 +221,7 @@ public class SoemEcatCheck extends Service<Void> {
                     }
                     Console.writeStackTrace(SoemEcatCheck.class.getName(), ex);
                 } finally {
-                    finished_.set(true);
+                    runningTasks_.decrementAndGet();
                 }
                 return null;
             }

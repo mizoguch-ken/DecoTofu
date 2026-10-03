@@ -38,6 +38,10 @@ public interface SoemEtherCATMain {
      */
     public static final int EC_MAXMBX = 1486;
     /**
+     * max. number of entries in the mailbox pool and mailbox queue
+     */
+    public static final int EC_MBXPOOLSIZE = 32;
+    /**
      * max. eeprom PDO entries
      */
     public static final int EC_MAXEEPDO = 0x200;
@@ -199,6 +203,10 @@ public interface SoemEtherCATMain {
          */
         public final Unsigned32 eep_rev;
         /**
+         * serial number from EEprom
+         */
+        public final Unsigned32 eep_ser;
+        /**
          * Interface type
          */
         public final Unsigned16 Itype;
@@ -219,6 +227,10 @@ public interface SoemEtherCATMain {
          */
         public final Pointer outputs;
         /**
+         * output offset in IOmap buffer
+         */
+        public final Unsigned32 Ooffset;
+        /**
          * startbit in first output byte
          */
         public final Unsigned8 Ostartbit;
@@ -234,6 +246,10 @@ public interface SoemEtherCATMain {
          * input pointer in IOmap buffer
          */
         public final Pointer inputs;
+        /**
+         * input offset in IOmap buffer
+         */
+        public final Unsigned32 Ioffset;
         /**
          * startbit in first input byte
          */
@@ -364,10 +380,6 @@ public interface SoemEtherCATMain {
          */
         public final Unsigned8 DCactive;
         /**
-         * link to config table
-         */
-        public final Unsigned16 configindex;
-        /**
          * link to SII config
          */
         public final Unsigned16 SIIindex;
@@ -421,9 +433,94 @@ public interface SoemEtherCATMain {
          */
         public final SoemLibrary.CallBackPO2SOconfig PO2SOconfig;
         /**
-         * registered configuration function PO->SO
+         * mailbox handler state, 0 = no handler, 1 = cyclic task mbx handler,
+         * 2 = slave lost
          */
-        public final SoemLibrary.CallBackPO2SOconfigx PO2SOconfigx;
+        public final Signed32 mbxhandlerstate;
+        /**
+         * mailbox handler robust mailbox protocol state
+         */
+        public final Signed32 mbxrmpstate;
+        /**
+         * mailbox handler RMP extended mbx in state
+         */
+        public final Unsigned16 mbxinstateex;
+        /**
+         * pointer to CoE mailbox in buffer
+         */
+        public final Pointer coembxin;
+        /**
+         * CoE mailbox in flag, true = mailbox full
+         */
+        public final Unsigned8 coembxinfull;
+        /**
+         * CoE mailbox in overrun counter
+         */
+        public final Signed32 coembxoverrun;
+        /**
+         * pointer to SoE mailbox in buffer
+         */
+        public final Pointer soembxin;
+        /**
+         * SoE mailbox in flag, true = mailbox full
+         */
+        public final Unsigned8 soembxinfull;
+        /**
+         * SoE mailbox in overrun counter
+         */
+        public final Signed32 soembxoverrun;
+        /**
+         * pointer to FoE mailbox in buffer
+         */
+        public final Pointer foembxin;
+        /**
+         * FoE mailbox in flag, true = mailbox full
+         */
+        public final Unsigned8 foembxinfull;
+        /**
+         * FoE mailbox in overrun counter
+         */
+        public final Signed32 foembxoverrun;
+        /**
+         * pointer to EoE mailbox in buffer
+         */
+        public final Pointer eoembxin;
+        /**
+         * EoE mailbox in flag, true = mailbox full
+         */
+        public final Unsigned8 eoembxinfull;
+        /**
+         * EoE mailbox in overrun counter
+         */
+        public final Signed32 eoembxoverrun;
+        /**
+         * pointer to VoE mailbox in buffer
+         */
+        public final Pointer voembxin;
+        /**
+         * VoE mailbox in flag, true = mailbox full
+         */
+        public final Unsigned8 voembxinfull;
+        /**
+         * VoE mailbox in overrun counter
+         */
+        public final Signed32 voembxoverrun;
+        /**
+         * pointer to AoE mailbox in buffer
+         */
+        public final Pointer aoembxin;
+        /**
+         * AoE mailbox in flag, true = mailbox full
+         */
+        public final Unsigned8 aoembxinfull;
+        /**
+         * AoE mailbox in overrun counter
+         */
+        public final Signed32 aoembxoverrun;
+        /**
+         * pointer to out mailbox status register buffer
+         */
+        public final Pointer mbxstatus;
         /**
          * readable name
          */
@@ -439,15 +536,18 @@ public interface SoemEtherCATMain {
             eep_man = new Unsigned32();
             eep_id = new Unsigned32();
             eep_rev = new Unsigned32();
+            eep_ser = new Unsigned32();
             Itype = new Unsigned16();
             Dtype = new Unsigned16();
             Obits = new Unsigned16();
             Obytes = new Unsigned32();
             outputs = new Pointer();
+            Ooffset = new Unsigned32();
             Ostartbit = new Unsigned8();
             Ibits = new Unsigned16();
             Ibytes = new Unsigned32();
             inputs = new Pointer();
+            Ioffset = new Unsigned32();
             Istartbit = new Unsigned8();
             SM = super.array(new ec_smt[EC_MAXSM]);
             SMtype = super.array(new Unsigned8[EC_MAXSM]);
@@ -480,7 +580,6 @@ public interface SoemEtherCATMain {
             DCcycle = new Signed32();
             DCshift = new Signed32();
             DCactive = new Unsigned8();
-            configindex = new Unsigned16();
             SIIindex = new Unsigned16();
             eep_8byte = new Unsigned8();
             eep_pdi = new Unsigned8();
@@ -494,7 +593,28 @@ public interface SoemEtherCATMain {
             FMMUunused = new Unsigned8();
             islost = new Unsigned8();
             PO2SOconfig = inner(new SoemLibrary.CallBackPO2SOconfig(runtime));
-            PO2SOconfigx = inner(new SoemLibrary.CallBackPO2SOconfigx(runtime));
+            mbxhandlerstate = new Signed32();
+            mbxrmpstate = new Signed32();
+            mbxinstateex = new Unsigned16();
+            coembxin = new Pointer();
+            coembxinfull = new Unsigned8();
+            coembxoverrun = new Signed32();
+            soembxin = new Pointer();
+            soembxinfull = new Unsigned8();
+            soembxoverrun = new Signed32();
+            foembxin = new Pointer();
+            foembxinfull = new Unsigned8();
+            foembxoverrun = new Signed32();
+            eoembxin = new Pointer();
+            eoembxinfull = new Unsigned8();
+            eoembxoverrun = new Signed32();
+            voembxin = new Pointer();
+            voembxinfull = new Unsigned8();
+            voembxoverrun = new Signed32();
+            aoembxin = new Pointer();
+            aoembxinfull = new Unsigned8();
+            aoembxoverrun = new Signed32();
+            mbxstatus = new Pointer();
             name = new UTF8String(EC_MAXNAME + 1);
         }
     }
@@ -568,6 +688,27 @@ public interface SoemEtherCATMain {
          * IO segmentation list. Datagrams must not break SM in two.
          */
         public final Unsigned32[] IOsegment;
+        /**
+         * pointer to the group's mailbox status data
+         */
+        public final Pointer mbxstatus;
+        /**
+         * length of the group's mailbox status data
+         */
+        public final Signed32 mbxstatuslength;
+        /**
+         * lookup table of mailbox status per slave
+         */
+        public final Unsigned16[] mbxstatuslookup;
+        /**
+         * position of the last mailbox status
+         */
+        public final Unsigned16 lastmbxpos;
+        /**
+         * mailbox transmit queue (embedded single entry, mirrors C
+         * "ec_mbxqueuet mbxtxqueue")
+         */
+        public final ec_mbxqueuet[] mbxtxqueue;
 
         public ec_groupt(jnr.ffi.Runtime runtime) {
             super(runtime);
@@ -588,6 +729,41 @@ public interface SoemEtherCATMain {
             inputsWKC = new Unsigned16();
             docheckstate = new Unsigned8();
             IOsegment = super.array(new Unsigned32[EC_MAXIOSEGMENTS]);
+            mbxstatus = new Pointer();
+            mbxstatuslength = new Signed32();
+            mbxstatuslookup = super.array(new Unsigned16[EC_MAXSLAVE]);
+            lastmbxpos = new Unsigned16();
+            mbxtxqueue = super.array(new ec_mbxqueuet[1]);
+        }
+    }
+
+    /**
+     * mailbox queue (transmit queue) used by groups
+     */
+    public class ec_mbxqueuet extends Struct {
+
+        public final Signed32 listhead;
+        public final Signed32 listtail;
+        public final Signed32 listcount;
+        public final Pointer[] mbx;
+        public final Signed32[] mbxstate;
+        public final Signed32[] mbxremove;
+        public final Signed32[] mbxticket;
+        public final Unsigned16[] mbxslave;
+        public final Pointer mbxmutex;
+
+        public ec_mbxqueuet(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            listhead = new Signed32();
+            listtail = new Signed32();
+            listcount = new Signed32();
+            mbx = super.array(new Pointer[EC_MBXPOOLSIZE]);
+            mbxstate = super.array(new Signed32[EC_MBXPOOLSIZE]);
+            mbxremove = super.array(new Signed32[EC_MBXPOOLSIZE]);
+            mbxticket = super.array(new Signed32[EC_MBXPOOLSIZE]);
+            mbxslave = super.array(new Unsigned16[EC_MBXPOOLSIZE]);
+            mbxmutex = new Pointer();
         }
     }
 
@@ -725,6 +901,10 @@ public interface SoemEtherCATMain {
         public final Pointer[] data;
         public final Unsigned16[] length;
         public final Unsigned16[] dcoffset;
+        /**
+         * construct type (LRD/LWR/LRW)
+         */
+        public final Unsigned8[] type;
 
         public ec_idxstackT(jnr.ffi.Runtime runtime) {
             super(runtime);
@@ -735,6 +915,7 @@ public interface SoemEtherCATMain {
             data = super.array(new Pointer[SoemEtherCATType.EC_MAXBUF]);
             length = super.array(new Unsigned16[SoemEtherCATType.EC_MAXBUF]);
             dcoffset = super.array(new Unsigned16[SoemEtherCATType.EC_MAXBUF]);
+            type = super.array(new Unsigned8[SoemEtherCATType.EC_MAXBUF]);
         }
     }
 
@@ -902,6 +1083,10 @@ public interface SoemEtherCATMain {
         private final Pointer _eepFMMU;
         public final ec_eepromFMMUt eepFMMU;
         /**
+         * internal, mailbox pool
+         */
+        public final Pointer mbxpool;
+        /**
          * registered FoE hook
          */
         public final SoemLibrary.CallBackFOEhook FOEhook;
@@ -977,6 +1162,7 @@ public interface SoemEtherCATMain {
             eepSM = new ec_eepromSMt(getRuntime());
             _eepFMMU = new Pointer();
             eepFMMU = new ec_eepromFMMUt(getRuntime());
+            mbxpool = new Pointer();
             FOEhook = inner(new SoemLibrary.CallBackFOEhook(runtime));
             EOEhook = inner(new SoemLibrary.CallBackEOEhook(runtime));
             manualstatechange = new Signed32();

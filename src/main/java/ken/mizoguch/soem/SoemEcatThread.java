@@ -14,7 +14,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -60,7 +60,7 @@ public class SoemEcatThread extends Service<Void> {
     private final SoemEtherCATMain.ecx_contextt context_;
     private final ConcurrentMap<Integer, EcatPO2SO> po2so_;
     private final ConcurrentMap<Long, EcatData> out_;
-    private final AtomicBoolean finished_;
+    private final AtomicInteger runningTasks_;
     private SoemEcatCheck ecatCheck_;
     private volatile boolean init_, exit_;
 
@@ -80,7 +80,7 @@ public class SoemEcatThread extends Service<Void> {
         ecatCheck_ = null;
         init_ = false;
         exit_ = true;
-        finished_ = new AtomicBoolean(true);
+        runningTasks_ = new AtomicInteger();
     }
 
     /**
@@ -275,7 +275,7 @@ public class SoemEcatThread extends Service<Void> {
         if (ecatCheck_ != null) {
             terminated = ecatCheck_.awaitTermination(remainingMillis(deadline));
         }
-        while (!finished_.get()) {
+        while (runningTasks_.get() > 0) {
             if (System.currentTimeMillis() >= deadline) {
                 break;
             }
@@ -286,7 +286,7 @@ public class SoemEcatThread extends Service<Void> {
                 break;
             }
         }
-        return finished_.get() && terminated;
+        return (runningTasks_.get() == 0) && terminated;
     }
 
     private long remainingMillis(long deadline) {
@@ -375,7 +375,7 @@ public class SoemEcatThread extends Service<Void> {
         return new Task<Void>() {
             @Override
             protected Void call() {
-                finished_.set(false);
+                runningTasks_.incrementAndGet();
                 try {
                     Pointer pointer;
                     Map.Entry<Long, EcatData> entry;
@@ -408,7 +408,7 @@ public class SoemEcatThread extends Service<Void> {
                 } catch (Exception ex) {
                     Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
                 } finally {
-                    finished_.set(true);
+                    runningTasks_.decrementAndGet();
                 }
                 return null;
             }
