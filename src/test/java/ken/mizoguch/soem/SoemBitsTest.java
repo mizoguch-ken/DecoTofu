@@ -136,9 +136,15 @@ class SoemBitsTest {
 
         write(map, 0, 4, -1L, value);
         assertEquals(value, SoemBits.read(map, 0, 4, -1L, SoemBits.mapBytes(4, 64)));
+        // the variable starts at the bit 4 : the byte 0 of the map holds its 4
+        // lowest bits, shifted by 4
+        assertEquals((int) ((value & 0x0f) << 4), Byte.toUnsignedInt(map.getByte(0)));
+        // the byte 7 holds the bits 52..59 of the variable, all of them
+        assertEquals((int) ((value >>> 52) & 0xff), Byte.toUnsignedInt(map.getByte(7)));
         // the mapping of a 64 bits variable that starts at the bit 4 ends at the
-        // byte 8 of the map : it holds the highest bits of the variable
-        assertEquals(0x01, Byte.toUnsignedInt(map.getByte(8)));
+        // byte 8 of the map : that byte holds only the 4 highest bits of the
+        // variable, which are 0 here
+        assertEquals((int) (value >>> 60), Byte.toUnsignedInt(map.getByte(8)));
     }
 
     @Test
