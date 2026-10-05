@@ -220,9 +220,7 @@ public class Soem {
                 soem_.ec_free_context(context_);
                 context_ = null;
             }
-            if (pIOmap_ != null) {
-                pIOmap_ = null;
-            }
+            pIOmap_ = null;
             return true;
         }
         return null;
@@ -348,44 +346,45 @@ public class Soem {
 
     public Long in(int slave, long bitsOffset, long bitsMask) {
         if (checkSlave(slave)) {
-            Pointer inputs = context_.slavelist[slave].inputs.get();
-            long Ibits = context_.slavelist[slave].Ibits.get();
+            SoemEtherCATMain.ec_slavet sl = context_.slavelist[slave];
 
-            if ((inputs != null) && (bitsOffset >= 0) && (bitsOffset < Ibits)) {
-                long bits = Ibits - bitsOffset;
-
-                if ((bitsMask > 0) && (bits > 0)) {
-                    if (bits < SoemBits.MAX_BITS) {
-                        bitsMask &= (1L << bits) - 1;
-                    }
-                    return SoemBits.read(inputs, bitsOffset / 8,
-                            context_.slavelist[slave].Istartbit.get() + ((int) (bitsOffset % 8)), bitsMask,
-                            SoemBits.mapBytes(context_.slavelist[slave].Istartbit.get(), Ibits));
-                }
-            }
+            return readBits(bitsOffset, bitsMask, sl.inputs.get(), sl.Istartbit.get(), sl.Ibits.get());
         }
         return null;
     }
 
     public Long out(int slave, long bitsOffset, long bitsMask) {
         if (checkSlave(slave)) {
-            Pointer outputs = context_.slavelist[slave].outputs.get();
-            long Obits = context_.slavelist[slave].Obits.get();
+            SoemEtherCATMain.ec_slavet sl = context_.slavelist[slave];
 
-            if ((outputs != null) && (bitsOffset >= 0) && (bitsOffset < Obits)) {
-                long bits = Obits - bitsOffset;
-
-                if ((bitsMask > 0) && (bits > 0)) {
-                    if (bits < SoemBits.MAX_BITS) {
-                        bitsMask &= (1L << bits) - 1;
-                    }
-                    return SoemBits.read(outputs, bitsOffset / 8,
-                            context_.slavelist[slave].Ostartbit.get() + ((int) (bitsOffset % 8)), bitsMask,
-                            SoemBits.mapBytes(context_.slavelist[slave].Ostartbit.get(), Obits));
-                }
-            }
+            return readBits(bitsOffset, bitsMask, sl.outputs.get(), sl.Ostartbit.get(), sl.Obits.get());
         }
         return null;
+    }
+
+    /**
+     * read the variable of a slave in the map of the inputs or of the outputs :
+     * the bits of the neighbours of the slave are never read
+     *
+     * @param bitsOffset offset of the variable in the bits of the slave
+     * @param bitsMask bit mask of the variable (&gt; 0)
+     * @param map map of the slave, null when the slave has none
+     * @param mapStartbit bit offset of the map of the slave in the first byte of
+     * the map of the group
+     * @param mapBits number of the bits of the map of the slave
+     * @return the value of the variable, null when it is not in the map
+     */
+    private Long readBits(long bitsOffset, long bitsMask, Pointer map, int mapStartbit, long mapBits) {
+        if ((map == null) || (bitsMask <= 0) || (bitsOffset < 0) || (bitsOffset >= mapBits)) {
+            return null;
+        }
+        long bits = mapBits - bitsOffset;
+
+        if (bits < SoemBits.MAX_BITS) {
+            bitsMask &= (1L << bits) - 1;
+        }
+        return SoemBits.read(map, bitsOffset / 8, mapStartbit + ((int) (bitsOffset % 8)), bitsMask,
+                SoemBits.mapBytes(mapStartbit, mapBits));
     }
 
     public Long out(int slave, long bitsOffset, long bitsMask, long value) {
