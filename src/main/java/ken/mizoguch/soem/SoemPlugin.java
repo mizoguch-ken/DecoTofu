@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javafx.application.Platform;
@@ -35,8 +36,22 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
 
     private final Soem soem_;
 
-    private String funcErrorSafeOpError_, funcErrorLost_, funcWarningSafeOp_,
-            funcMessageReconfigured_, funcMessageRecovered_, funcMessageFound_, funcMessageAllSlavesResumedOperational_;
+    /**
+     * the notification of the monitor task of the ecat that the web page may be
+     * notified of : every event is answered by the js function set with the
+     * matching setter
+     */
+    private enum CheckEvent {
+        ERROR_SAFE_OP_ERROR,
+        ERROR_LOST,
+        WARNING_SAFE_OP,
+        MESSAGE_RECONFIGURED,
+        MESSAGE_RECOVERED,
+        MESSAGE_FOUND,
+        MESSAGE_ALL_SLAVES_RESUMED_OPERATIONAL
+    }
+
+    private final EnumMap<CheckEvent, String> func_;
 
     /**
      *
@@ -46,13 +61,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         webEngine_ = null;
         state_ = Worker.State.READY;
         soem_ = soem;
-        funcErrorSafeOpError_ = null;
-        funcErrorLost_ = null;
-        funcWarningSafeOp_ = null;
-        funcMessageReconfigured_ = null;
-        funcMessageRecovered_ = null;
-        funcMessageFound_ = null;
-        funcMessageAllSlavesResumedOperational_ = null;
+        func_ = new EnumMap<>(CheckEvent.class);
     }
 
     /**
@@ -86,11 +95,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @return
      */
     public Boolean init(int size) {
-        Boolean ret = soem_.init(size);
-        if (ret != null) {
-            return ret;
-        }
-        return null;
+        return soem_.init(size);
     }
 
     /**
@@ -143,14 +148,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param func
      */
     public void setNotifyErrorSafeOpError(String func) {
-        funcErrorSafeOpError_ = func;
-        if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
-                && (funcMessageAllSlavesResumedOperational_ == null)) {
-            soem_.setNotifyCheck(false);
-        } else {
-            soem_.setNotifyCheck(true);
-        }
+        setNotify(CheckEvent.ERROR_SAFE_OP_ERROR, func);
     }
 
     /**
@@ -158,14 +156,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param func
      */
     public void setNotifyErrorLost(String func) {
-        funcErrorLost_ = func;
-        if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
-                && (funcMessageAllSlavesResumedOperational_ == null)) {
-            soem_.setNotifyCheck(false);
-        } else {
-            soem_.setNotifyCheck(true);
-        }
+        setNotify(CheckEvent.ERROR_LOST, func);
     }
 
     /**
@@ -173,14 +164,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param func
      */
     public void setNotifyWarningSafeOp(String func) {
-        funcWarningSafeOp_ = func;
-        if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
-                && (funcMessageAllSlavesResumedOperational_ == null)) {
-            soem_.setNotifyCheck(false);
-        } else {
-            soem_.setNotifyCheck(true);
-        }
+        setNotify(CheckEvent.WARNING_SAFE_OP, func);
     }
 
     /**
@@ -188,14 +172,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param func
      */
     public void setNotifyMessageReconfigured(String func) {
-        funcMessageReconfigured_ = func;
-        if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
-                && (funcMessageAllSlavesResumedOperational_ == null)) {
-            soem_.setNotifyCheck(false);
-        } else {
-            soem_.setNotifyCheck(true);
-        }
+        setNotify(CheckEvent.MESSAGE_RECONFIGURED, func);
     }
 
     /**
@@ -203,14 +180,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param func
      */
     public void setNotifyMessageRecovered(String func) {
-        funcMessageRecovered_ = func;
-        if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
-                && (funcMessageAllSlavesResumedOperational_ == null)) {
-            soem_.setNotifyCheck(false);
-        } else {
-            soem_.setNotifyCheck(true);
-        }
+        setNotify(CheckEvent.MESSAGE_RECOVERED, func);
     }
 
     /**
@@ -218,14 +188,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param func
      */
     public void setNotifyMessageFound(String func) {
-        funcMessageFound_ = func;
-        if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
-                && (funcMessageAllSlavesResumedOperational_ == null)) {
-            soem_.setNotifyCheck(false);
-        } else {
-            soem_.setNotifyCheck(true);
-        }
+        setNotify(CheckEvent.MESSAGE_FOUND, func);
     }
 
     /**
@@ -233,14 +196,24 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param func
      */
     public void setNotifyMessageAllSlavesResumedOperational(String func) {
-        funcMessageAllSlavesResumedOperational_ = func;
-        if ((funcErrorSafeOpError_ == null) && (funcErrorLost_ == null) && (funcWarningSafeOp_ == null)
-                && (funcMessageReconfigured_ == null) && (funcMessageRecovered_ == null) && (funcMessageFound_ == null)
-                && (funcMessageAllSlavesResumedOperational_ == null)) {
-            soem_.setNotifyCheck(false);
+        setNotify(CheckEvent.MESSAGE_ALL_SLAVES_RESUMED_OPERATIONAL, func);
+    }
+
+    /**
+     * set the js function of one notification of the monitor task of the ecat :
+     * the task answers the plugin only when the web page has at least one
+     * function to call
+     *
+     * @param event notification of the monitor task
+     * @param func js function name, null when the web page does not want it
+     */
+    private void setNotify(CheckEvent event, String func) {
+        if (func != null) {
+            func_.put(event, func);
         } else {
-            soem_.setNotifyCheck(true);
+            func_.remove(event);
         }
+        soem_.setNotifyCheck(!func_.isEmpty());
     }
 
     /**
@@ -397,86 +370,53 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
 
     @Override
     public void errorSafeOpErrorSoemEcatCheck(final int slave) {
-        if (funcErrorSafeOpError_ != null) {
-            Platform.runLater(() -> {
-                if (state_ == Worker.State.SUCCEEDED) {
-                    try {
-                        webEngine_.executeScript(funcErrorSafeOpError_ + "(" + slave + ")");
-                    } catch (JSException | NullPointerException ex) {
-                        Console.writeStackTrace(SoemPlugin.class.getName(), ex);
-                    }
-                }
-            });
-        }
+        runScript(func_.get(CheckEvent.ERROR_SAFE_OP_ERROR), "(" + slave + ")");
     }
 
     @Override
     public void errorLostSoemEcatCheck(final int slave) {
-        if (funcErrorLost_ != null) {
-            Platform.runLater(() -> {
-                if (state_ == Worker.State.SUCCEEDED) {
-                    try {
-                        webEngine_.executeScript(funcErrorLost_ + "(" + slave + ")");
-                    } catch (JSException | NullPointerException ex) {
-                        Console.writeStackTrace(SoemPlugin.class.getName(), ex);
-                    }
-                }
-            });
-        }
+        runScript(func_.get(CheckEvent.ERROR_LOST), "(" + slave + ")");
     }
 
     @Override
     public void warningSafeOpSoemEcatCheck(final int slave) {
-        if (funcWarningSafeOp_ != null) {
-            Platform.runLater(() -> {
-                if (state_ == Worker.State.SUCCEEDED) {
-                    try {
-                        webEngine_.executeScript(funcWarningSafeOp_ + "(" + slave + ")");
-                    } catch (JSException | NullPointerException ex) {
-                        Console.writeStackTrace(SoemPlugin.class.getName(), ex);
-                    }
-                }
-            });
-        }
+        runScript(func_.get(CheckEvent.WARNING_SAFE_OP), "(" + slave + ")");
     }
 
     @Override
     public void messageReconfiguredSoemEcatCheck(final int slave) {
-        if (funcMessageReconfigured_ != null) {
-            Platform.runLater(() -> {
-                if (state_ == Worker.State.SUCCEEDED) {
-                    try {
-                        webEngine_.executeScript(funcMessageReconfigured_ + "(" + slave + ")");
-                    } catch (JSException | NullPointerException ex) {
-                        Console.writeStackTrace(SoemPlugin.class.getName(), ex);
-                    }
-                }
-            });
-        }
+        runScript(func_.get(CheckEvent.MESSAGE_RECONFIGURED), "(" + slave + ")");
     }
 
     @Override
     public void messageRecoveredSoemEcatCheck(final int slave) {
-        if (funcMessageRecovered_ != null) {
-            Platform.runLater(() -> {
-                if (state_ == Worker.State.SUCCEEDED) {
-                    try {
-                        webEngine_.executeScript(funcMessageRecovered_ + "(" + slave + ")");
-                    } catch (JSException | NullPointerException ex) {
-                        Console.writeStackTrace(SoemPlugin.class.getName(), ex);
-                    }
-                }
-            });
-        }
+        runScript(func_.get(CheckEvent.MESSAGE_RECOVERED), "(" + slave + ")");
     }
 
     @Override
     public void messageFoundSoemEcatCheck(final int slave) {
-        if (funcMessageFound_ != null) {
+        runScript(func_.get(CheckEvent.MESSAGE_FOUND), "(" + slave + ")");
+    }
+
+    @Override
+    public void messageAllSlavesResumedOperationalSoemEcatCheck() {
+        runScript(func_.get(CheckEvent.MESSAGE_ALL_SLAVES_RESUMED_OPERATIONAL), "()");
+    }
+
+    /**
+     * call the js function of the web page on the fx thread : the notification
+     * of the monitor task of the ecat comes from an other thread
+     *
+     * @param func js function name, nothing is done when the web page does not
+     * set it
+     * @param args call of the js function
+     */
+    private void runScript(String func, String args) {
+        if (func != null) {
             Platform.runLater(() -> {
                 if (state_ == Worker.State.SUCCEEDED) {
                     try {
-                        webEngine_.executeScript(funcMessageFound_ + "(" + slave + ")");
+                        webEngine_.executeScript(func + args);
                     } catch (JSException | NullPointerException ex) {
                         Console.writeStackTrace(SoemPlugin.class.getName(), ex);
                     }
@@ -485,20 +425,6 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         }
     }
 
-    @Override
-    public void messageAllSlavesResumedOperationalSoemEcatCheck() {
-        if (funcMessageAllSlavesResumedOperational_ != null) {
-            Platform.runLater(() -> {
-                if (state_ == Worker.State.SUCCEEDED) {
-                    try {
-                        webEngine_.executeScript(funcMessageAllSlavesResumedOperational_ + "()");
-                    } catch (JSException | NullPointerException ex) {
-                        Console.writeStackTrace(SoemPlugin.class.getName(), ex);
-                    }
-                }
-            });
-        }
-    }
 
     @Override
     public void initialize(WebViewerPlugin webViewer) {
