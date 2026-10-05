@@ -94,6 +94,31 @@ final class SoemBits {
     }
 
     /**
+     * the bits of one byte of the map that do not belong to the variable : a
+     * write of the variable has to keep them.
+     *
+     * @param maskByte the bits of the byte that belong to the variable
+     * @return the other bits of that byte
+     */
+    static int keepMask(int maskByte) {
+        return maskByte ^ 0xff;
+    }
+
+    /**
+     * merge the value of a variable in one byte of the map : the bits of the
+     * variable take their place in the byte, the bits of the neighbour
+     * variables are kept.
+     *
+     * @param mapByte current byte of the map
+     * @param keep bits of the byte that do not belong to the variable
+     * @param bits value of the variable in that byte
+     * @return the new byte of the map
+     */
+    static byte merge(byte mapByte, int keep, int bits) {
+        return (byte) ((Byte.toUnsignedInt(mapByte) & keep) | bits);
+    }
+
+    /**
      * read the variable of a slave in the map, the bytes that only hold the
      * neighbour slaves are never read.
      *

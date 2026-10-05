@@ -56,9 +56,9 @@ class SoemBitsTest {
         for (int cnt = 0; cnt < count; cnt++) {
             int mask = SoemBits.byteAt(bitsMask, startBit, cnt);
             int bits = SoemBits.byteAt(masked, startBit, cnt);
-            int current = Byte.toUnsignedInt(map.getByte(byteOffset + cnt));
+            int keep = SoemBits.keepMask(mask);
 
-            map.putByte(byteOffset + cnt, (byte) ((current & (mask ^ 0xff)) | bits));
+            map.putByte(byteOffset + cnt, SoemBits.merge(map.getByte(byteOffset + cnt), keep, bits));
         }
     }
 

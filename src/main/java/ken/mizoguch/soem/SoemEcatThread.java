@@ -45,13 +45,14 @@ public class SoemEcatThread extends Service<Void> {
         }
     }
 
-    private static class EcatData {
+    /** one byte of the map of the group queued for the next cycle. */
+    private static final class EcatData {
 
-        private int bitMask;
+        private int keepMask;
         private int value;
 
-        public EcatData(int bitMask, int value) {
-            this.bitMask = bitMask;
+        public EcatData(int keepMask, int value) {
+            this.keepMask = keepMask;
             this.value = value;
         }
     }
@@ -409,46 +410,49 @@ public class SoemEcatThread extends Service<Void> {
      * @return
      */
     public Long out(int slave, long bitsOffset, long bitsMask, long value) {
+        SoemEtherCATMain.ec_slavet sl = context_.slavelist[slave];
         Pointer group = context_.slavelist[0].outputs.get();
-        Pointer outputs = context_.slavelist[slave].outputs.get();
+        Pointer outputs = sl.outputs.get();
 
         if ((group != null) && (outputs != null)) {
-            long Obits = context_.slavelist[slave].Obits.get();
+            int mapStartbit = sl.Ostartbit.get();
+            long Obits = sl.Obits.get();
             long bits = Obits - bitsOffset;
 
             if ((bitsOffset >= 0) && (bitsOffset < Obits) && (bitsMask > 0) && (bits > 0)) {
                 long address = outputs.address() - group.address() + (bitsOffset / 8);
-                int startbit = context_.slavelist[slave].Ostartbit.get() + ((int) (bitsOffset % 8));
+                int startbit = mapStartbit + ((int) (bitsOffset % 8));
 
                 if (bits < SoemBits.MAX_BITS) {
                     bitsMask &= (1L << bits) - 1;
                 }
                 // the bytes of the map of the group that hold the variable : no
                 // byte of a neighbour slave is written
-                int bytes = SoemBits.byteCount(startbit, SoemBits.bitLength(bitsMask),
-                        SoemBits.mapBytes(context_.slavelist[slave].Ostartbit.get(), Obits) - (bitsOffset / 8));
+                int byteCount = SoemBits.byteCount(startbit, SoemBits.bitLength(bitsMask),
+                        SoemBits.mapBytes(mapStartbit, Obits) - (bitsOffset / 8));
                 // the queue is keyed with the address in the map of the group : the
                 // cyclic task applies it at the end of the current cycle
                 synchronized (lockOut_) {
-                    for (int cnt = 0; cnt < bytes; cnt++) {
-                        int mask = SoemBits.byteAt(bitsMask, startbit, cnt);
+                    for (int cnt = 0; cnt < byteCount; cnt++) {
+                        int maskByte = SoemBits.byteAt(bitsMask, startbit, cnt);
                         EcatData data;
 
-                        if (mask == 0) {
+                        if (maskByte == 0) {
                             continue;
                         }
+                        int keep = SoemBits.keepMask(maskByte);
                         int bitsByte = SoemBits.byteAt(value & bitsMask, startbit, cnt);
 
                         data = out_.get(address + cnt);
                         if (data != null) {
                             // merge with the value already queued for that byte
-                            data.bitMask &= (mask ^ 0xff);
+                            data.keepMask &= keep;
                             data.value |= bitsByte;
                         } else {
                             int current = Byte.toUnsignedInt(group.getByte(address + cnt));
 
-                            if (current != ((current & (mask ^ 0xff)) | bitsByte)) {
-                                out_.put(address + cnt, new EcatData(mask ^ 0xff, bitsByte));
+                            if (current != Byte.toUnsignedInt(SoemBits.merge((byte) current, keep, bitsByte))) {
+                                out_.put(address + cnt, new EcatData(keep, bitsByte));
                             }
                         }
                     }
@@ -485,8 +489,8 @@ public class SoemEcatThread extends Service<Void> {
                                             .iterator(); iterator.hasNext();) {
                                         entry = iterator.next();
                                         value = pointer.getByte(entry.getKey());
-                                        pointer.putByte(entry.getKey(),
-                                                (byte) ((value & entry.getValue().bitMask) | entry.getValue().value));
+                                        pointer.putByte(entry.getKey(), SoemBits.merge((byte) value,
+                                                entry.getValue().keepMask, entry.getValue().value));
                                         iterator.remove();
                                     }
                                 }
