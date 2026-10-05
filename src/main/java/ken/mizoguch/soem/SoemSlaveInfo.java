@@ -25,43 +25,6 @@ public class SoemSlaveInfo {
 
     private Pointer pIOmap_;
 
-    public enum ec_objecttype implements EnumMapper.IntegerEnum {
-        OTYPE_VAR(0x0007),
-        OTYPE_ARRAY(0x0008),
-        OTYPE_RECORD(0x0009);
-
-        private final int value_;
-
-        private ec_objecttype(int value) {
-            value_ = value;
-        }
-
-        @Override
-        public int intValue() {
-            return value_;
-        }
-    }
-
-    private enum ec_accesstype implements EnumMapper.IntegerEnum {
-        ATYPE_Rpre(0x01),
-        ATYPE_Rsafe(0x02),
-        ATYPE_Rop(0x04),
-        ATYPE_Wpre(0x08),
-        ATYPE_Wsafe(0x10),
-        ATYPE_Wop(0x20);
-
-        private final int value_;
-
-        private ec_accesstype(int value) {
-            value_ = value;
-        }
-
-        @Override
-        public int intValue() {
-            return value_;
-        }
-    }
-
     public class SlaveInfo {
 
         public class SM {
@@ -377,128 +340,6 @@ public class SoemSlaveInfo {
         return null;
     }
 
-    private String dtype2string(int dtype, int bitlen) {
-        String str;
-
-        try {
-            SoemEtherCATType.ec_datatype edtype = (SoemEtherCATType.ec_datatype) EnumMapper
-                    .getInstance(SoemEtherCATType.ec_datatype.class).valueOf(dtype);
-            switch (edtype) {
-                case ECT_BOOLEAN:
-                    str = "BOOLEAN";
-                    break;
-                case ECT_INTEGER8:
-                    str = "INTEGER8";
-                    break;
-                case ECT_INTEGER16:
-                    str = "INTEGER16";
-                    break;
-                case ECT_INTEGER32:
-                    str = "INTEGER32";
-                    break;
-                case ECT_INTEGER24:
-                    str = "INTEGER24";
-                    break;
-                case ECT_INTEGER64:
-                    str = "INTEGER64";
-                    break;
-                case ECT_UNSIGNED8:
-                    str = "UNSIGNED8";
-                    break;
-                case ECT_UNSIGNED16:
-                    str = "UNSIGNED16";
-                    break;
-                case ECT_UNSIGNED32:
-                    str = "UNSIGNED32";
-                    break;
-                case ECT_UNSIGNED24:
-                    str = "UNSIGNED24";
-                    break;
-                case ECT_UNSIGNED64:
-                    str = "UNSIGNED64";
-                    break;
-                case ECT_REAL32:
-                    str = "REAL32";
-                    break;
-                case ECT_REAL64:
-                    str = "REAL64";
-                    break;
-                case ECT_BIT1:
-                    str = "BIT1";
-                    break;
-                case ECT_BIT2:
-                    str = "BIT2";
-                    break;
-                case ECT_BIT3:
-                    str = "BIT3";
-                    break;
-                case ECT_BIT4:
-                    str = "BIT4";
-                    break;
-                case ECT_BIT5:
-                    str = "BIT5";
-                    break;
-                case ECT_BIT6:
-                    str = "BIT6";
-                    break;
-                case ECT_BIT7:
-                    str = "BIT7";
-                    break;
-                case ECT_BIT8:
-                    str = "BIT8";
-                    break;
-                case ECT_VISIBLE_STRING:
-                    str = String.format("VISIBLE_STR(%d)", bitlen);
-                    break;
-                case ECT_OCTET_STRING:
-                    str = String.format("OCTET_STR(%d)", bitlen);
-                    break;
-                default:
-                    str = String.format("dt:0x%04X (%d)", edtype, bitlen);
-            }
-        } catch (IllegalArgumentException ex) {
-            str = String.format("dt:0x%04X (%d)", dtype, bitlen);
-        }
-        return str;
-    }
-
-    private String otype2string(int otype) {
-        String str;
-
-        try {
-            ec_objecttype eotype = (ec_objecttype) EnumMapper.getInstance(ec_objecttype.class).valueOf(otype);
-            switch (eotype) {
-                case OTYPE_VAR:
-                    str = "VAR";
-                    break;
-                case OTYPE_ARRAY:
-                    str = "ARRAY";
-                    break;
-                case OTYPE_RECORD:
-                    str = "RECORD";
-                    break;
-                default:
-                    str = String.format("ot:0x%04X", eotype);
-            }
-        } catch (IllegalArgumentException ex) {
-            str = String.format("ot:0x%04X", otype);
-        }
-        return str;
-    }
-
-    private String access2string(int access) {
-        String str;
-
-        str = String.format("%s%s%s%s%s%s",
-                (access & ec_accesstype.ATYPE_Rpre.intValue()) != 0 ? "R" : "_",
-                (access & ec_accesstype.ATYPE_Wpre.intValue()) != 0 ? "W" : "_",
-                (access & ec_accesstype.ATYPE_Rsafe.intValue()) != 0 ? "R" : "_",
-                (access & ec_accesstype.ATYPE_Wsafe.intValue()) != 0 ? "W" : "_",
-                (access & ec_accesstype.ATYPE_Rop.intValue()) != 0 ? "R" : "_",
-                (access & ec_accesstype.ATYPE_Wop.intValue()) != 0 ? "W" : "_");
-        return str;
-    }
-
     private String SDO2string(SoemEtherCATMain.ecx_contextt context, int index, int idx, int subidx, int dtype) {
         StringBuilder str;
         SoemLibrary.UTF8String usdo = new SoemLibrary.UTF8String(runtime_, 128);
@@ -674,7 +515,7 @@ public class SoemSlaveInfo {
                         sii.ObjectSubIndex = obj_subidx;
                         sii.BitLength = bitlen;
                         if ((wkc > 0) && (OElist.Entries.get() > 0)) {
-                            sii.ObjectDataType = dtype2string(OElist.DataType[obj_subidx].get(), bitlen);
+                            sii.ObjectDataType = SoemNames.dtype2string(OElist.DataType[obj_subidx].get(), bitlen);
                             sii.Name = OElist.Name[obj_subidx].get();
                         }
                         bitoffset += bitlen;
@@ -869,7 +710,7 @@ public class SoemSlaveInfo {
                         sii.ObjectIndex = obj_idx;
                         sii.ObjectSubIndex = obj_subidx;
                         sii.BitLength = bitlen;
-                        sii.ObjectDataType = dtype2string(obj_datatype, bitlen);
+                        sii.ObjectDataType = SoemNames.dtype2string(obj_datatype, bitlen);
                         sii.Name = str_name.get();
                         bitoffset += bitlen;
                         totalsize += bitlen;
@@ -953,7 +794,7 @@ public class SoemSlaveInfo {
                 od.Index = ODlist.Index[i].get();
                 od.DataType = ODlist.DataType[i].get();
                 od.ObjectCode = ODlist.ObjectCode[i].get();
-                od.DataTypeName = otype2string(od.ObjectCode);
+                od.DataTypeName = SoemNames.otype2string(od.ObjectCode);
                 od.Name = ODlist.Name[i].toString();
                 Pointer pOElist = Memory.allocate(runtime_, Struct.size(OElist));
                 OElist.useMemory(pOElist);
@@ -961,7 +802,7 @@ public class SoemSlaveInfo {
                 if (context.ecaterror.get() > 0) {
                     od.EcatError = soem_.ecx_elist2string(context);
                 }
-                if (od.ObjectCode != ec_objecttype.OTYPE_VAR.intValue()) {
+                if (od.ObjectCode != SoemNames.ec_objecttype.OTYPE_VAR.intValue()) {
                     soem_.ecx_SDOread(context, cnt, od.Index, 0, SoemOsal.FALSE, pL, pMaxSub,
                             SoemEtherCATType.EC_TIMEOUTRXM);
                     od.MaxSub = maxSub.get();
@@ -974,9 +815,9 @@ public class SoemSlaveInfo {
                         oe.Index = j;
                         oe.DataType = OElist.DataType[j].get();
                         oe.BitLength = OElist.BitLength[j].get();
-                        oe.DataTypeName = dtype2string(oe.DataType, oe.BitLength);
+                        oe.DataTypeName = SoemNames.dtype2string(oe.DataType, oe.BitLength);
                         oe.ObjectAccess = OElist.ObjAccess[j].get();
-                        oe.AccessType = access2string(oe.ObjectAccess);
+                        oe.AccessType = SoemNames.access2string(oe.ObjectAccess);
                         oe.Name = OElist.Name[j].toString();
                         if ((OElist.ObjAccess[j].get() & 0x0007) > 0) {
                             oe.SDO = SDO2string(context, cnt, ODlist.Index[i].get(), j, OElist.DataType[j].get());
