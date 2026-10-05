@@ -32,7 +32,8 @@ public class SoemEcatThread extends Service<Void> {
 
     private final EventListenerList eventListenerList_;
 
-    private class EcatPO2SO {
+    /** the callback of the java side asked for one slave with po2so(). */
+    private static final class EcatPO2SO {
 
         private long eep_man;
         private long eep_id;
@@ -144,10 +145,12 @@ public class SoemEcatThread extends Service<Void> {
      * @param func
      */
     public void po2so(int slave, long eep_man, long eep_id, Callable<Integer> func) {
-        if (po2so_.containsKey(slave)) {
-            po2so_.get(slave).eep_man = eep_man;
-            po2so_.get(slave).eep_id = eep_id;
-            po2so_.get(slave).func = func;
+        EcatPO2SO po2so = po2so_.get(slave);
+
+        if (po2so != null) {
+            po2so.eep_man = eep_man;
+            po2so.eep_id = eep_id;
+            po2so.func = func;
         } else {
             po2so_.put(slave, new EcatPO2SO(eep_man, eep_id, func));
         }
@@ -166,19 +169,9 @@ public class SoemEcatThread extends Service<Void> {
                 int index, size, state;
 
                 exit_ = false;
-                if (ifname2 == null) {
-                    if (soem_.ecx_init(context_, ifname) <= 0) {
-                        writeLog("ecx_init() failed on [" + ifname + "]", true);
-                        return false;
-                    }
-                } else {
-                    if (soem_.ecx_init_redundant(context_, soem_.ec_redport(context_), ifname, ifname2) <= 0) {
-                        writeLog("ecx_init_redundant() failed on [" + ifname + "][" + ifname2 + "]", true);
-                        return false;
-                    }
+                if (!openPort(ifname, ifname2)) {
+                    return false;
                 }
-                // from now, the port of SOEM is open and it has to be closed
-                portOpen_ = true;
 
                 if (soem_.ecx_config_init(context_, SoemOsal.FALSE) > 0) {
                     context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_PRE_OP.intValue());
@@ -188,50 +181,16 @@ public class SoemEcatThread extends Service<Void> {
                     if (context_.slavecount.get() > 0) {
                         for (index = 1, size = context_.slavecount.get(); (index < context_.slavelist.length)
                                 && (index <= size); index++) {
-                            if (po2so_.containsKey(index)) {
-                                if ((context_.slavelist[index].eep_man.get() == po2so_.get(index).eep_man)
-                                        && (context_.slavelist[index].eep_id.get() == po2so_.get(index).eep_id)) {
-                                    context_.slavelist[index].PO2SOconfig.PO2SOconfig.set((int slave) -> {
-                                        if (po2so_ != null) {
-                                            if (po2so_.containsKey(slave)) {
-                                                RunnableFuture<Integer> future = new FutureTask<>(
-                                                        po2so_.get(slave).func);
-                                                if (Platform.isFxApplicationThread()) {
-                                                    try {
-                                                        future.run();
-                                                        return future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
-                                                    } catch (InterruptedException ex) {
-                                                        Thread.currentThread().interrupt();
-                                                        Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
-                                                    } catch (ExecutionException | TimeoutException ex) {
-                                                        Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
-                                                    }
-                                                } else {
-                                                    try {
-                                                        Platform.runLater(future);
-                                                        // the java side may never answer : the
-                                                        // configuration of the slaves must not wait
-                                                        // for ever inside the native call
-                                                        return future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
-                                                    } catch (InterruptedException ex) {
-                                                        Thread.currentThread().interrupt();
-                                                        Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
-                                                    } catch (ExecutionException ex) {
-                                                        Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
-                                                    } catch (TimeoutException ex) {
-                                                        future.cancel(true);
-                                                        writeLog("PO2SO : no answer of the java side for the Slave["
-                                                                + slave + "]", true);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        return 0;
-                                    });
+                            EcatPO2SO po2so = po2so_.get(index);
+
+                            if (po2so != null) {
+                                SoemEtherCATMain.ec_slavet sl = context_.slavelist[index];
+
+                                if ((sl.eep_man.get() == po2so.eep_man) && (sl.eep_id.get() == po2so.eep_id)) {
+                                    sl.PO2SOconfig.PO2SOconfig.set((int slave) -> answerPo2so(slave));
                                 } else {
-                                    writeLog("PO2SO: EEP_MAN[" + context_.slavelist[index].eep_man.get() + ":"
-                                            + po2so_.get(index).eep_man + "] & EEP_ID["
-                                            + context_.slavelist[index].eep_id.get() + ":" + po2so_.get(index).eep_id
+                                    writeLog("PO2SO: EEP_MAN[" + sl.eep_man.get() + ":" + po2so.eep_man + "] & EEP_ID["
+                                            + sl.eep_id.get() + ":" + po2so.eep_id
                                             + "] of Slave[" + index + "] are different ", true);
                                     initFail();
                                     return false;
@@ -292,6 +251,79 @@ public class SoemEcatThread extends Service<Void> {
         }
         return false;
     }
+
+    /**
+     * open the port of SOEM on the network interface of the master
+     *
+     * @param ifname name of the network interface of the master
+     * @param ifname2 name of the second interface of a redundant port, null
+     * when the port of SOEM is not redundant
+     * @return true when the port of SOEM is open
+     */
+    private boolean openPort(String ifname, String ifname2) {
+        if (ifname2 == null) {
+            if (soem_.ecx_init(context_, ifname) <= 0) {
+                writeLog("ecx_init() failed on [" + ifname + "]", true);
+                return false;
+            }
+        } else {
+            if (soem_.ecx_init_redundant(context_, soem_.ec_redport(context_), ifname, ifname2) <= 0) {
+                writeLog("ecx_init_redundant() failed on [" + ifname + "][" + ifname2 + "]", true);
+                return false;
+            }
+        }
+        // from now, the port of SOEM is open and it has to be closed
+        portOpen_ = true;
+        return true;
+    }
+
+    /**
+     * the PO2SO callback SOEM calls while it configures a slave : the answer of
+     * the java side is waited on the fx thread, the native call of SOEM must
+     * not wait for ever
+     *
+     * @param slave the slave SOEM is configuring
+     * @return the answer of the java side, 0 when it does not answer
+     */
+    private int answerPo2so(int slave) {
+        EcatPO2SO po2so = po2so_.get(slave);
+
+        if (po2so == null) {
+            // the callback was removed while the slaves are configured
+            return 0;
+        }
+        RunnableFuture<Integer> future = new FutureTask<>(po2so.func);
+
+        if (Platform.isFxApplicationThread()) {
+            try {
+                future.run();
+                return future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+            } catch (ExecutionException | TimeoutException ex) {
+                Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+            }
+        } else {
+            try {
+                Platform.runLater(future);
+                // the java side may never answer : the
+                // configuration of the slaves must not wait
+                // for ever inside the native call
+                return future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+            } catch (ExecutionException ex) {
+                Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+            } catch (TimeoutException ex) {
+                future.cancel(true);
+                writeLog("PO2SO : no answer of the java side for the Slave[" + slave + "]", true);
+            }
+        }
+        return 0;
+    }
+
 
     /**
      * the configuration of the slaves failed : leave the native context as it was
@@ -371,18 +403,7 @@ public class SoemEcatThread extends Service<Void> {
         if (ecatCheck_ != null) {
             terminated = ecatCheck_.awaitTermination(remainingMillis(deadline));
         }
-        while (runningTasks_.get() > 0) {
-            if (System.currentTimeMillis() >= deadline) {
-                break;
-            }
-            try {
-                TimeUnit.MILLISECONDS.sleep(5);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        return (runningTasks_.get() == 0) && terminated;
+        return SoemAwait.awaitZero(runningTasks_, remainingMillis(deadline)) && terminated;
     }
 
     private long remainingMillis(long deadline) {
