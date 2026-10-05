@@ -14,7 +14,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -56,31 +58,56 @@ public class SoemEcatThread extends Service<Void> {
 
     private final SoemLibrary soem_;
     private final Object lockOut_ = new Object();
+    private final Object ecatLock_;
     private final SoemEtherCAT.ecx_parcelt parcel_;
     private final SoemEtherCATMain.ecx_contextt context_;
     private final ConcurrentMap<Integer, EcatPO2SO> po2so_;
     private final ConcurrentMap<Long, EcatData> out_;
     private final AtomicInteger runningTasks_;
     private SoemEcatCheck ecatCheck_;
-    private volatile boolean init_, exit_;
+    private volatile boolean init_, exit_, portOpen_;
+
+    /**
+     * the time to wait the answer of the java fx side at the PO2SO callback
+     */
+    private static final long PO2SO_WAIT_MILLIS = 500;
+
+    /**
+     * the time the cyclic task waits the end of the current cycle
+     */
+    private static final long CYCLE_WAIT_NANOS = 200000;
 
     /**
      *
      * @param soem
      * @param parcel
      * @param context
+     * @param ecatLock the lock of the native calls of the context of SOEM
      */
-    public SoemEcatThread(SoemLibrary soem, SoemEtherCAT.ecx_parcelt parcel, SoemEtherCATMain.ecx_contextt context) {
+    public SoemEcatThread(SoemLibrary soem, SoemEtherCAT.ecx_parcelt parcel, SoemEtherCATMain.ecx_contextt context,
+            Object ecatLock) {
         eventListenerList_ = new EventListenerList();
         soem_ = soem;
         parcel_ = parcel;
         context_ = context;
+        ecatLock_ = ecatLock;
         po2so_ = new ConcurrentHashMap<>();
         out_ = new ConcurrentHashMap<>();
         ecatCheck_ = null;
         init_ = false;
         exit_ = true;
+        portOpen_ = false;
         runningTasks_ = new AtomicInteger();
+    }
+
+    /**
+     * the port of SOEM is open when ecx_init() succeeded and ecx_close() is not
+     * called yet : the context of SOEM has to be closed only in that case
+     *
+     * @return
+     */
+    public boolean isPortOpen() {
+        return portOpen_;
     }
 
     /**
@@ -135,18 +162,22 @@ public class SoemEcatThread extends Service<Void> {
     public boolean init(String ifname, String ifname2, Pointer pIOmap) {
         if (ecatCheck_ == null) {
             try {
-                int index, size;
+                int index, size, state;
 
                 exit_ = false;
                 if (ifname2 == null) {
                     if (soem_.ecx_init(context_, ifname) <= 0) {
+                        writeLog("ecx_init() failed on [" + ifname + "]", true);
                         return false;
                     }
                 } else {
                     if (soem_.ecx_init_redundant(context_, soem_.ec_redport(context_), ifname, ifname2) <= 0) {
+                        writeLog("ecx_init_redundant() failed on [" + ifname + "][" + ifname2 + "]", true);
                         return false;
                     }
                 }
+                // from now, the port of SOEM is open and it has to be closed
+                portOpen_ = true;
 
                 if (soem_.ecx_config_init(context_, SoemOsal.FALSE) > 0) {
                     context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_PRE_OP.intValue());
@@ -167,22 +198,29 @@ public class SoemEcatThread extends Service<Void> {
                                                 if (Platform.isFxApplicationThread()) {
                                                     try {
                                                         future.run();
-                                                        return future.get();
+                                                        return future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
                                                     } catch (InterruptedException ex) {
                                                         Thread.currentThread().interrupt();
                                                         Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
-                                                    } catch (ExecutionException ex) {
+                                                    } catch (ExecutionException | TimeoutException ex) {
                                                         Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
                                                     }
                                                 } else {
                                                     try {
                                                         Platform.runLater(future);
-                                                        return future.get();
+                                                        // the java side may never answer : the
+                                                        // configuration of the slaves must not wait
+                                                        // for ever inside the native call
+                                                        return future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
                                                     } catch (InterruptedException ex) {
                                                         Thread.currentThread().interrupt();
                                                         Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
                                                     } catch (ExecutionException ex) {
                                                         Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+                                                    } catch (TimeoutException ex) {
+                                                        future.cancel(true);
+                                                        writeLog("PO2SO : no answer of the java side for the Slave["
+                                                                + slave + "]", true);
                                                     }
                                                 }
                                             }
@@ -194,28 +232,39 @@ public class SoemEcatThread extends Service<Void> {
                                             + po2so_.get(index).eep_man + "] & EEP_ID["
                                             + context_.slavelist[index].eep_id.get() + ":" + po2so_.get(index).eep_id
                                             + "] of Slave[" + index + "] are different ", true);
+                                    initFail();
                                     return false;
                                 }
                             }
                         }
                     }
-                    soem_.ecx_config_map_group(context_, pIOmap, 0);
+                    // the map of the group is written in pIOmap : the answer of the
+                    // native call is the size of the map, 0 means that the process
+                    // data of the slaves was not mapped
+                    int map = soem_.ecx_config_map_group(context_, pIOmap, 0);
+                    if (map <= 0) {
+                        writeLog("ecx_config_map_group() failed : [" + map + "]", true);
+                        initFail();
+                        return false;
+                    }
                     soem_.ecx_configdc(context_);
                     context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue());
                     soem_.ecx_writestate(context_, 0);
-                    soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue(),
+                    state = soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue(),
                             SoemEtherCATType.EC_TIMEOUTSTATE * 4);
-                    ecatCheck_ = new SoemEcatCheck(eventListenerList_, soem_, parcel_, context_);
+                    if (state != SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue()) {
+                        writeLog("the slaves are not all in SAFE_OP : [" + state + "]", true);
+                    }
+                    ecatCheck_ = new SoemEcatCheck(eventListenerList_, soem_, parcel_, context_, ecatLock_);
                     ecatCheck_.setExpectedWKC(
                             (context_.grouplist[0].outputsWKC.get() * 2) + context_.grouplist[0].inputsWKC.get());
                     context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue());
                     soem_.ecx_send_processdata(context_);
                     soem_.ecx_receive_processdata(context_, SoemEtherCATType.EC_TIMEOUTRET);
                     soem_.ecx_writestate(context_, 0);
-                    soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue(),
+                    state = soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue(),
                             SoemEtherCATType.EC_TIMEOUTSTATE);
-                    if (context_.slavelist[0].state.get() == SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL
-                            .intValue()) {
+                    if (state == SoemEtherCATType.ec_state.EC_STATE_OPERATIONAL.intValue()) {
                         ecatCheck_.init();
                         if (Platform.isFxApplicationThread()) {
                             runEcatCheck();
@@ -227,12 +276,44 @@ public class SoemEcatThread extends Service<Void> {
                         init_ = true;
                         return true;
                     }
+                    // the slaves did not reach OPERATIONAL : leave the native
+                    // context as before init(), so start() can be tried again
+                    writeLog("the slaves are not in OPERATIONAL : [" + state + "]", true);
+                    initFail();
+                } else {
+                    writeLog("ecx_config_init() failed : no slave configured", true);
+                    initFail();
                 }
             } catch (Exception ex) {
                 Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+                initFail();
             }
         }
         return false;
+    }
+
+    /**
+     * the configuration of the slaves failed : leave the native context as it was
+     * before init(), so that start() can be tried again
+     */
+    private void initFail() {
+        if (ecatCheck_ != null) {
+            ecatCheck_.exit();
+            ecatCheck_.cancel();
+            ecatCheck_ = null;
+        }
+        init_ = false;
+        closePort();
+    }
+
+    /**
+     * close the port of SOEM only when ecx_init() opened it
+     */
+    private void closePort() {
+        if (portOpen_ && (soem_ != null) && (context_ != null)) {
+            portOpen_ = false;
+            soem_.ecx_close(context_);
+        }
     }
 
     private void runEcatCheck() {
@@ -244,7 +325,10 @@ public class SoemEcatThread extends Service<Void> {
     }
 
     /**
-     *
+     * stop the java tasks : no native call of SOEM is done here, the monitor task
+     * and the native thread of the process data are still using the context of
+     * SOEM. The slaves are left in INIT state by shutdown(), when every native
+     * call is over
      */
     public void exit() {
         exit_ = true;
@@ -252,12 +336,23 @@ public class SoemEcatThread extends Service<Void> {
             ecatCheck_.exit();
             ecatCheck_.cancel();
         }
+    }
+
+    /**
+     * leave the slaves in INIT state : to call after exit() and
+     * awaitTermination(), and after the end of the native thread of the process
+     * data, so that no native call uses the context at the same time
+     */
+    public void shutdown() {
         if (init_ && (soem_ != null) && (context_ != null)) {
             init_ = false;
-            context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_INIT.intValue());
-            soem_.ecx_writestate(context_, 0);
-            soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_INIT.intValue(),
-                    SoemEtherCATType.EC_TIMEOUTSTATE);
+            // the sdo calls of the java side use the context until it is freed
+            synchronized (ecatLock_) {
+                context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_INIT.intValue());
+                soem_.ecx_writestate(context_, 0);
+                soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_INIT.intValue(),
+                        SoemEtherCATType.EC_TIMEOUTSTATE);
+            }
         }
     }
 
@@ -314,52 +409,46 @@ public class SoemEcatThread extends Service<Void> {
      * @return
      */
     public Long out(int slave, long bitsOffset, long bitsMask, long value) {
-        if (context_.slavelist[slave].outputs.get() != null) {
-            Pointer pointer = context_.slavelist[0].outputs.get();
-            long address = context_.slavelist[slave].outputs.get().address()
-                    - context_.slavelist[0].outputs.get().address() + (bitsOffset / 8);
-            int startbit = context_.slavelist[slave].Ostartbit.get() + ((int) (bitsOffset % 8));
-            long bits = (context_.slavelist[slave].Obits.get() - bitsOffset);
-            long notBitsMask;
-            int val, bytes, cnt;
+        Pointer group = context_.slavelist[0].outputs.get();
+        Pointer outputs = context_.slavelist[slave].outputs.get();
 
-            if ((bitsMask > 0) && (bits > 0)) {
-                if (bits < 64) {
-                    bitsMask &= (1 << bits) - 1;
+        if ((group != null) && (outputs != null)) {
+            long Obits = context_.slavelist[slave].Obits.get();
+            long bits = Obits - bitsOffset;
+
+            if ((bitsOffset >= 0) && (bitsOffset < Obits) && (bitsMask > 0) && (bits > 0)) {
+                long address = outputs.address() - group.address() + (bitsOffset / 8);
+                int startbit = context_.slavelist[slave].Ostartbit.get() + ((int) (bitsOffset % 8));
+
+                if (bits < SoemBits.MAX_BITS) {
+                    bitsMask &= (1L << bits) - 1;
                 }
-
-                if (bitsMask < 0xff) {
-                    bytes = 1;
-                } else if (bitsMask < 0xffff) {
-                    bytes = 2;
-                } else if (bitsMask < 0xffffff) {
-                    bytes = 3;
-                } else if (bitsMask < 0xffffffff) {
-                    bytes = 4;
-                } else if (bitsMask < 0xffffffffffL) {
-                    bytes = 5;
-                } else if (bitsMask < 0xffffffffffffL) {
-                    bytes = 6;
-                } else if (bitsMask < 0xffffffffffffffL) {
-                    bytes = 7;
-                } else {
-                    bytes = 8;
-                }
-
-                bitsMask <<= startbit;
-                notBitsMask = ~bitsMask;
-                value = (value << startbit) & bitsMask;
+                // the bytes of the map of the group that hold the variable : no
+                // byte of a neighbour slave is written
+                int bytes = SoemBits.byteCount(startbit, SoemBits.bitLength(bitsMask),
+                        SoemBits.mapBytes(context_.slavelist[slave].Ostartbit.get(), Obits) - (bitsOffset / 8));
+                // the queue is keyed with the address in the map of the group : the
+                // cyclic task applies it at the end of the current cycle
                 synchronized (lockOut_) {
-                    for (cnt = 0; cnt < bytes; cnt++) {
-                        if (out_.containsKey(address + cnt)) {
-                            out_.get(address + cnt).bitMask &= (notBitsMask >>> (cnt * Byte.SIZE)) & 0xff;
-                            out_.get(address + cnt).value |= (value >>> (cnt * Byte.SIZE)) & 0xff;
+                    for (int cnt = 0; cnt < bytes; cnt++) {
+                        int mask = SoemBits.byteAt(bitsMask, startbit, cnt);
+                        EcatData data;
+
+                        if (mask == 0) {
+                            continue;
+                        }
+                        int bitsByte = SoemBits.byteAt(value & bitsMask, startbit, cnt);
+
+                        data = out_.get(address + cnt);
+                        if (data != null) {
+                            // merge with the value already queued for that byte
+                            data.bitMask &= (mask ^ 0xff);
+                            data.value |= bitsByte;
                         } else {
-                            val = Byte.toUnsignedInt(pointer.getByte(address + cnt));
-                            if (val != (((val & (notBitsMask >>> (cnt * Byte.SIZE))) | (value >>> (cnt * Byte.SIZE)))
-                                    & 0xff)) {
-                                out_.put(address + cnt, new EcatData((int) ((notBitsMask >>> (cnt * Byte.SIZE)) & 0xff),
-                                        (int) ((value >>> (cnt * Byte.SIZE)) & 0xff)));
+                            int current = Byte.toUnsignedInt(group.getByte(address + cnt));
+
+                            if (current != ((current & (mask ^ 0xff)) | bitsByte)) {
+                                out_.put(address + cnt, new EcatData(mask ^ 0xff, bitsByte));
                             }
                         }
                     }
@@ -374,15 +463,18 @@ public class SoemEcatThread extends Service<Void> {
     protected Task<Void> createTask() {
         return new Task<Void>() {
             @Override
-            protected Void call() {
+            protected Void call() throws Exception {
                 runningTasks_.incrementAndGet();
                 try {
                     Pointer pointer;
                     Map.Entry<Long, EcatData> entry;
                     int value;
 
-                    if (!exit_) {
-                        soem_.ec_run(parcel_);
+                    if (!exit_ && (soem_.ec_run(parcel_) != SoemOsal.TRUE)) {
+                        // the native thread of the process data is not started : the
+                        // cyclic process of the ecat can not run
+                        throw new IllegalStateException(
+                                "ec_run() failed : the thread of the process data is not started");
                     }
                     while (!exit_) {
                         if (parcel_.isprocess.get() == SoemOsal.FALSE) {
@@ -401,12 +493,15 @@ public class SoemEcatThread extends Service<Void> {
                             }
                             parcel_.isprocess.set(SoemOsal.TRUE);
                         } else {
-                            // nothing to do : wait the next cycle without burning the cpu
-                            Thread.onSpinWait();
+                            // nothing to do : wait the end of the current cycle of
+                            // the native thread without burning the cpu
+                            LockSupport.parkNanos(CYCLE_WAIT_NANOS);
                         }
                     }
                 } catch (Exception ex) {
                     Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
+                    // the state of the service answers FAILED : the ecat is not running
+                    throw ex;
                 } finally {
                     runningTasks_.decrementAndGet();
                 }

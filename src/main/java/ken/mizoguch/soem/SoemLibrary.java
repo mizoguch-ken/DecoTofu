@@ -321,6 +321,16 @@ public interface SoemLibrary {
 
     public int ec_run(SoemEtherCAT.ecx_parcelt parcel);
 
+    /**
+     * wait the end of the native thread of the process data started by ec_run()
+     *
+     * @param parcel
+     * @param timeoutMillis -1 to wait for ever
+     * @return 1 when the thread left the cyclic function, 0 when it is still
+     * running, -1 when the platform of the shared library can not wait it
+     */
+    public int ec_wait_thread(SoemEtherCAT.ecx_parcelt parcel, int timeoutMillis);
+
     // SoemEtherCATBase
     public int ecx_setupdatagram(Pointer port, Pointer frame, @u_int8_t int com, @u_int8_t int idx, @u_int16_t int ADP,
             @u_int16_t int ADO, @u_int16_t int length, Pointer data);
@@ -420,6 +430,8 @@ public interface SoemLibrary {
 
     public @u_int16_t int ecx_statecheck(SoemEtherCATMain.ecx_contextt context, @u_int16_t int slave,
             @u_int16_t int reqstate, int timeout);
+
+    public int ecx_mbxhandler(SoemEtherCATMain.ecx_contextt context, @u_int8_t int group, int limit);
 
     public int ecx_mbxempty(SoemEtherCATMain.ecx_contextt context, @u_int16_t int slave, int timeout);
 

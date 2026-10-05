@@ -246,7 +246,7 @@ public class JavaLibrary {
      * @param libraryName
      * @return the library name without the "lib" prefix when it has one
      */
-    private static String stripLibraryPrefix(String libraryName) {
+    public static String stripLibraryPrefix(String libraryName) {
         if (libraryName.startsWith("lib")) {
             return libraryName.substring("lib".length());
         }

@@ -518,7 +518,11 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
 
     @Override
     public void close() {
-        soem_.close(this);
+        if (Boolean.FALSE.equals(soem_.close(this))) {
+            // a native call of SOEM is still running : the native memory of the
+            // ecat was not freed, Soem.close() writes the reason in the console
+            Console.write(SoemPlugin.class.getName(), "the ecat is not closed", true);
+        }
     }
 
     @Override

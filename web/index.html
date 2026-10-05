@@ -1,46 +1,284 @@
 <!DOCTYPE html>
-
-<html lang="en">
+<html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width,height=device-height" />
-    <title>Ace Kitchen Sink</title>
-    <meta name="author" content="Fabian Jakobs">
-
-    <link rel="stylesheet" href="demo/kitchen-sink/styles.css" type="text/css" media="screen" charset="utf-8">
-
-    <link href="./doc/site/images/favicon.ico" rel="icon" type="image/x-icon">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta charset="utf-8">
+	<title>DecoTofu --- Serial Test ---</title>
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="">
+	<!--[if lt IE 9]>
+		<script src="//cdn.jsdelivr.net/html5shiv/3.7.2/html5shiv.min.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+	<![endif]-->
+	<link rel="shortcut icon" href="">
 </head>
 <body>
-<div id="sidePanel" style="position:absolute;height:100%;width:280px;">
-  <div class="toggleButton" id="optionToggle" role="button" aria-label="Hide Options" tabindex="0">
-    <div></div><div></div><div></div>
-  </div>
-  <a href="https://c9.io">
-    <img id="c9-logo" alt="Cloud9 IDE | Your code anywhere, anytime" src="demo/kitchen-sink/logo.png" style="width: 172px;margin: -9px 30px -12px 51px;">
-  </a>
-  <div style="position: absolute; overflow: hidden; top:100px; bottom:0;width:100%;">
-  <div id="optionsPanel" style="height:100%; width:100%; overflow-y: auto">
-
-  
-  <a href="https://ace.c9.io">
-    <img id="ace-logo" alt="Ace Website" src="demo/kitchen-sink/ace-logo.png" style="width: 134px;margin: 46px 0px 4px 66px;">
-  </a>
-
-  </div>
-  </div>
+<div>
+  <table border="1">
+    <tbody>
+      <tr>
+        <td><label>Parameter: </label></td>
+        <td><label>Port name<br><input id="txtPortName" type="text" size="10"></label></td>
+        <td><label>Baud rate<br><input id="txtBaudrate" type="text" size="10"></label></td>
+        <td><label>Data bits<br>
+          <select id="selDataBits">
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8" selected>8</option>
+          </select>
+        </label></td>
+        <td><label>Stop bits<br>
+          <select id="selStopBits">
+            <option value="1">1</option>
+            <option value="1.5">1.5</option>
+            <option value="2" selected>2</option>
+          </select>
+        </label></td>
+        <td><label>Parity<br>
+          <select id="selParity">
+            <option value="NONE" selected>NONE</option>
+            <option value="ODD">ODD</option>
+            <option value="EVEN">EVEN</option>
+            <option value="MARK">MARK</option>
+            <option value="SPACE">SPACE</option>
+          </select>
+        </label></td>
+      </tr>
+      <tr>
+        <td><label>Flow Control: </label></td>
+        <td><label>RTS IN<br><input id="chkFlowRtsIn" type="checkbox"></label></td>
+        <td><label>RTS OUT<br><input id="chkFlowRtsOut" type="checkbox"></label></td>
+        <td><label>XON/XOFF IN<br><input id="chkFlowXonxoffIn" type="checkbox"></label></td>
+        <td><label>XON/XOFF OUT<br><input id="chkFlowXonxoffOut" type="checkbox"></label></td>
+      </tr>
+      <tr>
+        <td><label>Line In: </label></td>
+        <td><label>DSR<br><input id="chkLineInDsr" type="checkbox" disabled></label></td>
+        <td><label>CTS<br><input id="chkLineInCts" type="checkbox" disabled></label></td>
+        <td><label>RING<br><input id="chkLineInRing" type="checkbox" disabled></label></td>
+        <td><label>CD<br><input id="chkLineInCd" type="checkbox" disabled></label></td>
+      </tr>
+      <tr>
+        <td><label>Line Out: </label></td>
+        <td><label>DTR<br><input id="chkLineOutDtr" type="checkbox" onchange="lineOutDtr_change();"></label></td>
+        <td><label>RTS<br><input id="chkLineOutRts" type="checkbox" onchange="lineOutRts_change();"></label></td>
+      </tr>
+    </tbody>
+  </table>
+  <button id="btnConnect" type="button" onclick="connect_click();">Connect</button>
+  <button id="btnDisconnect" type="button" onclick="disconnect_click();" disabled>Disconnect</button>
+  <button id="btnFindPortNames" type="button" onclick="findPortNames_click();">Find Port Names</button>
 </div>
-  <div id="editor-container"></div>
+<div>
+  <label>Text: <input id="txtSendText" type="text" size="40"></label>
+  <button id="btnSend" type="button" onclick="send_click();" disabled>Send</button>
+  <button id="btnClear" type="button" onclick="clear_click();">Clear</button><br>
+  <label>Message: <br><select id="selMessage" size="8" style="width:100%;"></select></label>
+</div>
 
-
-
-
-  <script src="src/ace.js" data-ace-base="src" type="text/javascript" charset="utf-8"></script>
-  <script src="demo/kitchen-sink/demo.js"></script>
-  <script type="text/javascript" charset="utf-8">
-    require("kitchen-sink/demo");
-  </script>
+<script type="text/javascript">
+  var asciiCode = [
+      '[NULL(00)]', '[SOH(01)]', '[STX(02)]', '[ETX(03)]', '[EOT(04)]', '[ENG(05)]', '[ACK(06)]', '[BEL(07)]'
+    , '[BS(08)]',   '[HT(09)]',  '[LF(0A)]',  '[VT(0B)]',  '[FF(0C)]',  '[CR(0D)]',  '[SO(0E)]',  '[SI(0F)]'
+    , '[DLE(10)]',  '[DC1(11)]', '[DC2(12)]', '[DC3(13)]', '[DC4(14)]', '[NAK(15)]', '[SYN(16)]', '[ETB(17)]'
+    , '[CAN(18)]',  '[EM(19)]',  '[SUB(1A)]', '[ESC(1B)]', '[FS(1C)]',  '[GS(1D)]',  '[RS(1E)]',  '[US(1F)]'
+    , ' ',          '!',         '"',         '#',         '$',         '%',         '&',         '\''
+    , '(',          ')',         '*',         '+',         ',',         '-',         '.',         '/'
+    , '0',          '1',         '2',         '3',         '4',         '5',         '6',         '7'
+    , '8',          '9',         ':',         ';',         '<',         '=',         '>',         '?'
+    , '@',          'A',         'B',         'C',         'D',         'E',         'F',         'G'
+    , 'H',          'I',         'J',         'K',         'L',         'M',         'N',         'O'
+    , 'P',          'Q',         'R',         'S',         'T',         'U',         'V',         'W'
+    , 'X',          'Y',         'Z',         '[',         '\\',        ']',         '^',         '_'
+    , '`',          'a',         'b',         'c',         'd',         'e',         'f',         'g'
+    , 'h',          'i',         'j',         'k',         'l',         'm',         'n',         'o'
+    , 'p',          'q',         'r',         's',         't',         'u',         'v',         'w'
+    , 'x',          'y',         'z',         '{',         '|',         '}',         '~',         '[DEL(FF)]'
+  ];
+  function addMessage(msg) {
+    var message = document.getElementById('selMessage');
+    var opt = document.createElement('option');
     
-
+    opt.text = msg;
+    message.add(opt, message.options[0]);
+  }
+  function ctlSettings() {
+    var portName = document.getElementById('txtPortName');
+    var baudrate = document.getElementById('txtBaudrate');
+    var dataBits = document.getElementById('selDataBits');
+    var stopBits = document.getElementById('selStopBits');
+    var parity = document.getElementById('selParity');
+    var flowRtsIn = document.getElementById('chkFlowRtsIn');
+    var flowRtsOut = document.getElementById('chkFlowRtsOut');
+    var flowXonxoffIn = document.getElementById('chkFlowXonxoffIn');
+    var flowXonxoffOut = document.getElementById('chkFlowXonxoffOut');
+    var connect = document.getElementById('btnConnect');
+    var disconnect = document.getElementById('btnDisconnect');
+    var send = document.getElementById('btnSend');
+    
+    if (serial.isOwned()) {
+      portName.disabled = true;
+      baudrate.disabled = true;
+      dataBits.disabled = true;
+      stopBits.disabled = true;
+      parity.disabled = true;
+      flowRtsIn.disabled = true;
+      flowRtsOut.disabled = true;
+      flowXonxoffIn.disabled = true;
+      flowXonxoffOut.disabled = true;
+      connect.disabled = true;
+      disconnect.disabled = false;
+      send.disabled = false;
+    } else {
+      portName.disabled = false;
+      baudrate.disabled = false;
+      dataBits.disabled = false;
+      stopBits.disabled = false;
+      parity.disabled = false;
+      flowRtsIn.disabled = false;
+      flowRtsOut.disabled = false;
+      flowXonxoffIn.disabled = false;
+      flowXonxoffOut.disabled = false;
+      connect.disabled = false;
+      disconnect.disabled = true;
+      send.disabled = true;
+    }
+  }
+  
+  function lineOutDtr_change() {
+    var lineOutDtr = document.getElementById('chkLineOutDtr');
+    
+    serial.setDTR(!!lineOutDtr.checked);
+    lineOutDtr.checked = !!serial.isDTR();
+  }
+  function lineOutRts_change() {
+    var lineOutRts = document.getElementById('chkLineOutRts');
+    
+    serial.setRTS(!!lineOutRts.checked);
+    lineOutRts.checked = !!serial.isRTS();
+  }
+  function connect_click() {
+    if (serial.isOwned()) {
+      addMessage('serial port is already connected');
+    } else {
+      var portName = document.getElementById('txtPortName');
+      var baudrate = document.getElementById('txtBaudrate');
+      var dataBits = document.getElementById('selDataBits');
+      var stopBits = document.getElementById('selStopBits');
+      var parity = document.getElementById('selParity');
+      var lineInDsr = document.getElementById('chkLineInDsr');
+      var lineInCts = document.getElementById('chkLineInCts');
+      var lineInRing = document.getElementById('chkLineInRing');
+      var lineInCd = document.getElementById('chkLineInCd');
+      var lineOutDtr = document.getElementById('chkLineOutDtr');
+      var lineOutRts = document.getElementById('chkLineOutRts');
+      
+      try {
+        serial.setNotifyDataAvailable('notifyDataAvailable');
+        // serial.setNotifyOutputEmpty('notifyOutputEmpty');
+        serial.setNotifyBreakInterrupt('notifyBreakInterrupt');
+        serial.setNotifyCarrierDetect('notifyCarrierDetect');
+        serial.setNotifyCTS('notifyCTS');
+        serial.setNotifyDSR('notifyDSR');
+        serial.setNotifyFramingError('notifyFramingError');
+        serial.setNotifyOverrunError('notifyOverrunError');
+        serial.setNotifyParityError('notifyParityError');
+        serial.setNotifyRingIndicator('notifyRingIndicator');
+        
+        if (serial.open(portName.value, baudrate.value, dataBits.value, stopBits.value, parity.value)) {
+          lineInDsr.checked  = !!serial.isDSR();
+          lineInCts.checked  = !!serial.isCTS();
+          lineInRing.checked  = !!serial.isRI();
+          lineInCd.checked  = !!serial.isCD();
+          lineOutDtr.checked = !!serial.isDTR();
+          lineOutRts.checked = !!serial.isRTS();
+          
+          addMessage('connected' + '[' + portName.value + ']');
+        } else {
+          addMessage('connection faild');
+        }
+      } catch (ex) {
+        addMessage(ex);
+      }
+    }
+    
+    ctlSettings();
+  }
+  function disconnect_click() {
+    serial.close();
+    addMessage('disconnected');
+    
+    ctlSettings();
+  }
+  function findPortNames_click() {
+    addMessage(serial.getPortNames());
+  }
+  function send_click() {
+    var sendText = document.getElementById('txtSendText');
+    
+    if (sendText.value) {
+      serial.write(sendText.value);
+      addMessage('Send: ' + sendText.value);
+    }
+  }
+  function clear_click() {
+    var message = document.getElementById('selMessage');
+    
+    while (message.lastChild) {
+      message.removeChild(message.lastChild);
+    }
+  }
+  
+  function setup() {
+    serial.close();
+  }
+  
+  function notifyDataAvailable() {
+    var data = '';
+    
+    while(serial.available() > 0) {
+      data += asciiCode[serial.read()];
+    }
+    addMessage('Recv: ' + data);
+  }
+  function notifyOutputEmpty() {
+    addMessage('Output Empty');
+  }
+  function notifyBreakInterrupt() {
+    addMessage('Break Interrupt');
+  }
+  function notifyCarrierDetect(cd) {
+    var lineInCd = document.getElementById('chkLineInCd');
+    
+    lineInCd.checked  = !!cd;
+  }
+  function notifyCTS(cts) {
+    var lineInCts = document.getElementById('chkLineInCts');
+    
+    lineInCts.checked  = !!cts;
+  }
+  function notifyDSR(dsr) {
+    var lineInDsr = document.getElementById('chkLineInDsr');
+    
+    lineInDsr.checked  = !!dsr;
+  }
+  function notifyFramingError() {
+    addMessage('Framing Error');
+  }
+  function notifyOverrunError() {
+    addMessage('Overrun Error');
+  }
+  function notifyParityError() {
+    addMessage('Parity Error');
+  }
+  function notifyRingIndicator(ri) {
+    var lineInRing = document.getElementById('chkLineInRing');
+    
+    lineInRing.checked  = !!ri;
+  }
+</script>
 </body>
 </html>

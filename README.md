@@ -1,4 +1,5 @@
 # <u>DecoTofu</u>
+
 ### <u>Overview</u>
 
 ### <u>概要</u>
@@ -15,35 +16,195 @@
  * WebViewerへのプラグイン機能
  * Unique ladder logic
  * 独特なラダーロジック
+ * EtherCAT master (SOEM) by a native shared library
+ * ネイティブ共有ライブラリによるEtherCATマスタ(SOEM)
+ * The HTML page web/index.html is the user interface of the application
+ * アプリケーションのユーザーインターフェースはHTMLページ web/index.html
 ### <u>Requirement</u>
 
 ### <u>要件</u>
 
- * Java 17 or later
- * Java 17 以上
+ * Java 17 or later JDK which includes JavaFX (javafx.web, javafx.fxml, javafx.swing, javafx.controls)
+ * JavaFX(javafx.web, javafx.fxml, javafx.swing, javafx.controls)を含むJava 17以上のJDK
+ * Maven 3 or later
+ * Maven 3 以上
+ * CMake 2.8.0 or later, Visual Studio (Windows) and Npcap installed in WinPcap API-compatible Mode, to build the SOEM shared library
+ * SOEM共有ライブラリの作成にはCMake 2.8.0以上、Visual Studio(Windows)、WinPcap API互換モードでのNpcapのインストールが必要
+### <u>Build</u>
+
+### <u>ビルド</u>
+
+    mvn package
+
+ * the executable jar with the dependencies is created as target/DecoTofu.jar
+ * 依存ライブラリを含む実行可能jarが target/DecoTofu.jar として作成される
+
+    mvn test
+
+ * the unit tests are run on the classpath
+ * ユニットテストはクラスパス上で実行される
+### <u>Run</u>
+
+### <u>起動</u>
+
+    java -jar target/DecoTofu.jar
+
+ * web/index.html is loaded at startup, and it is created from a template when it does not exist
+ * 起動時に web/index.html が読み込まれ、存在しない場合はテンプレートから作成される
+ * the window title is the title of the loaded page
+ * ウィンドウのタイトルは読み込まれたページのタイトル
+ * properties.xml keeps the window settings : STAGE_MAXIMIZED, STAGE_WIDTH, STAGE_HEIGHT
+ * properties.xml にはウィンドウの設定 STAGE_MAXIMIZED, STAGE_WIDTH, STAGE_HEIGHT が保存される
+ * if a log directory exists next to the jar, the console output is written to log/Console_yyyyMMddHHmmss.txt
+ * jarと同じ場所に log ディレクトリがある場合、コンソール出力は log/Console_yyyyMMddHHmmss.txt に書き出される
+ * the released jar is available at https://github.com/mizoguch-ken/DecoTofu/releases
+ * リリースされたjarは https://github.com/mizoguch-ken/DecoTofu/releases からダウンロードできる
 ### <u>Dependency</u>
 
 ### <u>依存</u>
 
     <dependency>
-      <groupId>com.googlecode.java-diff-utils</groupId>
-      <artifactId>diffutils</artifactId>
+      <groupId>io.github.java-diff-utils</groupId>
+      <artifactId>java-diff-utils</artifactId>
+      <version>4.17</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
+      <version>2.14.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-ffi</artifactId>
+      <version>2.3.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.pdfbox</groupId>
       <artifactId>pdfbox</artifactId>
+      <version>3.0.8</version>
     </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.14.4</version>
+      <scope>test</scope>
+    </dependency>
+
+ * JavaFX is required by module-info.java, but it is not declared here, so it must be provided by the JDK
+ * JavaFXはmodule-info.javaで必要とされるがここでは宣言されていないため、JDK側で提供される必要がある
+### <u>Project</u>
+
+### <u>プロジェクト構成</u>
+
+    src/main/java/ken/mizoguch/decotofu  : application entry and native library loader
+    src/main/java/ken/mizoguch/webviewer : WebViewer and the plug-ins of the WebViewer
+    src/main/java/ken/mizoguch/ladders   : ladder editor and the ladder cycle
+    src/main/java/ken/mizoguch/soem      : SOEM(EtherCAT) binding by jnr-ffi
+    src/main/java/ken/mizoguch/console   : console output
+    src/main/java/module-info.java       : module definition
+    src/main/resources/fxml              : user interface definitions
+    src/main/resources/icons             : window icons
+    src/main/resources/font              : fonts used by the PDF export
+    src/main/resources/LICENSES          : licenses shown by stage.showLicenses()
+    src/test/java                        : unit tests
+    web                                  : the page and the plug-ins used by the WebViewer
+    web/index.html                       : the page loaded at startup
+    web/plugins                          : plug-in jar files loaded at startup
+    properties.xml                       : window settings
+
+### <u>Plugin</u>
+
+### <u>プラグイン</u>
+
+ * a plug-in is the jar in the web/plugins directory whose Main-Class implements WebViewerPlugin
+ * プラグインは web/plugins ディレクトリに置く、Main-ClassがWebViewerPluginを実装するjar
+ * the value of functionName() is set as a member of the window object, so it is the name of the JS functions
+ * functionName()の値がwindowオブジェクトのメンバーとして設定され、JS関数の名前になる
+ * the web/plugins directory is optional, the plug-ins are loaded when it exists
+ * web/plugins ディレクトリは任意で、存在するときプラグインが読み込まれる
+ * when the page loading is succeeded, setup() of the page is called if it is defined
+ * ページの読み込みが成功したとき、定義されていればページのsetup()が呼び出される
+
+    public class MyPlugin implements WebViewerPlugin {
+
+        private WebViewerPlugin webViewer_;
+
+        @Override
+        public void initialize(WebViewerPlugin webViewer) {
+            webViewer_ = webViewer;
+        }
+
+        @Override
+        public String functionName() {
+            return "myplugin";
+        }
+
+        @Override
+        public void state(Worker.State state) {
+        }
+
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public Stage stage() {
+            return webViewer_.stage();
+        }
+
+        @Override
+        public List<Image> icons() {
+            return webViewer_.icons();
+        }
+
+        @Override
+        public WebEngine webEngine() {
+            return webViewer_.webEngine();
+        }
+
+        @Override
+        public Path webPath() {
+            return webViewer_.webPath();
+        }
+
+        @Override
+        public void writeStackTrace(String name, Throwable throwable) {
+            webViewer_.writeStackTrace(name, throwable);
+        }
+
+        @Override
+        public void write(String name, String msg, boolean err) {
+            webViewer_.write(name, msg, err);
+        }
+
+        public String hello() {
+            return "hello";
+        }
+    }
+
+ * the JS code of the page calls the public methods of the plug-in : myplugin.hello()
+ * ページのJSコードはプラグインのpublicメソッドを呼び出す : myplugin.hello()
+### <u>Ladder</u>
+
+### <u>ラダー</u>
+
+ * a ladder is edited in the ladder window and it is saved as a JSON file
+ * ラダーはラダーウィンドウで編集され、JSONファイルとして保存される
+ * File(New, Open, Save, Save As.., Export as PDF, Difference, Recent Files), Edit(Undo, Redo, Cut, Copy, Paste, Select, Tab), View(Tab Select, Find Blocks), Tools(Connect, Run, Stop)
+ * ファイル(New, Open, Save, Save As.., Export as PDF, Difference, Recent Files)、編集(Undo, Redo, Cut, Copy, Paste, Select, Tab)、表示(Tab Select, Find Blocks)、ツール(Connect, Run, Stop)
+ * blocks : LD /LD @LD /@LD %LD /%LD, OUT /OUT @OUT /@OUT %OUT /%OUT, = <> < <= > >= & | ^, SET RES AND OR XOR NOT ADD SUB MUL DIV AVE SFL SFR SIG RND TIM /TIM CNT /CNT MOV SCR, comment(;)
+ * ブロック : LD /LD @LD /@LD %LD /%LD、OUT /OUT @OUT /@OUT %OUT /%OUT、= <> < <= > >= & | ^、SET RES AND OR XOR NOT ADD SUB MUL DIV AVE SFL SFR SIG RND TIM /TIM CNT /CNT MOV SCR、コメント(;)
+ * an address which does not start with "." is global, an address which starts with "." is local to the ladder
+ * "."で始まらないアドレスはグローバル、"."で始まるアドレスはそのラダーのローカル
+ * the ladder is connected by ladders.connect() and it cycles by ladders.run()
+ * ラダーはladders.connect()で接続され、ladders.run()でサイクル実行される
+
 ### <u>JS Functions</u>
 
 ### <u>JS関数</u>
+
+ * the functions are added to the window object after the page loading is succeeded
+ * 関数はページの読み込み成功後にwindowオブジェクトに追加される
 
 [stage]
 
@@ -81,10 +242,7 @@
 * void stage.toBack()
 * void stage.toFront()
 
-  
-  
-
-[ladders] 
+[ladders]
 
 * Boolean ladders.isShowing()
 * void ladders.show()
@@ -133,8 +291,6 @@
 * Boolean ladders.fileSave()
 * String ladders.getFileName()
 
-
-
 [soem]
 
 * Soem soem.getSoem()
@@ -167,7 +323,6 @@
 
 - [EtherCAT](https://github.com/mizoguch-ken/GcodeFX/wiki/EtherCAT)
   - [Example](https://github.com/mizoguch-ken/GcodeFX/wiki/EtherCAT#example)
-
 ### <u>Example</u>
 
 ### <u>例</u>
@@ -175,3 +330,32 @@
 - [Ladders](https://github.com/mizoguch-ken/DecoTofu/wiki/Ladders)
 - [Serial Test](https://github.com/mizoguch-ken/DecoTofu/wiki/SerialTest)
 
+ * web/index.html of this project is the Serial Test page
+ * このプロジェクトの web/index.html はSerial Testのページ
+
+### <u>Licenses</u>
+
+### <u>ライセンス</u>
+
+ * the license of DecoTofu itself is not declared, so the copyright of the DecoTofu code is reserved by the author
+ * DecoTofu 自体のライセンスは未宣言で、DecoTofu のコードの著作権は作者に留保されます
+ * only the licenses of the third parties are listed here, the full texts are in src/main/resources/LICENSES which stage.showLicenses() displays
+ * ここでは第三者のライセンスのみを掲載しており、全文は stage.showLicenses() が表示する src/main/resources/LICENSES にあります
+
+    SOEM (Simple Open EtherCAT Master Library)                        GPL-2.0 with a special exception, and the EtherCAT Master License of Beckhoff Automation GmbH is required for an EtherCAT network master
+    Java Diff Utils                                                   Apache-2.0
+    Gson                                                              Apache-2.0
+    Jnr Ffi, Jffi                                                     Apache-2.0 or LGPL-3.0 or later
+    Jnr a64asm                                                        Apache-2.0
+    Jnr X86asm                                                        MIT
+    Apache PDFBox (FontBox included)                                  Apache-2.0
+    Apache Commons Logging                                            Apache-2.0
+    ASM, ASM Analysis, ASM Commons, ASM Tree, ASM Util                BSD-3-Clause
+    Myrica, MyricaM (the fonts used by the PDF export, based on M+ FONTS)   SIL Open Font License 1.1, and the M+ FONTS notice
+
+ * the web directory contains the Ace editor (ace-builds 1.44.0), it is BSD-3-Clause and the text is web/LICENSE
+ * web ディレクトリには Ace エディタ(ace-builds 1.44.0)が含まれており、BSD-3-Clause で、その文は web/LICENSE です
+ * JavaFX is not a part of this project, it is provided by the JDK and the terms of JavaFX itself apply (OpenJFX : GPL-2.0 with the Classpath Exception)
+ * JavaFXはこのプロジェクトの一部ではなくJDKが提供するもので、JavaFX自身の条件に従います(OpenJFX : Classpath Exception付きGPL-2.0)
+ * the SOEM shared library is not a part of this project either, it is not in this repository and it must be built by the user from the SOEM source
+ * SOEM共有ライブラリもこのプロジェクトには含まれておらず、ユーザーがSOEMのソースから作成する必要があります
