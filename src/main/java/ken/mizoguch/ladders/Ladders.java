@@ -75,6 +75,11 @@ public class Ladders extends Service<Void> {
     public static final String LADDER_LOCAL_ADDRESS_PREFIX = ".";
 
     /**
+     * margin added to the ideal cycle time when the end of a cycle is awaited
+     */
+    private static final long LADDER_CYCLE_STOP_WAIT_MILLIS = 1000;
+
+    /**
      *
      */
     public static enum LADDER_BLOCK {
@@ -199,7 +204,12 @@ public class Ladders extends Service<Void> {
     private final CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> scriptIoMap_;
     private long idealCycleTime_;
     private volatile boolean isCycling_, isChanged_;
-    private final AtomicBoolean cycleFinished_;
+    /**
+     * finish flag of the last created cycle task : the flag is replaced by every task,
+     * so the end of a task which is still stopping can not answer the wait of a cycle
+     * which has just been started
+     */
+    private volatile AtomicBoolean cycleFinished_;
 
     private final Gson gson_ = new GsonBuilder().setPrettyPrinting().create();
 
@@ -2191,10 +2201,12 @@ public class Ladders extends Service<Void> {
 
     @Override
     protected Task<Void> createTask() {
+        final AtomicBoolean finished = new AtomicBoolean(false);
+
+        cycleFinished_ = finished;
         return new Task<Void>() {
             @Override
             protected Void call() {
-                cycleFinished_.set(false);
                 try {
                     Map.Entry<String, LadderIo> entry;
                     LadderRegisterSoemIo registerSoemIo;
@@ -2212,7 +2224,7 @@ public class Ladders extends Service<Void> {
                     cumulativeCycleTimeCount = 0;
 
                     nanoTimeOld = System.nanoTime();
-                    while (isCycling_) {
+                    while (isCycling_ && !isCancelled()) {
                         boolean refreshView = false;
                         synchronized (lock_) {
                             // soem
@@ -2275,7 +2287,10 @@ public class Ladders extends Service<Void> {
                             try {
                                 TimeUnit.NANOSECONDS.sleep(waitTime);
                             } catch (InterruptedException ex) {
+                                // the task has been interrupted : the cycle has to end,
+                                // otherwise the sleep would answer immediately again
                                 Thread.currentThread().interrupt();
+                                isCycling_ = false;
                             }
                         }
 
@@ -2299,12 +2314,19 @@ public class Ladders extends Service<Void> {
                     if (ex instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
                     }
+                    // an unexpected error of the cycle stops the cycle : the ladder is
+                    // started again by the user with a new task
                     Console.writeStackTrace(Ladders.class.getName(), ex);
                 } finally {
-                    cycleFinished_.set(true);
+                    try {
+                        ladderController_.runViewRunning(false);
+                    } finally {
+                        // isCycling_ is cleared before the finish flag, so awaitCycleStop()
+                        // never answers a cycle which is still running as finished
+                        isCycling_ = false;
+                        finished.set(true);
+                    }
                 }
-                ladderController_.runViewRunning(false);
-                isCycling_ = false;
                 return null;
             }
         };
@@ -2602,13 +2624,21 @@ public class Ladders extends Service<Void> {
             isCycling_ = false;
             // wait the end of the current cycle : never block the javafx application thread
             if (!Platform.isFxApplicationThread()) {
-                try {
-                    TimeUnit.NANOSECONDS.sleep(idealCycleTime_ + LADDER_VIEW_REFRESH_CYCLE_TIME);
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
+                if (!awaitCycleStop(cycleStopTimeoutMillis())) {
+                    writeLog("the ladder cycle is still running", true);
                 }
             }
         }
+    }
+
+    /**
+     * time to wait for the end of the current cycle, in milliseconds
+     *
+     * @return
+     */
+    private long cycleStopTimeoutMillis() {
+        return TimeUnit.NANOSECONDS.toMillis(idealCycleTime_ + LADDER_VIEW_REFRESH_CYCLE_TIME)
+                + LADDER_CYCLE_STOP_WAIT_MILLIS;
     }
 
     /**
@@ -2620,8 +2650,9 @@ public class Ladders extends Service<Void> {
      */
     public boolean awaitCycleStop(long timeoutMillis) {
         long deadline = System.currentTimeMillis() + Math.max(0, timeoutMillis);
+        final AtomicBoolean finished = cycleFinished_;
 
-        while (!cycleFinished_.get() || isCycling_) {
+        while (!finished.get() || isCycling_) {
             if (System.currentTimeMillis() >= deadline) {
                 break;
             }
@@ -2632,7 +2663,7 @@ public class Ladders extends Service<Void> {
                 break;
             }
         }
-        return cycleFinished_.get() && !isCycling_;
+        return finished.get() && !isCycling_;
     }
 
     private void fileNotFound(Path file) {

@@ -56,6 +56,11 @@ public class WebViewer implements WebViewerPlugin {
     private SoemPlugin soemPlugin_;
     private LaddersPlugin laddersPlugin_;
     private final List<WebViewerPlugin> plugins_ = new ArrayList<>();
+    /**
+     * class loaders of the plugin jars : a loader has to stay open while its plugin is
+     * used, because a plugin loads its own classes and resources lazily
+     */
+    private final List<URLClassLoader> pluginLoaders_ = new ArrayList<>();
 
     private boolean ownsPlugins_;
 
@@ -197,14 +202,41 @@ public class WebViewer implements WebViewerPlugin {
             }
             URLClassLoader loader = URLClassLoader.newInstance(
                     new URL[] { pluginFile.toUri().toURL() }, getClass().getClassLoader());
-            Class<?> clazz = loader.loadClass(mainClass);
-            if (WebViewerPlugin.class.isAssignableFrom(clazz)) {
-                Class<? extends WebViewerPlugin> pluginClass = clazz.asSubclass(WebViewerPlugin.class);
-                WebViewerPlugin webViewerPlugin = pluginClass.getDeclaredConstructor().newInstance();
-                webViewerPlugin.initialize(this);
-                plugins_.add(webViewerPlugin);
+            boolean isPlugin = false;
+
+            try {
+                Class<?> clazz = loader.loadClass(mainClass);
+                if (WebViewerPlugin.class.isAssignableFrom(clazz)) {
+                    Class<? extends WebViewerPlugin> pluginClass = clazz.asSubclass(WebViewerPlugin.class);
+                    WebViewerPlugin webViewerPlugin = pluginClass.getDeclaredConstructor().newInstance();
+                    webViewerPlugin.initialize(this);
+                    plugins_.add(webViewerPlugin);
+                    isPlugin = true;
+                }
+            } catch (IOException | ReflectiveOperationException | LinkageError | RuntimeException ex) {
+                // a plugin which can not be loaded must not stop the other plugins
+                writeStackTrace(WebViewer.class.getName(), ex);
+            } finally {
+                if (isPlugin) {
+                    pluginLoaders_.add(loader);
+                } else {
+                    // the jar holds no usable plugin : its file handle is released now
+                    closePluginLoader(loader);
+                }
             }
-        } catch (IOException | ReflectiveOperationException ex) {
+        } catch (IOException ex) {
+            writeStackTrace(WebViewer.class.getName(), ex);
+        }
+    }
+
+    /**
+     *
+     * @param loader
+     */
+    private void closePluginLoader(URLClassLoader loader) {
+        try {
+            loader.close();
+        } catch (IOException ex) {
             writeStackTrace(WebViewer.class.getName(), ex);
         }
     }
@@ -257,6 +289,11 @@ public class WebViewer implements WebViewerPlugin {
             ownsPlugins_ = false;
         }
         plugins_.clear();
+        // the plugins are closed : the jar files of the plugins can be released
+        for (int index = 0, size = pluginLoaders_.size(); index < size; index++) {
+            closePluginLoader(pluginLoaders_.get(index));
+        }
+        pluginLoaders_.clear();
     }
 
     /**
