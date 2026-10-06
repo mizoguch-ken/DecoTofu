@@ -55,6 +55,10 @@
  * ウィンドウのタイトルは読み込まれたページのタイトル
  * properties.xml keeps the window settings : STAGE_MAXIMIZED, STAGE_WIDTH, STAGE_HEIGHT
  * properties.xml にはウィンドウの設定 STAGE_MAXIMIZED, STAGE_WIDTH, STAGE_HEIGHT が保存される
+ * a damaged value of properties.xml is reported and its default value is used
+ * properties.xml の値が壊れている場合は報告され、既定値が使われる
+ * the directory of the application is the current directory when it holds properties.xml or web, else it is the directory of the jar or of its parents
+ * アプリケーションのディレクトリは properties.xml か web を置く現在のディレクトリで、無い場合はjarかその親のディレクトリ
  * if a log directory exists next to the jar, the console output is written to log/Console_yyyyMMddHHmmss.txt
  * jarと同じ場所に log ディレクトリがある場合、コンソール出力は log/Console_yyyyMMddHHmmss.txt に書き出される
  * the released jar is available at https://github.com/mizoguch-ken/DecoTofu/releases
@@ -111,6 +115,7 @@
     web/index.html                       : the page loaded at startup
     web/plugins                          : plug-in jar files loaded at startup
     properties.xml                       : window settings
+    ladder/properties.xml                : ladder editor settings
 
 ### <u>Plugin</u>
 
@@ -198,6 +203,12 @@
  * "."で始まらないアドレスはグローバル、"."で始まるアドレスはそのラダーのローカル
  * the ladder is connected by ladders.connect() and it cycles by ladders.run()
  * ラダーはladders.connect()で接続され、ladders.run()でサイクル実行される
+ * an error of the ladder cycle is reported and the cycle is stopped when the error is repeated
+ * ラダーサイクルのエラーは報告され、エラーが続く場合はサイクルが停止する
+ * the SCR block script of a loaded ladder is run after its confirmation, and it is removed when the confirmation is refused
+ * 読み込んだラダーのSCRブロックのスクリプトは確認後に実行され、確認が拒否された場合は除去される
+ * ladder/properties.xml keeps the ladder settings : HISTORY_GENERATION, IDEAL_CYCLE_TIME, LADDER_SCRIPT_ENABLE
+ * ladder/properties.xml にはラダーの設定 HISTORY_GENERATION, IDEAL_CYCLE_TIME, LADDER_SCRIPT_ENABLE が保存される
 
 ### <u>JS Functions</u>
 
