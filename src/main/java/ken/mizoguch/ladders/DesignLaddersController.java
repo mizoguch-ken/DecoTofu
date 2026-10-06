@@ -6,8 +6,9 @@
 package ken.mizoguch.ladders;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1279,6 +1280,9 @@ public class DesignLaddersController implements Initializable {
         // ideal cycletime
         idealCycleTime_ = 0;
 
+        // ladder scripts
+        ladders_.setScriptEnable(true);
+
         // menu
         menuFileRecentFile1.setText("");
         menuFileRecentFile2.setText("");
@@ -1292,33 +1296,101 @@ public class DesignLaddersController implements Initializable {
         menuFileRecentFile10.setText("");
     }
 
+    /**
+     * read a numeric property : a damaged properties.xml has to keep the application
+     * running, so an unreadable value is only reported and the default is used
+     *
+     * @param properties
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    private double parseDoubleProperty(Properties properties, String key, double defaultValue) {
+        String value = properties.getProperty(key);
+
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException ex) {
+            Console.write(DesignLaddersController.class.getName(),
+                    "properties : " + key + " is not a number [" + value + "]", true);
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param properties
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    private int parseIntProperty(Properties properties, String key, int defaultValue) {
+        String value = properties.getProperty(key);
+
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ex) {
+            Console.write(DesignLaddersController.class.getName(),
+                    "properties : " + key + " is not an integer [" + value + "]", true);
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param properties
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    private long parseLongProperty(Properties properties, String key, long defaultValue) {
+        String value = properties.getProperty(key);
+
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ex) {
+            Console.write(DesignLaddersController.class.getName(),
+                    "properties : " + key + " is not a long number [" + value + "]", true);
+            return defaultValue;
+        }
+    }
+
     private boolean loadProperties(Path propertyFile) {
         if (Files.exists(propertyFile) && Files.isRegularFile(propertyFile) && Files.isReadable(propertyFile)) {
             Properties properties = new Properties();
-            try {
-                properties.loadFromXML(Files.newInputStream(propertyFile));
+            try (InputStream inputStream = Files.newInputStream(propertyFile)) {
+                properties.loadFromXML(inputStream);
 
                 // stage
                 stageSettings_.setStageMaximized(
                         (Boolean.parseBoolean(properties.getProperty("STAGE_MAXIMIZED", "false"))), true);
-                stageSettings_.setStageWidth(Double.parseDouble(properties.getProperty("STAGE_WIDTH", "640.0")), true);
-                stageSettings_.setStageHeight(Double.parseDouble(properties.getProperty("STAGE_HEIGHT", "480.0")),
-                        true);
-                stageSettings_.setRootWidth(Double.parseDouble(properties.getProperty("PANE_ROOT_WIDTH", "640.0")),
-                        true);
-                stageSettings_.setRootHeight(Double.parseDouble(properties.getProperty("PANE_ROOT_HEIGHT", "480.0")),
-                        true);
+                stageSettings_.setStageWidth(parseDoubleProperty(properties, "STAGE_WIDTH", 640.0), true);
+                stageSettings_.setStageHeight(parseDoubleProperty(properties, "STAGE_HEIGHT", 480.0), true);
+                stageSettings_.setRootWidth(parseDoubleProperty(properties, "PANE_ROOT_WIDTH", 640.0), true);
+                stageSettings_.setRootHeight(parseDoubleProperty(properties, "PANE_ROOT_HEIGHT", 480.0), true);
                 stageSettings_.setIoLadderDividerPositions(
-                        Double.parseDouble(properties.getProperty("SPLIT_DIVIDER_IO_LADDER", "0.382")), true);
+                        parseDoubleProperty(properties, "SPLIT_DIVIDER_IO_LADDER", 0.382), true);
                 stageSettings_.setIoIoDividerPositions(
-                        Double.parseDouble(properties.getProperty("SPLIT_DIVIDER_IO_IO", "0.618")), true);
+                        parseDoubleProperty(properties, "SPLIT_DIVIDER_IO_IO", 0.618), true);
                 ladders_.setWorkFilePath(properties.getProperty("WORK_FILE_PATH", ""));
 
                 // history generation
-                ladders_.setHistoryGeneration(Integer.parseInt(properties.getProperty("HISTORY_GENERATION", "-1")));
+                ladders_.setHistoryGeneration(parseIntProperty(properties, "HISTORY_GENERATION", -1));
 
                 // ideal cycletime
-                ladders_.setIdealCycleTime(Long.parseLong(properties.getProperty("IDEAL_CYCLE_TIME", "0")));
+                ladders_.setIdealCycleTime(parseLongProperty(properties, "IDEAL_CYCLE_TIME", 0));
+
+                // ladder scripts
+                ladders_.setScriptEnable(Boolean.parseBoolean(properties.getProperty("LADDER_SCRIPT_ENABLE", "true")));
 
                 // menu
                 menuFileRecentFile1.setText(properties.getProperty("MENU_RECENT_FILE_1", ""));
@@ -1332,8 +1404,6 @@ public class DesignLaddersController implements Initializable {
                 menuFileRecentFile9.setText(properties.getProperty("MENU_RECENT_FILE_9", ""));
                 menuFileRecentFile10.setText(properties.getProperty("MENU_RECENT_FILE_10", ""));
                 return true;
-            } catch (FileNotFoundException ex) {
-                Console.writeStackTrace(DesignLaddersController.class.getName(), ex);
             } catch (IOException ex) {
                 Console.writeStackTrace(DesignLaddersController.class.getName(), ex);
             }
@@ -1376,6 +1446,9 @@ public class DesignLaddersController implements Initializable {
                 // ideal cycletime
                 properties.setProperty("IDEAL_CYCLE_TIME", Long.toString(ladders_.getIdealCycleTime()));
 
+                // ladder scripts
+                properties.setProperty("LADDER_SCRIPT_ENABLE", Boolean.toString(ladders_.isScriptEnable()));
+
                 // menu
                 properties.setProperty("MENU_RECENT_FILE_1", menuFileRecentFile1.getText());
                 properties.setProperty("MENU_RECENT_FILE_2", menuFileRecentFile2.getText());
@@ -1388,7 +1461,9 @@ public class DesignLaddersController implements Initializable {
                 properties.setProperty("MENU_RECENT_FILE_9", menuFileRecentFile9.getText());
                 properties.setProperty("MENU_RECENT_FILE_10", menuFileRecentFile10.getText());
 
-                properties.storeToXML(Files.newOutputStream(propertyFile), "Ladders");
+                try (OutputStream outputStream = Files.newOutputStream(propertyFile)) {
+                    properties.storeToXML(outputStream, "Ladders");
+                }
                 return true;
             }
         } catch (IOException ex) {

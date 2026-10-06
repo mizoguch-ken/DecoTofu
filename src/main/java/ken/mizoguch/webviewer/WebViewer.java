@@ -213,7 +213,7 @@ public class WebViewer implements WebViewerPlugin {
                     plugins_.add(webViewerPlugin);
                     isPlugin = true;
                 }
-            } catch (IOException | ReflectiveOperationException | LinkageError | RuntimeException ex) {
+            } catch (ReflectiveOperationException | LinkageError | RuntimeException ex) {
                 // a plugin which can not be loaded must not stop the other plugins
                 writeStackTrace(WebViewer.class.getName(), ex);
             } finally {

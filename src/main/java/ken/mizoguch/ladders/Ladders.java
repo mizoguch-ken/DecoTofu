@@ -210,6 +210,10 @@ public class Ladders extends Service<Void> {
     private long idealCycleTime_;
     private volatile boolean isCycling_, isChanged_;
     /**
+     * run the javascript of the script blocks of a ladder loaded from a file
+     */
+    private volatile boolean isScriptEnable_;
+    /**
      * finish flag of the last created cycle task : the flag is replaced by every task,
      * so the end of a task which is still stopping can not answer the wait of a cycle
      * which has just been started
@@ -250,6 +254,7 @@ public class Ladders extends Service<Void> {
         idealCycleTime_ = 0;
         isChanged_ = false;
         isCycling_ = false;
+        isScriptEnable_ = true;
         cycleFinished_ = new AtomicBoolean(true);
     }
 
@@ -641,6 +646,17 @@ public class Ladders extends Service<Void> {
             return null;
         }
 
+        // the script blocks of a file run their javascript in the web page with the apis
+        // of the application : the user decides if they are kept
+        int scriptCount = countLadderScripts(ladderJson);
+
+        if (scriptCount > 0) {
+            if (!confirmLadderScripts(scriptCount, file)) {
+                removeLadderScripts(ladderJson);
+                writeLog("ladder scripts removed [" + scriptCount + "] [" + file.getFileName() + "]", true);
+            }
+        }
+
         // allClear() destroys the ladder of the editor : it is kept as a backup to be
         // restored when the loaded file can not be displayed
         LadderJson backup = ladderJsonSave(tabPane, ioMap, commentMap);
@@ -699,6 +715,106 @@ public class Ladders extends Service<Void> {
             ladderCommand_.setDisableHistory(false);
         }
         return restore;
+    }
+
+    /**
+     * number of the blocks which hold a script in a ladder json
+     *
+     * @param ladderJson
+     * @return
+     */
+    static int countLadderScripts(LadderJson ladderJson) {
+        List<LadderJsonLadder> ladders;
+        List<LadderJsonBlock> blocks;
+        int count = 0;
+
+        if (ladderJson == null) {
+            return 0;
+        }
+        ladders = ladderJson.getLadders();
+        if (ladders == null) {
+            return 0;
+        }
+        for (LadderJsonLadder ladder : ladders) {
+            blocks = ladder.getBlocks();
+            if (blocks == null) {
+                continue;
+            }
+            for (LadderJsonBlock block : blocks) {
+                if (block.hasScript()) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * remove the scripts of a ladder json, so that a ladder loaded from a file is used
+     * without the javascript of its script blocks
+     *
+     * @param ladderJson
+     * @return the number of the removed scripts
+     */
+    static int removeLadderScripts(LadderJson ladderJson) {
+        List<LadderJsonLadder> ladders;
+        List<LadderJsonBlock> blocks;
+        int count = 0;
+
+        if (ladderJson == null) {
+            return 0;
+        }
+        ladders = ladderJson.getLadders();
+        if (ladders == null) {
+            return 0;
+        }
+        for (LadderJsonLadder ladder : ladders) {
+            blocks = ladder.getBlocks();
+            if (blocks == null) {
+                continue;
+            }
+            for (LadderJsonBlock block : blocks) {
+                if (block.hasScript()) {
+                    block.removeScript();
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * ask the user if the scripts of a ladder loaded from a file have to be kept
+     *
+     * @param count number of the script blocks
+     * @param file
+     * @return true when the scripts are kept
+     */
+    private boolean confirmLadderScripts(int count, Path file) {
+        Alert alert;
+        Optional<ButtonType> result;
+
+        if (!isScriptEnable_) {
+            return false;
+        }
+        if (!Platform.isFxApplicationThread()) {
+            // a dialog can not be shown from an other thread : the scripts are kept when
+            // the configuration enables them
+            return true;
+        }
+
+        alert = new Alert(Alert.AlertType.CONFIRMATION);
+        if (!icons_.isEmpty()) {
+            ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
+        }
+        alert.setTitle("Ladder");
+        alert.getDialogPane().setHeaderText(null);
+        alert.getDialogPane().setContentText("Run Scripts Program? [" + count + "] "
+                + ((file != null) ? file.getFileName().toString() : ""));
+        alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+        result = alert.showAndWait();
+        // a closed dialog never runs the scripts of a file
+        return result.orElse(ButtonType.NO) == ButtonType.YES;
     }
 
     private Path ladderSave() {
@@ -2400,6 +2516,22 @@ public class Ladders extends Service<Void> {
     public void setIdealCycleTime(long idealCycleTime) {
         idealCycleTime_ = idealCycleTime;
         ladderController_.setIdealCycleTime(idealCycleTime_);
+    }
+
+    /**
+     *
+     * @return true when the scripts of a ladder loaded from a file are run
+     */
+    public boolean isScriptEnable() {
+        return isScriptEnable_;
+    }
+
+    /**
+     *
+     * @param isScriptEnable run the scripts of a ladder loaded from a file
+     */
+    public void setScriptEnable(boolean isScriptEnable) {
+        isScriptEnable_ = isScriptEnable;
     }
 
     public Boolean isRegistered(Object object) {

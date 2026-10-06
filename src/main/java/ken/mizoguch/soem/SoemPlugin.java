@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.regex.Pattern;
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.image.Image;
@@ -30,6 +31,13 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
 
     private WebViewerPlugin webViewer_;
     private static final String FUNCTION_NAME = "soem";
+
+    /**
+     * name of a js function : a name and the properties of an object only, so the name
+     * of a function can not carry an other javascript
+     */
+    private static final Pattern PATTERN_SCRIPT_FUNCTION = Pattern
+            .compile("^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$");
 
     private WebEngine webEngine_;
     private Worker.State state_;
@@ -412,17 +420,33 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param args call of the js function
      */
     private void runScript(String func, String args) {
-        if (func != null) {
-            Platform.runLater(() -> {
-                if (state_ == Worker.State.SUCCEEDED) {
-                    try {
-                        webEngine_.executeScript(func + args);
-                    } catch (JSException | NullPointerException ex) {
-                        Console.writeStackTrace(SoemPlugin.class.getName(), ex);
-                    }
-                }
-            });
+        if (!isScriptFunction(func)) {
+            if (func != null) {
+                Console.write(SoemPlugin.class.getName(), "invalid script function [" + func + "]", true);
+            }
+            return;
         }
+        Platform.runLater(() -> {
+            if (state_ == Worker.State.SUCCEEDED) {
+                try {
+                    webEngine_.executeScript(func + args);
+                } catch (JSException | NullPointerException ex) {
+                    Console.writeStackTrace(SoemPlugin.class.getName(), ex);
+                }
+            }
+        });
+    }
+
+    /**
+     * check the name of a js function : the name and the arguments build the script of a
+     * notification, so a name which comes from a web page can not carry an other
+     * javascript
+     *
+     * @param func js function name
+     * @return true when the name can be used to build a script
+     */
+    static boolean isScriptFunction(String func) {
+        return (func != null) && PATTERN_SCRIPT_FUNCTION.matcher(func).matches();
     }
 
 

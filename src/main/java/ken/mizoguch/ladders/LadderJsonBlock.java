@@ -41,7 +41,7 @@ public class LadderJsonBlock {
     private final String address;
     private final String comment;
     private List<JsonBlockFunction> blockFunctions;
-    private final String blockScript;
+    private String blockScript;
 
     /**
      *
@@ -168,5 +168,22 @@ public class LadderJsonBlock {
      */
     public String getBlockScript() {
         return blockScript;
+    }
+
+    /**
+     *
+     * @return true when the block holds a script
+     */
+    public boolean hasScript() {
+        return blockScript != null;
+    }
+
+    /**
+     * remove the script of the block : the script of a ladder which comes from a file
+     * is not always wanted, because it is run in the web page with the apis of the
+     * application
+     */
+    public void removeScript() {
+        blockScript = null;
     }
 }

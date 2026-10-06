@@ -17,19 +17,26 @@ import netscape.javascript.JSException;
  */
 public class LadderIo {
 
-    private WebEngine webEngine_;
-    private Worker.State state_;
+    private volatile WebEngine webEngine_;
+    private volatile Worker.State state_;
 
     private String address_, comment_;
-    private double value_;
+    private volatile double value_;
 
     private double cumulativeValue_;
-    private boolean isDefaultLd_, isLd_, isLdRising_, isLdFalling_, isOldLd_;
+    private volatile boolean isDefaultLd_, isLd_, isLdRising_, isLdFalling_, isOldLd_;
 
     private Object scriptObject_;
     private final StringBuilder script_;
     private final Object lockScript_;
-    private boolean isCycled_;
+    private volatile boolean isCycled_;
+
+    /**
+     * maximum length of the javascript of the script blocks of a ladder : the script of
+     * a block is written by the ladder and executed in the web page, so an abnormal
+     * length is refused instead of filling the memory
+     */
+    public static final int LADDER_IO_SCRIPT_MAX_LENGTH = 4096;
 
     private final String undefined_ = "undefined";
 
@@ -325,45 +332,61 @@ public class LadderIo {
      * @return
      */
     public boolean setScript(String script) {
-        if (webEngine_ != null) {
-            isDefaultLd_ = false;
-            if (script != null) {
-                synchronized (lockScript_) {
-                    script_.append(script).append(";");
-                }
-                Platform.runLater(() -> {
-                    String executeScript;
+        if ((webEngine_ == null) || (script == null)) {
+            return false;
+        }
+        isDefaultLd_ = false;
+        synchronized (lockScript_) {
+            if (!isScriptLengthAcceptable(script_.length(), script.length())) {
+                // an abnormal length of script is refused : the javascript of a script
+                // block is executed in the web page with the apis of the application
+                Console.write(LadderIo.class.getName(), "script too long [" + address_ + "]", true);
+                script_.setLength(0);
+                return false;
+            }
+            script_.append(script).append(";");
+        }
+        Platform.runLater(() -> {
+            String executeScript;
 
-                    synchronized (lockScript_) {
-                        executeScript = script_.toString();
-                        script_.delete(0, script_.length());
-                    }
-                    if (executeScript.length() > 0) {
-                        if (webEngine_ != null) {
-                            if (state_ == Worker.State.SUCCEEDED) {
-                                try {
-                                    scriptObject_ = webEngine_.executeScript(executeScript);
-                                    if (!undefined_.equals(scriptObject_)) {
-                                        if (scriptObject_ instanceof Integer) {
-                                            value_ = (Integer) scriptObject_;
-                                        } else if (scriptObject_ instanceof Double) {
-                                            value_ = (Double) scriptObject_;
-                                        }
-                                    }
-                                } catch (JSException | ClassCastException ex) {
-                                    Console.writeStackTrace(LadderIo.class.getName(), ex);
-                                }
-                            }
-                            isLd_ = (value_ != 0.0);
-                            chehckEdge();
-                            isOldLd_ = isLd_;
+            synchronized (lockScript_) {
+                executeScript = script_.toString();
+                script_.delete(0, script_.length());
+            }
+            if (executeScript.length() > 0) {
+                if (webEngine_ != null) {
+                    if (state_ == Worker.State.SUCCEEDED) {
+                        try {
+                            scriptObject_ = webEngine_.executeScript(executeScript);
+                        } catch (JSException | ClassCastException ex) {
+                            Console.writeStackTrace(LadderIo.class.getName(), ex);
                         }
+                        setScriptValue(scriptObject_);
                     }
-                });
-                return true;
+                }
+            }
+        });
+        return true;
+    }
+
+    /**
+     * use the result of the javascript of a script block : the result comes from the
+     * javafx application thread while the value of the io is read by the cycle of the
+     * ladder, so the value and the edge flags are changed together
+     *
+     * @param scriptResult
+     */
+    private synchronized void setScriptValue(Object scriptResult) {
+        if (!undefined_.equals(scriptResult)) {
+            if (scriptResult instanceof Integer) {
+                value_ = (Integer) scriptResult;
+            } else if (scriptResult instanceof Double) {
+                value_ = (Double) scriptResult;
             }
         }
-        return false;
+        isLd_ = (value_ != 0.0);
+        chehckEdge();
+        isOldLd_ = isLd_;
     }
 
     /**
@@ -404,6 +427,19 @@ public class LadderIo {
      */
     public boolean isCycled() {
         return isCycled_;
+    }
+
+    /**
+     * check the length of the javascript which is waited by an io : the script of the
+     * script blocks of a ladder is executed in the web page, so an abnormal length is
+     * refused
+     *
+     * @param scriptLength length of the scripts already waited
+     * @param newScriptLength length of the new script
+     * @return true when the new script can be added
+     */
+    static boolean isScriptLengthAcceptable(int scriptLength, int newScriptLength) {
+        return (scriptLength + newScriptLength + 1) <= LADDER_IO_SCRIPT_MAX_LENGTH;
     }
 
     /**
