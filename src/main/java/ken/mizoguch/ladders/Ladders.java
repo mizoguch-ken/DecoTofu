@@ -7,13 +7,13 @@ package ken.mizoguch.ladders;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,7 +49,6 @@ import javafx.stage.StageStyle;
 import ken.mizoguch.console.Console;
 import ken.mizoguch.decotofu.JavaLibrary;
 import ken.mizoguch.soem.Soem;
-import netscape.javascript.JSException;
 import org.apache.fontbox.ttf.TrueTypeCollection;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -623,21 +622,68 @@ public class Ladders extends Service<Void> {
         }
 
         LadderJson ladderJson = ladderJsonOpen(file);
-        if (ladderJson != null) {
-            allClear();
+        if (ladderJson == null) {
+            return null;
+        }
 
-            // global
-            treeTableIo_.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
-                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
-            ioMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-            commentMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-            scriptIoMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
+        // allClear() destroys the ladder of the editor : it is kept as a backup to be
+        // restored when the loaded file can not be displayed
+        LadderJson backup = ladderJsonSave(tabPane, ioMap, commentMap);
+        // the history of the backup is not restored : the undo history is left empty
+        backup.setHistoryManager(new LadderHistoryManager(), -1);
 
-            if (ladderJsonLoad(this, tabPane, treeTableView, ioMap, commentMap, scriptIoMap_, ladderJson)) {
-                return file;
-            }
+        allClear();
+        addGlobalRow();
+
+        if (ladderJsonLoad(this, tabPane, treeTableView, ioMap, commentMap, scriptIoMap_, ladderJson)) {
+            return file;
+        }
+
+        // the file was readable but the ladder could not be restored : use the backup
+        writeLog("load failed [" + file.getFileName() + "]", true);
+        if (!ladderRestoreBackup(backup, tabPane, treeTableView, ioMap, commentMap)) {
+            writeLog("the ladder backup could not be restored", true);
         }
         return null;
+    }
+
+    /**
+     * add the global address row of the ladder list
+     */
+    private void addGlobalRow() {
+        treeTableIo_.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
+                new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
+        ioMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
+        commentMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
+        scriptIoMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
+    }
+
+    /**
+     * restore a ladder backed up before allClear() : the undo history is disabled, so
+     * that the failure of a load is not added to the history of the user
+     *
+     * @param backup
+     * @param tabPane
+     * @param treeTableView
+     * @param ioMap
+     * @param commentMap
+     * @return
+     */
+    private boolean ladderRestoreBackup(LadderJson backup, TabPane tabPane,
+            TreeTableView<LadderTreeTableIo> treeTableView,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
+            CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap) {
+        boolean restore;
+
+        ladderCommand_.setDisableHistory(true);
+        try {
+            allClear();
+            addGlobalRow();
+            restore = ladderJsonLoad(this, tabPane, treeTableView, ioMap, commentMap, scriptIoMap_, backup);
+        } finally {
+            ladderCommand_.setDisableHistory(false);
+        }
+        return restore;
     }
 
     private Path ladderSave() {
@@ -1688,7 +1734,7 @@ public class Ladders extends Service<Void> {
 
                 doc.save(file.toFile());
                 return file;
-            } catch (JSException | IOException ex) {
+            } catch (IOException ex) {
                 Console.writeStackTrace(Ladders.class.getName(), ex);
             }
         }
@@ -1723,18 +1769,14 @@ public class Ladders extends Service<Void> {
      */
     public LadderJson ladderJsonOpen(Path file) {
         if (file != null) {
-            if (Files.exists(file)) {
-                try (BufferedReader bufferedReader = new BufferedReader(
-                        new InputStreamReader(Files.newInputStream(file), "UTF-8"))) {
-                    StringBuilder builder = new StringBuilder();
-                    String line;
-                    while ((line = bufferedReader.readLine()) != null) {
-                        builder.append(line);
-                    }
-                    return gson_.fromJson(builder.toString(), LadderJson.class);
-                } catch (FileNotFoundException ex) {
+            if (Files.isRegularFile(file) && Files.isReadable(file)) {
+                try {
+                    return gson_.fromJson(Files.readString(file, StandardCharsets.UTF_8), LadderJson.class);
+                } catch (JsonParseException ex) {
+                    // the file is not a valid ladder json : the caller keeps the current ladder
+                    writeLog("json parse error [" + file.getFileName() + "]", true);
                     Console.writeStackTrace(Ladders.class.getName(), ex);
-                } catch (JSException | IOException ex) {
+                } catch (IOException ex) {
                     Console.writeStackTrace(Ladders.class.getName(), ex);
                 }
             }
@@ -2618,78 +2660,65 @@ public class Ladders extends Service<Void> {
             alert.getDialogPane().setContentText("Save Changes Program?");
             alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
             Optional<ButtonType> result = alert.showAndWait();
-            response = result.get();
+            // the dialog can be closed without an answer : it is a cancel, not an error
+            response = result.orElse(ButtonType.CANCEL);
         }
         return response;
     }
 
     public boolean fileNew() {
-        ButtonType response = fileSavedCheck();
+        if (!saveChanges(fileSavedCheck())) {
+            // the changes are kept : a new ladder is not created
+            return false;
+        }
+        ladderNew();
+        filePath_ = null;
+        isChanged_ = false;
+        setTitle();
+        return true;
+    }
 
+    /**
+     * apply the answer of fileSavedCheck() : the current ladder is kept when the save
+     * failed, so that fileNew() and fileOpen() can not destroy edited data
+     *
+     * @param response answer of fileSavedCheck(), null when the ladder was saved
+     * @return true when the current ladder can be replaced
+     */
+    private boolean saveChanges(ButtonType response) {
         if (response == null) {
-            ladderNew();
-            filePath_ = null;
-            isChanged_ = false;
-            setTitle();
-            return true;
-        } else if (response == ButtonType.YES) {
-            ladderSave();
-            ladderNew();
-            filePath_ = null;
-            isChanged_ = false;
-            setTitle();
-            return true;
-        } else if (response == ButtonType.NO) {
-            ladderNew();
-            filePath_ = null;
-            isChanged_ = false;
-            setTitle();
+            // nothing to save
             return true;
         }
-        return false;
+        if (response == ButtonType.YES) {
+            if (ladderSave() == null) {
+                writeLog("save failed : the current ladder is kept", true);
+                return false;
+            }
+            return true;
+        }
+        // ButtonType.NO discards the changes on purpose, ButtonType.CANCEL and a closed
+        // dialog keep the current ladder
+        return response == ButtonType.NO;
     }
 
     public boolean fileOpen(Path filePath) {
         Path file;
-        ButtonType response = fileSavedCheck();
 
-        if (response == null) {
-            file = ladderOpen(tabLadder_, treeTableIo_, filePath);
-            if (file == null) {
-                if (filePath != null) {
-                    fileNotFound(filePath);
-                }
-            } else {
-                filePath_ = file;
-                isChanged_ = false;
-                setTitle();
-                return true;
+        if (!saveChanges(fileSavedCheck())) {
+            // the changes are kept : an other ladder is not loaded
+            return false;
+        }
+        file = ladderOpen(tabLadder_, treeTableIo_, filePath);
+        if (file == null) {
+            if (filePath != null) {
+                fileNotFound(filePath);
             }
-        } else if (response == ButtonType.YES) {
-            ladderSave();
-            file = ladderOpen(tabLadder_, treeTableIo_, filePath);
-            if (file == null) {
-                if (filePath != null) {
-                    fileNotFound(filePath);
-                }
-            } else {
-                filePath_ = file;
-                isChanged_ = false;
-                setTitle();
-                return true;
-            }
-        } else if (response == ButtonType.NO) {
-            file = ladderOpen(tabLadder_, treeTableIo_, filePath);
-            if (file == null) {
-                if (filePath != null) {
-                    fileNotFound(filePath);
-                }
-            } else {
-                filePath_ = file;
-                isChanged_ = false;
-                setTitle();
-                return true;
-            }
+        } else {
+            filePath_ = file;
+            isChanged_ = false;
+            setTitle();
+            return true;
         }
         return false;
     }
