@@ -32,6 +32,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import ken.mizoguch.console.Console;
 import ken.mizoguch.decotofu.JavaLibrary;
+import ken.mizoguch.decotofu.PathResolver;
 import ken.mizoguch.decotofu.ShutdownHook;
 import ken.mizoguch.ladders.DesignLaddersController;
 import ken.mizoguch.ladders.Ladders;
@@ -60,6 +61,12 @@ public class DesignWebController implements Initializable {
     private List<Image> icons_;
     private Path currentPath_, webPath_, logPath_;
     private WebViewer webViewer_;
+
+    /**
+     * default window size used when properties.xml is absent or damaged
+     */
+    private static final double DEFAULT_STAGE_WIDTH = 640.0;
+    private static final double DEFAULT_STAGE_HEIGHT = 480.0;
     private final String template_ = "<!DOCTYPE html>" + "\n"
             + "<html>" + "\n"
             + "<head>" + "\n"
@@ -201,8 +208,32 @@ public class DesignWebController implements Initializable {
     private void initProperties() {
         // stage
         stageSettings_.setStageMaximized(false, false);
-        stageSettings_.setStageWidth(640.0, false);
-        stageSettings_.setStageHeight(480.0, false);
+        stageSettings_.setStageWidth(DEFAULT_STAGE_WIDTH, false);
+        stageSettings_.setStageHeight(DEFAULT_STAGE_HEIGHT, false);
+    }
+
+    /**
+     * read a double property : a damaged properties.xml has to keep the application
+     * running, so an unreadable value is only reported and the default is used
+     *
+     * @param properties
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    private double parseDoubleProperty(Properties properties, String key, double defaultValue) {
+        String value = properties.getProperty(key);
+
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException ex) {
+            Console.write(DesignWebController.class.getName(),
+                    "properties : " + key + " is not a number [" + value + "]", true);
+            return defaultValue;
+        }
     }
 
     private boolean loadProperties(Path propertyFile) {
@@ -214,9 +245,10 @@ public class DesignWebController implements Initializable {
                 // stage
                 stageSettings_.setStageMaximized(
                         (Boolean.parseBoolean(properties.getProperty("STAGE_MAXIMIZED", "false"))), true);
-                stageSettings_.setStageWidth(Double.parseDouble(properties.getProperty("STAGE_WIDTH", "640.0")), true);
-                stageSettings_.setStageHeight(Double.parseDouble(properties.getProperty("STAGE_HEIGHT", "480.0")),
-                        true);
+                stageSettings_.setStageWidth(
+                        parseDoubleProperty(properties, "STAGE_WIDTH", DEFAULT_STAGE_WIDTH), true);
+                stageSettings_.setStageHeight(
+                        parseDoubleProperty(properties, "STAGE_HEIGHT", DEFAULT_STAGE_HEIGHT), true);
 
                 return true;
             } catch (IOException ex) {
@@ -267,12 +299,7 @@ public class DesignWebController implements Initializable {
         icons_ = icons;
 
         // current path
-        currentPath_ = Paths.get("properties.xml");
-        if (Files.exists(currentPath_)) {
-            currentPath_ = currentPath_.toAbsolutePath().getParent();
-        } else {
-            currentPath_ = Paths.get(System.getProperty("java.class.path").split(";")[0]).toAbsolutePath().getParent();
-        }
+        currentPath_ = PathResolver.applicationDirectory(DesignWebController.class);
 
         // web path
         webPath_ = currentPath_.resolve("web");
@@ -296,12 +323,10 @@ public class DesignWebController implements Initializable {
 
         // log path
         logPath_ = currentPath_.resolve("log");
-        if (logPath_ != null) {
-            // If the log path exists, the log file will be output
-            if (Files.exists(logPath_)) {
-                SimpleDateFormat sdfFile = new SimpleDateFormat("yyyyMMddHHmmss");
-                Console.setPrintStream(logPath_.resolve("Console_" + sdfFile.format(new Date()) + ".txt"));
-            }
+        // If the log path exists, the log file will be output
+        if (Files.exists(logPath_)) {
+            SimpleDateFormat sdfFile = new SimpleDateFormat("yyyyMMddHHmmss");
+            Console.setPrintStream(logPath_.resolve("Console_" + sdfFile.format(new Date()) + ".txt"));
         }
 
         // load properties
