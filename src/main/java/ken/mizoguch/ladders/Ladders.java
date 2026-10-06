@@ -80,6 +80,11 @@ public class Ladders extends Service<Void> {
     private static final long LADDER_CYCLE_STOP_WAIT_MILLIS = 1000;
 
     /**
+     * number of the cycle errors accepted before the cycle is stopped
+     */
+    private static final int LADDER_CYCLE_ERROR_LIMIT = 100;
+
+    /**
      *
      */
     public static enum LADDER_BLOCK {
@@ -2199,6 +2204,26 @@ public class Ladders extends Service<Void> {
         cancel();
     }
 
+    /**
+     * io of a global address : an address can be removed from the io map while the cycle
+     * is running, so a null answer only skips the io of the cycle
+     *
+     * @param address
+     * @return the io of the address, null when the address is not registered
+     */
+    private LadderIo globalLadderIo(String address) {
+        ConcurrentHashMap<String, LadderIo> ioMap;
+
+        if ((address == null) || ioMap_.isEmpty()) {
+            return null;
+        }
+        ioMap = ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX);
+        if (ioMap == null) {
+            return null;
+        }
+        return ioMap.get(address);
+    }
+
     @Override
     protected Task<Void> createTask() {
         final AtomicBoolean finished = new AtomicBoolean(false);
@@ -2210,10 +2235,11 @@ public class Ladders extends Service<Void> {
                 try {
                     Map.Entry<String, LadderIo> entry;
                     LadderRegisterSoemIo registerSoemIo;
+                    LadderIo cycleIo;
                     Long registerSoemValue;
                     long cycleTime, minCycleTime, maxCycleTime, cumulativeCycleTime, cumulativeCycleTimeCount, nanoTime,
                             nanoTimeOld, waitTime;
-                    int index, size;
+                    int cycleErrorCount, index, size;
 
                     ladderController_.runViewRunning(true);
 
@@ -2222,57 +2248,80 @@ public class Ladders extends Service<Void> {
                     maxCycleTime = 0;
                     cumulativeCycleTime = 0;
                     cumulativeCycleTimeCount = 0;
+                    cycleErrorCount = 0;
 
                     nanoTimeOld = System.nanoTime();
                     while (isCycling_ && !isCancelled()) {
                         boolean refreshView = false;
-                        synchronized (lock_) {
-                            // soem
-                            if (soem_ != null) {
-                                for (index = 0, size = registerSoemOut_.size(); index < size; index++) {
-                                    registerSoemIo = registerSoemOut_.get(index);
-                                    soem_.out(registerSoemIo.getSlave(), registerSoemIo.getBitsOffset(),
-                                            registerSoemIo.getBitsMask(), (long) ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX)
-                                                    .get(registerSoemIo.getAddress()).getValue());
-                                }
-                                for (index = 0, size = registerSoemIn_.size(); index < size; index++) {
-                                    registerSoemIo = registerSoemIn_.get(index);
-                                    registerSoemValue = soem_.in(registerSoemIo.getSlave(),
-                                            registerSoemIo.getBitsOffset(), registerSoemIo.getBitsMask());
-                                    if (registerSoemValue != null) {
-                                        ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).get(registerSoemIo.getAddress())
-                                                .setValue(registerSoemValue);
+                        try {
+                            synchronized (lock_) {
+                                // soem
+                                if (soem_ != null) {
+                                    for (index = 0, size = registerSoemOut_.size(); index < size; index++) {
+                                        registerSoemIo = registerSoemOut_.get(index);
+                                        cycleIo = globalLadderIo(registerSoemIo.getAddress());
+                                        if (cycleIo != null) {
+                                            soem_.out(registerSoemIo.getSlave(), registerSoemIo.getBitsOffset(),
+                                                    registerSoemIo.getBitsMask(), (long) cycleIo.getValue());
+                                        }
                                     }
-                                }
-                            }
-
-                            // script io
-                            for (index = 0; index < scriptIoMap_.size(); index++) {
-                                if (!scriptIoMap_.get(index).isEmpty()) {
-                                    for (Iterator<Map.Entry<String, LadderIo>> iterator = scriptIoMap_.get(index)
-                                            .entrySet().iterator(); iterator.hasNext();) {
-                                        entry = iterator.next();
-                                        if (entry.getValue().isCycled()) {
-                                            ioMap_.get(index).get(entry.getKey()).chehckEdge();
-                                            iterator.remove();
-                                        } else {
-                                            ioMap_.get(index).get(entry.getKey()).setValue(entry.getValue().getValue());
-                                            entry.getValue().setCycled(true);
+                                    for (index = 0, size = registerSoemIn_.size(); index < size; index++) {
+                                        registerSoemIo = registerSoemIn_.get(index);
+                                        registerSoemValue = soem_.in(registerSoemIo.getSlave(),
+                                                registerSoemIo.getBitsOffset(), registerSoemIo.getBitsMask());
+                                        cycleIo = globalLadderIo(registerSoemIo.getAddress());
+                                        if ((registerSoemValue != null) && (cycleIo != null)) {
+                                            cycleIo.setValue(registerSoemValue);
                                         }
                                     }
                                 }
-                            }
 
-                            // ladder
-                            Ladder[] laddersLocal = ladders_;
-                            if (laddersLocal != null) {
-                                for (index = 0; index < laddersSize_; index++) {
-                                    laddersLocal[index].run(ioMap_, cycleTime);
+                                // script io
+                                for (index = 0; index < scriptIoMap_.size(); index++) {
+                                    if (!scriptIoMap_.get(index).isEmpty()) {
+                                        for (Iterator<Map.Entry<String, LadderIo>> iterator = scriptIoMap_.get(index)
+                                                .entrySet().iterator(); iterator.hasNext();) {
+                                            entry = iterator.next();
+                                            cycleIo = ioMap_.get(index).get(entry.getKey());
+                                            if (cycleIo == null) {
+                                                // the io of the script does not exist any more
+                                                iterator.remove();
+                                            } else if (entry.getValue().isCycled()) {
+                                                cycleIo.chehckEdge();
+                                                iterator.remove();
+                                            } else {
+                                                cycleIo.setValue(entry.getValue().getValue());
+                                                entry.getValue().setCycled(true);
+                                            }
+                                        }
+                                    }
                                 }
-                            }
 
-                            // refresh view
-                            refreshView = (LADDER_VIEW_REFRESH_CYCLE_TIME - cumulativeCycleTime) < 0;
+                                // ladder
+                                Ladder[] laddersLocal = ladders_;
+                                if (laddersLocal != null) {
+                                    for (index = 0; index < laddersSize_; index++) {
+                                        laddersLocal[index].run(ioMap_, cycleTime);
+                                    }
+                                }
+
+                                // refresh view
+                                refreshView = (LADDER_VIEW_REFRESH_CYCLE_TIME - cumulativeCycleTime) < 0;
+                            }
+                            cycleErrorCount = 0;
+                        } catch (Exception ex) {
+                            // the error of a cycle does not stop the cycle thread : an
+                            // error which is repeated stops the cycle, because the ladder
+                            // would be run in an unknown state
+                            if (cycleErrorCount == 0) {
+                                Console.writeStackTrace(Ladders.class.getName(), ex);
+                            } else {
+                                writeLog("cycle error : " + ex, true);
+                            }
+                            if (++cycleErrorCount > LADDER_CYCLE_ERROR_LIMIT) {
+                                writeLog("the ladder cycle is stopped after " + cycleErrorCount + " errors", true);
+                                isCycling_ = false;
+                            }
                         }
                         // refreshLadder only queues an asynchronous update : keep the lock for io and ladder state
                         if (refreshView) {

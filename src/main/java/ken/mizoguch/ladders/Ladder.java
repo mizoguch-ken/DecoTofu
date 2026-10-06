@@ -8,8 +8,10 @@ package ken.mizoguch.ladders;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
@@ -31,6 +33,11 @@ public class Ladder {
 
     private int[] connectNumbers_;
     private int[] runConnectNumbers_;
+    /**
+     * addresses whose io is not registered in the io map : every address is reported
+     * only once, so that the cycle does not write a message at every cycle
+     */
+    private final Set<String> runIoErrorSet_;
     private int column_, row_;
     private int idx_;
     private String name_;
@@ -52,6 +59,7 @@ public class Ladder {
         outGrids_ = new ArrayList<>();
         inConnectGrids_ = new HashMap<>();
         outConnectGrids_ = new HashMap<>();
+        runIoErrorSet_ = new HashSet<>();
 
         column_ = gridColumn;
         row_ = gridRow;
@@ -273,6 +281,7 @@ public class Ladder {
         outGrids_.clear();
         inConnectGrids_.clear();
         outConnectGrids_.clear();
+        runIoErrorSet_.clear();
         isConnectFailed_ = false;
 
         connectNumberLast = 1;
@@ -645,6 +654,13 @@ public class Ladder {
             idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
             if (grid.getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
                 idx = idx_;
+            }
+
+            if (!checkRunIo(ioMap, idx, grid)) {
+                // the io of the block is not registered : the block is only ignored, the
+                // other blocks of the ladder are run
+                runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                continue;
             }
 
             if (runRouteBegin(ioMap, grid)) {
@@ -1287,6 +1303,81 @@ public class Ladder {
         }
     }
 
+    /**
+     * check the io used by a block before the block is run : an address which is not
+     * registered in the io map would make a null pointer error in the cycle of the ladder
+     *
+     * @param ioMap
+     * @param idx
+     * @param grid
+     * @return true when the block can be run
+     */
+    private boolean checkRunIo(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, int idx,
+            LadderGrid grid) {
+        LadderGrid.BlockFunction[] functions;
+        String address;
+        int funcIdx, index, size;
+
+        address = grid.getAddress();
+        if ((address == null) || address.isEmpty() || isRunAddressNumber(address)) {
+            // the block uses no address of the io map
+            return true;
+        }
+        if ((idx < 0) || (idx >= ioMap.size()) || (ioMap.get(idx).get(address) == null)) {
+            return writeRunIoError(address);
+        }
+
+        functions = grid.getBlockFunctions();
+        for (index = 0, size = functions.length; index < size; index++) {
+            if (functions[index].isNumber()) {
+                continue;
+            }
+            address = functions[index].getAddress();
+            if ((address == null) || address.isEmpty() || isRunAddressNumber(address)) {
+                continue;
+            }
+            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+            if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                funcIdx = idx_;
+            }
+            if ((funcIdx < 0) || (funcIdx >= ioMap.size()) || (ioMap.get(funcIdx).get(address) == null)) {
+                return writeRunIoError(address);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * a real number is never used as an address of the io map : the pattern is only used
+     * when the address can be a number, so that the cycle of the ladder is not slowed by
+     * a regular expression for every block
+     *
+     * @param address
+     * @return
+     */
+    private static boolean isRunAddressNumber(String address) {
+        char ch = address.charAt(0);
+
+        if (!((ch == '+') || (ch == '-') || ((ch >= '0') && (ch <= '9')))) {
+            return false;
+        }
+        return PATTERN_REAL_NUMBER.matcher(address).find();
+    }
+
+    /**
+     * report an io which is not registered only the first time it is found, so that the
+     * cycle of the ladder does not write a message at every cycle
+     *
+     * @param address
+     * @return false
+     */
+    private boolean writeRunIoError(String address) {
+        if (runIoErrorSet_.add(address)) {
+            writeLog("no io [" + address + "]", true);
+        }
+        return false;
+    }
+
     private boolean runRouteBegin(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, LadderGrid grid) {
         if (grid != null) {
             int connectNumber = grid.getInConnectNumber();
@@ -1322,6 +1413,11 @@ public class Ladder {
             idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
             if (grid.getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
                 idx = idx_;
+            }
+
+            if (!checkRunIo(ioMap, idx, grid)) {
+                // the io of the block is not registered : the route does not conduct
+                return false;
             }
 
             switch (grid.getBlock()) {
