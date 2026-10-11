@@ -23,7 +23,11 @@ public class LadderIo {
     private String address_, comment_;
     private volatile double value_;
 
-    private double cumulativeValue_;
+    /**
+     * the count of a counter block : it is changed by the cycle of the ladder and answered
+     * to the view of the io by the javafx application thread, so it is volatile
+     */
+    private volatile double cumulativeValue_;
     private volatile boolean isDefaultLd_, isLd_, isLdRising_, isLdFalling_, isOldLd_;
 
     private Object scriptObject_;
@@ -104,11 +108,21 @@ public class LadderIo {
     }
 
     /**
-     *
+     * check the rising and the falling edge of the io : it is done by the cycle of the
+     * ladder which reads the io, so an edge is answered only to the cycle which makes it
      */
-    public void chehckEdge() {
+    public void checkEdge() {
         isLdRising_ = (isLd_ && !isOldLd_);
         isLdFalling_ = (!isLd_ && isOldLd_);
+    }
+
+    /**
+     * @deprecated misspelling of {@link #checkEdge()} : kept for the compatibility of the
+     * web pages and of the plugins which call it
+     */
+    @Deprecated
+    public void chehckEdge() {
+        checkEdge();
     }
 
     /**
@@ -128,7 +142,7 @@ public class LadderIo {
         isDefaultLd_ = false;
         value_ = value;
         isLd_ = (value != 0.0);
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLd_;
     }
@@ -142,7 +156,7 @@ public class LadderIo {
         isDefaultLd_ = true;
         value_ = value;
         isLd_ = (value != 0.0);
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLd_;
     }
@@ -155,7 +169,7 @@ public class LadderIo {
         isLd_ = isDefaultLd_;
         value_ = 0.0;
         cumulativeValue_ = 0.0;
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLd_;
     }
@@ -169,7 +183,7 @@ public class LadderIo {
         isDefaultLd_ = false;
         isLd_ = (value != 0.0) && (value_ == 0.0);
         value_ = value;
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLdRising_;
     }
@@ -183,7 +197,7 @@ public class LadderIo {
         isDefaultLd_ = true;
         isLd_ = !((value == 0.0) && (value_ != 0.0));
         value_ = value;
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLdRising_;
     }
@@ -197,7 +211,7 @@ public class LadderIo {
         isDefaultLd_ = false;
         isLd_ = (value == 0.0) && (value_ != 0.0);
         value_ = value;
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLdFalling_;
     }
@@ -211,7 +225,7 @@ public class LadderIo {
         isDefaultLd_ = true;
         isLd_ = !((value != 0.0) && (value_ == 0.0));
         value_ = value;
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLdFalling_;
     }
@@ -239,7 +253,7 @@ public class LadderIo {
             value_ = 0.0;
             isLd_ = false;
         }
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLd_;
     }
@@ -267,7 +281,7 @@ public class LadderIo {
             value_ = 0.0;
             isLd_ = false;
         }
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLd_;
     }
@@ -294,7 +308,7 @@ public class LadderIo {
             value_ = 0.0;
             isLd_ = false;
         }
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLd_;
     }
@@ -321,7 +335,7 @@ public class LadderIo {
             value_ = 0.0;
             isLd_ = false;
         }
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
         return isLd_;
     }
@@ -385,7 +399,7 @@ public class LadderIo {
             }
         }
         isLd_ = (value_ != 0.0);
-        chehckEdge();
+        checkEdge();
         isOldLd_ = isLd_;
     }
 

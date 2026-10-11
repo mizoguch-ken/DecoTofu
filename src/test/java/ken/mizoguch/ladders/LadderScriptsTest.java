@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for the scripts of a ladder which comes from a json file
- * ({@link Ladders#countLadderScripts} and {@link Ladders#removeLadderScripts}).
+ * ({@link LadderFileStore#countScripts} and {@link LadderFileStore#removeScripts}).
  */
 class LadderScriptsTest {
 
@@ -24,25 +24,25 @@ class LadderScriptsTest {
 
     @Test
     void nullAndEmptyLadderJsonHaveNoScript() {
-        assertEquals(0, Ladders.countLadderScripts(null));
-        assertEquals(0, Ladders.countLadderScripts(new LadderJson()));
-        assertEquals(0, Ladders.removeLadderScripts(null));
-        assertEquals(0, Ladders.removeLadderScripts(new LadderJson()));
+        assertEquals(0, LadderFileStore.countScripts(null));
+        assertEquals(0, LadderFileStore.countScripts(new LadderJson()));
+        assertEquals(0, LadderFileStore.removeScripts(null));
+        assertEquals(0, LadderFileStore.removeScripts(new LadderJson()));
     }
 
     @Test
     void blocksWithoutScriptAreNotCounted() {
-        assertEquals(0, Ladders.countLadderScripts(ladderJson(new String[]{null})));
+        assertEquals(0, LadderFileStore.countScripts(ladderJson(new String[]{null})));
     }
 
     @Test
     void scriptBlocksAreCountedAndRemoved() {
         LadderJson ladderJson = ladderJson("value(1);", null, "value(2);");
 
-        assertEquals(2, Ladders.countLadderScripts(ladderJson));
-        assertEquals(2, Ladders.removeLadderScripts(ladderJson));
-        assertEquals(0, Ladders.countLadderScripts(ladderJson));
-        assertEquals(0, Ladders.removeLadderScripts(ladderJson));
+        assertEquals(2, LadderFileStore.countScripts(ladderJson));
+        assertEquals(2, LadderFileStore.removeScripts(ladderJson));
+        assertEquals(0, LadderFileStore.countScripts(ladderJson));
+        assertEquals(0, LadderFileStore.removeScripts(ladderJson));
 
         for (LadderJsonBlock block : ladderJson.getLadders().get(0).getBlocks()) {
             assertFalse(block.hasScript());

@@ -12,6 +12,8 @@ import javafx.concurrent.Worker;
 import javafx.scene.image.Image;
 import javafx.scene.web.WebEngine;
 import javafx.stage.Stage;
+import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.PathResolver;
 import ken.mizoguch.soem.Soem;
 import ken.mizoguch.webviewer.plugin.WebViewerPlugin;
 
@@ -392,12 +394,21 @@ public class LaddersPlugin implements WebViewerPlugin {
     }
 
     /**
+     * open a ladder file : a relative path is used from the current directory when the
+     * file is there, otherwise it is used from the directory of the application because
+     * the launcher does not always set the current directory
      *
      * @param path
      * @return
      */
     public Boolean fileOpen(String path) {
-        return ladders_.fileOpen(Paths.get(path));
+        Path filePath = PathResolver.resolvePagePath(LaddersPlugin.class, path);
+
+        if (filePath == null) {
+            write(FUNCTION_NAME, "incorrect file path [" + path + "]", true);
+            return false;
+        }
+        return ladders_.fileOpen(filePath);
     }
 
     /**
@@ -463,11 +474,21 @@ public class LaddersPlugin implements WebViewerPlugin {
 
     @Override
     public void writeStackTrace(String name, Throwable throwable) {
-        webViewer_.writeStackTrace(name, throwable);
+        if (webViewer_ != null) {
+            webViewer_.writeStackTrace(name, throwable);
+        } else {
+            // the plugin is not attached to a web page : the console of the application
+            // answers the message
+            Console.writeStackTrace(name, throwable);
+        }
     }
 
     @Override
     public void write(String name, String msg, boolean err) {
-        webViewer_.write(name, msg, err);
+        if (webViewer_ != null) {
+            webViewer_.write(name, msg, err);
+        } else {
+            Console.write(name, msg, err);
+        }
     }
 }

@@ -11,7 +11,7 @@ package ken.mizoguch.ladders;
  */
 public class LadderHistory {
 
-    private final Ladders.LADDER_COMMAND command;
+    private final LadderCommandType command;
     private LadderJsonLadder original;
     private LadderJsonLadder revised;
 
@@ -19,7 +19,7 @@ public class LadderHistory {
      *
      * @param command
      */
-    public LadderHistory(Ladders.LADDER_COMMAND command) {
+    public LadderHistory(LadderCommandType command) {
         this.command = command;
         this.original = null;
         this.revised = null;
@@ -29,7 +29,7 @@ public class LadderHistory {
      *
      * @return
      */
-    public Ladders.LADDER_COMMAND getCommand() {
+    public LadderCommandType getCommand() {
         return command;
     }
 

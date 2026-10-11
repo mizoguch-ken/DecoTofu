@@ -36,7 +36,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
-import static ken.mizoguch.ladders.Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+import static ken.mizoguch.ladders.LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
 
 /**
  *
@@ -203,10 +203,10 @@ public class DesignLaddersDifferenceController implements Initializable {
             List<String> jsonOriginal = new ArrayList<>();
 
             // original global
-            treeTableIoOriginal.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
-                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
-            ioMapOriginal.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-            commentMapOriginal.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
+            treeTableIoOriginal.getRoot().getChildren().add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
+                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)));
+            ioMapOriginal.add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
+            commentMapOriginal.add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
 
             // revised ladder
             if (pathRevised == null) {
@@ -219,10 +219,10 @@ public class DesignLaddersDifferenceController implements Initializable {
             List<String> jsonRevised = new ArrayList<>();
 
             // revised global
-            treeTableIoRevised.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
-                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
-            ioMapRevised.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-            commentMapRevised.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
+            treeTableIoRevised.getRoot().getChildren().add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
+                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)));
+            ioMapRevised.add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
+            commentMapRevised.add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
 
             // connect
             ladders_.ladderJsonLoad(null, tabLadderOriginal, treeTableIoOriginal, ioMapOriginal, commentMapOriginal,
@@ -316,7 +316,7 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 }
                                 gridNew.setDownLadderGrid(grid);
                                 if (columnIndex == 0) {
-                                    grid.setBlock(Ladders.LADDER_BLOCK.CONTENTS);
+                                    grid.setBlock(LadderBlock.CONTENTS);
                                     gridPane.changeBlock();
                                 } else {
                                     gridPane.changeDifference(DeltaType.DELETE);
@@ -350,7 +350,7 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 }
                                 gridNew.setDownLadderGrid(grid);
                                 if (columnIndex == 0) {
-                                    grid.setBlock(Ladders.LADDER_BLOCK.CONTENTS);
+                                    grid.setBlock(LadderBlock.CONTENTS);
                                     gridPane.changeBlock();
                                 } else {
                                     gridPane.changeDifference(DeltaType.DELETE);

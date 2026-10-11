@@ -42,8 +42,6 @@ public class LadderPane extends GridPane {
     private String address_;
     private Double value_;
 
-    private static final Pattern PATTERN_REAL_NUMBER = Pattern.compile(
-            "^[\\+\\-]?(?:((?:\\d*\\.\\d+|\\d+\\.?\\d*)(?:[eE][\\+\\-]?\\d+|))|0[xX]([0-9a-fA-F]+)|0[bB]([0-1]+))$");
     private static final Pattern PATTERN_INPUT = Pattern.compile("[\\s]*;[\\s]*");
     private static final Pattern PATTERN_BLOCK = Pattern.compile("[\\s]+");
 
@@ -183,8 +181,8 @@ public class LadderPane extends GridPane {
             grid = ladder_.getInGrids().get(index);
             if (grid != null) {
                 gridPane = findGridPane(grid);
-                idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                if (grid.getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+                if (grid.getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                     idx = ladder_.getIdx();
                 }
                 LadderIo io = ioMap.get(idx).get(grid.getAddress());
@@ -219,8 +217,8 @@ public class LadderPane extends GridPane {
                                 grid.setBlockValue(io.getValue());
                                 if (!grid.getBlockFunctions()[0].isNumber()) {
                                     address = grid.getBlockFunctions()[0].getAddress();
-                                    idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                                    if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+                                    if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         idx = ladder_.getIdx();
                                     }
                                     if (ioMap.get(idx).containsKey(address)) {
@@ -242,8 +240,8 @@ public class LadderPane extends GridPane {
             grid = ladder_.getOutGrids().get(index);
             if (grid != null) {
                 gridPane = findGridPane(grid);
-                idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                if (grid.getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+                if (grid.getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                     idx = ladder_.getIdx();
                 }
                 LadderIo io = ioMap.get(idx).get(grid.getAddress());
@@ -328,71 +326,71 @@ public class LadderPane extends GridPane {
                                 previousGridPane = findGridPane(previousGrid);
                                 switch (previousGrid.getBlock()) {
                                     case BLOCK_COMMENT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.BLOCK_COMMENT.toCommand());
+                                        defaultValue.append(LadderBlock.BLOCK_COMMENT.toCommand());
                                         defaultValue.append(previousGrid.getComment());
                                         break;
                                     case LOAD:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.LOAD.toCommand());
+                                        defaultValue.append(LadderBlock.LOAD.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case LOAD_NOT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.LOAD_NOT.toCommand());
+                                        defaultValue.append(LadderBlock.LOAD_NOT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case LOAD_RISING:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.LOAD_RISING.toCommand());
+                                        defaultValue.append(LadderBlock.LOAD_RISING.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case LOAD_RISING_NOT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.LOAD_RISING_NOT.toCommand());
+                                        defaultValue.append(LadderBlock.LOAD_RISING_NOT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case LOAD_FALLING:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.LOAD_FALLING.toCommand());
+                                        defaultValue.append(LadderBlock.LOAD_FALLING.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case LOAD_FALLING_NOT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.LOAD_FALLING_NOT.toCommand());
+                                        defaultValue.append(LadderBlock.LOAD_FALLING_NOT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case OUT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.OUT.toCommand());
+                                        defaultValue.append(LadderBlock.OUT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case OUT_NOT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.OUT_NOT.toCommand());
+                                        defaultValue.append(LadderBlock.OUT_NOT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case OUT_RISING:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.OUT_RISING.toCommand());
+                                        defaultValue.append(LadderBlock.OUT_RISING.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case OUT_RISING_NOT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.OUT_RISING_NOT.toCommand());
+                                        defaultValue.append(LadderBlock.OUT_RISING_NOT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case OUT_FALLING:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.OUT_FALLING.toCommand());
+                                        defaultValue.append(LadderBlock.OUT_FALLING.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case OUT_FALLING_NOT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.OUT_FALLING_NOT.toCommand());
+                                        defaultValue.append(LadderBlock.OUT_FALLING_NOT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case COMPARISON_EQUAL:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_EQUAL.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_EQUAL.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -415,7 +413,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COMPARISON_NOT_EQUAL:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_NOT_EQUAL.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_NOT_EQUAL.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -438,7 +436,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COMPARISON_LESS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_LESS.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_LESS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -461,7 +459,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COMPARISON_LESS_EQUAL:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_LESS_EQUAL.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_LESS_EQUAL.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -484,7 +482,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COMPARISON_GREATER:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_GREATER.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_GREATER.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -507,7 +505,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COMPARISON_GREATER_EQUAL:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_GREATER_EQUAL.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_GREATER_EQUAL.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -530,7 +528,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COMPARISON_AND_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_AND_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_AND_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -553,7 +551,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COMPARISON_OR_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_OR_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_OR_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -576,7 +574,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COMPARISON_XOR_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COMPARISON_XOR_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.COMPARISON_XOR_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -599,17 +597,17 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case SET:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.SET.toCommand());
+                                        defaultValue.append(LadderBlock.SET.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case RESET:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.RESET.toCommand());
+                                        defaultValue.append(LadderBlock.RESET.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case AND_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.AND_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.AND_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -650,7 +648,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case OR_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.OR_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.OR_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -691,7 +689,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case XOR_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.XOR_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.XOR_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -732,7 +730,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case NOT_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.NOT_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.NOT_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -755,7 +753,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case ADDITION:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.ADDITION.toCommand());
+                                        defaultValue.append(LadderBlock.ADDITION.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -796,7 +794,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case SUBTRACTION:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.SUBTRACTION.toCommand());
+                                        defaultValue.append(LadderBlock.SUBTRACTION.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -837,7 +835,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case MULTIPLICATION:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.MULTIPLICATION.toCommand());
+                                        defaultValue.append(LadderBlock.MULTIPLICATION.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -878,7 +876,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case DIVISION:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.DIVISION.toCommand());
+                                        defaultValue.append(LadderBlock.DIVISION.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -919,7 +917,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case AVERAGE:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.AVERAGE.toCommand());
+                                        defaultValue.append(LadderBlock.AVERAGE.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -960,7 +958,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case SHIFT_LEFT_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.SHIFT_LEFT_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.SHIFT_LEFT_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -1001,7 +999,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case SHIFT_RIGHT_BITS:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.SHIFT_RIGHT_BITS.toCommand());
+                                        defaultValue.append(LadderBlock.SHIFT_RIGHT_BITS.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -1042,7 +1040,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case SIGMOID:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.SIGMOID.toCommand());
+                                        defaultValue.append(LadderBlock.SIGMOID.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -1083,12 +1081,12 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case RANDOM:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.RANDOM.toCommand());
+                                        defaultValue.append(LadderBlock.RANDOM.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case TIMER:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.TIMER.toCommand());
+                                        defaultValue.append(LadderBlock.TIMER.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -1111,7 +1109,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case TIMER_NOT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.TIMER_NOT.toCommand());
+                                        defaultValue.append(LadderBlock.TIMER_NOT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -1134,7 +1132,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COUNTER:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COUNTER.toCommand());
+                                        defaultValue.append(LadderBlock.COUNTER.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -1157,7 +1155,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case COUNTER_NOT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.COUNTER_NOT.toCommand());
+                                        defaultValue.append(LadderBlock.COUNTER_NOT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -1180,7 +1178,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case MOVE:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.MOVE.toCommand());
+                                        defaultValue.append(LadderBlock.MOVE.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
@@ -1203,7 +1201,7 @@ public class LadderPane extends GridPane {
                                         }
                                         break;
                                     case SCRIPT:
-                                        defaultValue.append(Ladders.LADDER_BLOCK.SCRIPT.toCommand());
+                                        defaultValue.append(LadderBlock.SCRIPT.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress()).append(";");
                                         defaultValue.append(" ");
@@ -1230,7 +1228,7 @@ public class LadderPane extends GridPane {
                             grid = previousGrid.getLeftLadderGrid();
                             gridPane = findGridPane(grid);
                             ladderCommand_.blockChangeConnectLineLeft(ladder_, previousGrid, grid, gridPane,
-                                    grid.getBlock() != Ladders.LADDER_BLOCK.CONNECT_LINE);
+                                    grid.getBlock() != LadderBlock.CONNECT_LINE);
                             ladderCommand_.blockChangeSelect(scrollPane, this, grid, false);
                             changed = true;
                         }
@@ -1283,7 +1281,7 @@ public class LadderPane extends GridPane {
                             grid = previousGrid.getRightLadderGrid();
                             previousGridPane = findGridPane(previousGrid);
                             ladderCommand_.blockChangeConnectLineRight(ladder_, previousGrid, grid, previousGridPane,
-                                    previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONNECT_LINE);
+                                    previousGrid.getBlock() != LadderBlock.CONNECT_LINE);
                             ladderCommand_.blockChangeSelect(scrollPane, this, grid, false);
                             changed = true;
                         }
@@ -1334,62 +1332,62 @@ public class LadderPane extends GridPane {
                             switch (previousGrid.getBlock()) {
                                 case LOAD:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_RISING);
+                                            LadderBlock.LOAD_RISING);
                                     changed = true;
                                     break;
                                 case LOAD_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_RISING_NOT);
+                                            LadderBlock.LOAD_RISING_NOT);
                                     changed = true;
                                     break;
                                 case LOAD_RISING:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_FALLING);
+                                            LadderBlock.LOAD_FALLING);
                                     changed = true;
                                     break;
                                 case LOAD_RISING_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_FALLING_NOT);
+                                            LadderBlock.LOAD_FALLING_NOT);
                                     changed = true;
                                     break;
                                 case LOAD_FALLING:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD);
+                                            LadderBlock.LOAD);
                                     changed = true;
                                     break;
                                 case LOAD_FALLING_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_NOT);
+                                            LadderBlock.LOAD_NOT);
                                     changed = true;
                                     break;
                                 case OUT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_RISING);
+                                            LadderBlock.OUT_RISING);
                                     changed = true;
                                     break;
                                 case OUT_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_RISING_NOT);
+                                            LadderBlock.OUT_RISING_NOT);
                                     changed = true;
                                     break;
                                 case OUT_RISING:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_FALLING);
+                                            LadderBlock.OUT_FALLING);
                                     changed = true;
                                     break;
                                 case OUT_RISING_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_FALLING_NOT);
+                                            LadderBlock.OUT_FALLING_NOT);
                                     changed = true;
                                     break;
                                 case OUT_FALLING:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT);
+                                            LadderBlock.OUT);
                                     changed = true;
                                     break;
                                 case OUT_FALLING_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_NOT);
+                                            LadderBlock.OUT_NOT);
                                     changed = true;
                                     break;
                                 default:
@@ -1404,122 +1402,122 @@ public class LadderPane extends GridPane {
                             switch (previousGrid.getBlock()) {
                                 case LOAD:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_NOT);
+                                            LadderBlock.LOAD_NOT);
                                     changed = true;
                                     break;
                                 case LOAD_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD);
+                                            LadderBlock.LOAD);
                                     changed = true;
                                     break;
                                 case LOAD_RISING:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_RISING_NOT);
+                                            LadderBlock.LOAD_RISING_NOT);
                                     changed = true;
                                     break;
                                 case LOAD_RISING_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_RISING);
+                                            LadderBlock.LOAD_RISING);
                                     changed = true;
                                     break;
                                 case LOAD_FALLING:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_FALLING_NOT);
+                                            LadderBlock.LOAD_FALLING_NOT);
                                     changed = true;
                                     break;
                                 case LOAD_FALLING_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.LOAD_FALLING);
+                                            LadderBlock.LOAD_FALLING);
                                     changed = true;
                                     break;
                                 case OUT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_NOT);
+                                            LadderBlock.OUT_NOT);
                                     changed = true;
                                     break;
                                 case OUT_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT);
+                                            LadderBlock.OUT);
                                     changed = true;
                                     break;
                                 case OUT_RISING:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_RISING_NOT);
+                                            LadderBlock.OUT_RISING_NOT);
                                     changed = true;
                                     break;
                                 case OUT_RISING_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_RISING);
+                                            LadderBlock.OUT_RISING);
                                     changed = true;
                                     break;
                                 case OUT_FALLING:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_FALLING_NOT);
+                                            LadderBlock.OUT_FALLING_NOT);
                                     changed = true;
                                     break;
                                 case OUT_FALLING_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.OUT_FALLING);
+                                            LadderBlock.OUT_FALLING);
                                     changed = true;
                                     break;
                                 case COMPARISON_EQUAL:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.COMPARISON_NOT_EQUAL);
+                                            LadderBlock.COMPARISON_NOT_EQUAL);
                                     changed = true;
                                     break;
                                 case COMPARISON_NOT_EQUAL:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.COMPARISON_EQUAL);
+                                            LadderBlock.COMPARISON_EQUAL);
                                     changed = true;
                                     break;
                                 case COMPARISON_LESS:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.COMPARISON_GREATER_EQUAL);
+                                            LadderBlock.COMPARISON_GREATER_EQUAL);
                                     changed = true;
                                     break;
                                 case COMPARISON_LESS_EQUAL:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.COMPARISON_GREATER);
+                                            LadderBlock.COMPARISON_GREATER);
                                     changed = true;
                                     break;
                                 case COMPARISON_GREATER:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.COMPARISON_LESS_EQUAL);
+                                            LadderBlock.COMPARISON_LESS_EQUAL);
                                     changed = true;
                                     break;
                                 case COMPARISON_GREATER_EQUAL:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.COMPARISON_LESS);
+                                            LadderBlock.COMPARISON_LESS);
                                     changed = true;
                                     break;
                                 case SET:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.RESET);
+                                            LadderBlock.RESET);
                                     changed = true;
                                     break;
                                 case RESET:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.SET);
+                                            LadderBlock.SET);
                                     changed = true;
                                     break;
                                 case TIMER:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.TIMER_NOT);
+                                            LadderBlock.TIMER_NOT);
                                     changed = true;
                                     break;
                                 case TIMER_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.TIMER);
+                                            LadderBlock.TIMER);
                                     changed = true;
                                     break;
                                 case COUNTER:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.COUNTER_NOT);
+                                            LadderBlock.COUNTER_NOT);
                                     changed = true;
                                     break;
                                 case COUNTER_NOT:
                                     ladderCommand_.blockChangeBlock(ladder_, previousGrid, previousGridPane,
-                                            Ladders.LADDER_BLOCK.COUNTER);
+                                            LadderBlock.COUNTER);
                                     changed = true;
                                     break;
                                 default:
@@ -1537,9 +1535,9 @@ public class LadderPane extends GridPane {
                 case F:
                     if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
                         previousGrid = previousGrids_.get(previousGrids_.size() - 1);
-                        if ((previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS)
-                                && (previousGrid.getBlock() != Ladders.LADDER_BLOCK.EMPTY)
-                                && (previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONNECT_LINE)) {
+                        if ((previousGrid.getBlock() != LadderBlock.CONTENTS)
+                                && (previousGrid.getBlock() != LadderBlock.EMPTY)
+                                && (previousGrid.getBlock() != LadderBlock.CONNECT_LINE)) {
                             ladders_.getTableIo().getItems().clear();
                             addTableIo(previousGrid.getAddress(), previousGrid);
                             for (int i = 0; i < LadderGrid.LADDER_BLOCK_FUNCTIONS; i++) {
@@ -1618,7 +1616,7 @@ public class LadderPane extends GridPane {
     }
 
     private boolean keyInput(String defaultValue, LadderGrid grid, LadderGridPane gridPane) {
-        Ladders.LADDER_BLOCK block = Ladders.LADDER_BLOCK.EMPTY;
+        LadderBlock block = LadderBlock.EMPTY;
         String[] mInput, mBlock;
         int cInput, columnIndex, idx, index;
         TextInputDialog alert = new TextInputDialog(defaultValue);
@@ -1636,173 +1634,173 @@ public class LadderPane extends GridPane {
         if (result.isPresent()) {
             mInput = PATTERN_INPUT.split(result.get().trim());
             columnIndex = grid.getColumnIndex();
-            idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+            idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
             for (cInput = 0; cInput < mInput.length; cInput++) {
                 switch (cInput) {
                     case 0:
                         // command address
                         mBlock = PATTERN_BLOCK.split(mInput[cInput]);
                         if ((columnIndex > 0) && (mInput.length >= 1) && (mBlock.length >= 2)) {
-                            if (!PATTERN_REAL_NUMBER.matcher(mBlock[1]).find()) {
-                                switch (Ladders.LADDER_BLOCK.get(mBlock[0])) {
+                            if (!LadderNumber.isNumber(mBlock[1])) {
+                                switch (LadderBlock.get(mBlock[0])) {
                                     case LOAD:
                                         if (columnIndex < (ladder_.getColumn() - 1)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.LOAD;
+                                                block = LadderBlock.LOAD;
                                             }
                                         }
                                         break;
                                     case LOAD_NOT:
                                         if (columnIndex < (ladder_.getColumn() - 1)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.LOAD_NOT;
+                                                block = LadderBlock.LOAD_NOT;
                                             }
                                         }
                                         break;
                                     case LOAD_RISING:
                                         if (columnIndex < (ladder_.getColumn() - 1)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.LOAD_RISING;
+                                                block = LadderBlock.LOAD_RISING;
                                             }
                                         }
                                         break;
                                     case LOAD_RISING_NOT:
                                         if (columnIndex < (ladder_.getColumn() - 1)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.LOAD_RISING_NOT;
+                                                block = LadderBlock.LOAD_RISING_NOT;
                                             }
                                         }
                                         break;
                                     case LOAD_FALLING:
                                         if (columnIndex < (ladder_.getColumn() - 1)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.LOAD_FALLING;
+                                                block = LadderBlock.LOAD_FALLING;
                                             }
                                         }
                                         break;
                                     case LOAD_FALLING_NOT:
                                         if (columnIndex < (ladder_.getColumn() - 1)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.LOAD_FALLING_NOT;
+                                                block = LadderBlock.LOAD_FALLING_NOT;
                                             }
                                         }
                                         break;
                                     case OUT:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.OUT;
+                                                block = LadderBlock.OUT;
                                             }
                                         }
                                         break;
                                     case OUT_NOT:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.OUT_NOT;
+                                                block = LadderBlock.OUT_NOT;
                                             }
                                         }
                                         break;
                                     case OUT_RISING:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.OUT_RISING;
+                                                block = LadderBlock.OUT_RISING;
                                             }
                                         }
                                         break;
                                     case OUT_RISING_NOT:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.OUT_RISING_NOT;
+                                                block = LadderBlock.OUT_RISING_NOT;
                                             }
                                         }
                                         break;
                                     case OUT_FALLING:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.OUT_FALLING;
+                                                block = LadderBlock.OUT_FALLING;
                                             }
                                         }
                                         break;
                                     case OUT_FALLING_NOT:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.OUT_FALLING_NOT;
+                                                block = LadderBlock.OUT_FALLING_NOT;
                                             }
                                         }
                                         break;
                                     case COMPARISON_EQUAL:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_EQUAL;
+                                                block = LadderBlock.COMPARISON_EQUAL;
                                             }
                                         }
                                         break;
                                     case COMPARISON_NOT_EQUAL:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_NOT_EQUAL;
+                                                block = LadderBlock.COMPARISON_NOT_EQUAL;
                                             }
                                         }
                                         break;
                                     case COMPARISON_LESS:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_LESS;
+                                                block = LadderBlock.COMPARISON_LESS;
                                             }
                                         }
                                         break;
                                     case COMPARISON_LESS_EQUAL:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_LESS_EQUAL;
+                                                block = LadderBlock.COMPARISON_LESS_EQUAL;
                                             }
                                         }
                                         break;
                                     case COMPARISON_GREATER:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_GREATER;
+                                                block = LadderBlock.COMPARISON_GREATER;
                                             }
                                         }
                                         break;
                                     case COMPARISON_GREATER_EQUAL:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_GREATER_EQUAL;
+                                                block = LadderBlock.COMPARISON_GREATER_EQUAL;
                                             }
                                         }
                                         break;
                                     case COMPARISON_AND_BITS:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_AND_BITS;
+                                                block = LadderBlock.COMPARISON_AND_BITS;
                                             }
                                         }
                                         break;
                                     case COMPARISON_OR_BITS:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_OR_BITS;
+                                                block = LadderBlock.COMPARISON_OR_BITS;
                                             }
                                         }
                                         break;
                                     case COMPARISON_XOR_BITS:
                                         if ((columnIndex < (ladder_.getColumn() - 1)) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COMPARISON_XOR_BITS;
+                                                block = LadderBlock.COMPARISON_XOR_BITS;
                                             }
                                         }
                                         break;
                                     case SET:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.SET;
+                                                block = LadderBlock.SET;
                                             }
                                         }
                                         break;
                                     case RESET:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.RESET;
+                                                block = LadderBlock.RESET;
                                             }
                                         }
                                         break;
@@ -1810,7 +1808,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.AND_BITS;
+                                                block = LadderBlock.AND_BITS;
                                             }
                                         }
                                         break;
@@ -1818,7 +1816,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.OR_BITS;
+                                                block = LadderBlock.OR_BITS;
                                             }
                                         }
                                         break;
@@ -1826,14 +1824,14 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.XOR_BITS;
+                                                block = LadderBlock.XOR_BITS;
                                             }
                                         }
                                         break;
                                     case NOT_BITS:
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.NOT_BITS;
+                                                block = LadderBlock.NOT_BITS;
                                             }
                                         }
                                         break;
@@ -1841,7 +1839,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.ADDITION;
+                                                block = LadderBlock.ADDITION;
                                             }
                                         }
                                         break;
@@ -1849,7 +1847,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.SUBTRACTION;
+                                                block = LadderBlock.SUBTRACTION;
                                             }
                                         }
                                         break;
@@ -1857,7 +1855,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.MULTIPLICATION;
+                                                block = LadderBlock.MULTIPLICATION;
                                             }
                                         }
                                         break;
@@ -1865,7 +1863,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.DIVISION;
+                                                block = LadderBlock.DIVISION;
                                             }
                                         }
                                         break;
@@ -1873,7 +1871,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.AVERAGE;
+                                                block = LadderBlock.AVERAGE;
                                             }
                                         }
                                         break;
@@ -1881,7 +1879,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.SHIFT_LEFT_BITS;
+                                                block = LadderBlock.SHIFT_LEFT_BITS;
                                             }
                                         }
                                         break;
@@ -1889,7 +1887,7 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.SHIFT_RIGHT_BITS;
+                                                block = LadderBlock.SHIFT_RIGHT_BITS;
                                             }
                                         }
                                         break;
@@ -1897,56 +1895,56 @@ public class LadderPane extends GridPane {
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 4)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()
                                                     && !mBlock[3].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.SIGMOID;
+                                                block = LadderBlock.SIGMOID;
                                             }
                                         }
                                         break;
                                     case RANDOM:
                                         if (columnIndex < ladder_.getColumn()) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.RANDOM;
+                                                block = LadderBlock.RANDOM;
                                             }
                                         }
                                         break;
                                     case TIMER:
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.TIMER;
+                                                block = LadderBlock.TIMER;
                                             }
                                         }
                                         break;
                                     case TIMER_NOT:
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.TIMER_NOT;
+                                                block = LadderBlock.TIMER_NOT;
                                             }
                                         }
                                         break;
                                     case COUNTER:
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COUNTER;
+                                                block = LadderBlock.COUNTER;
                                             }
                                         }
                                         break;
                                     case COUNTER_NOT:
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.COUNTER_NOT;
+                                                block = LadderBlock.COUNTER_NOT;
                                             }
                                         }
                                         break;
                                     case MOVE:
                                         if ((columnIndex < ladder_.getColumn()) && (mBlock.length >= 3)) {
                                             if (!mBlock[0].isEmpty() && !mBlock[1].isEmpty() && !mBlock[2].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.MOVE;
+                                                block = LadderBlock.MOVE;
                                             }
                                         }
                                         break;
                                     case SCRIPT:
                                         if ((columnIndex < ladder_.getColumn()) && (mInput.length >= 2)) {
                                             if (!mInput[1].isEmpty() && !mBlock[0].isEmpty() && !mBlock[1].isEmpty()) {
-                                                block = Ladders.LADDER_BLOCK.SCRIPT;
+                                                block = LadderBlock.SCRIPT;
                                             }
                                         }
                                         break;
@@ -1957,10 +1955,10 @@ public class LadderPane extends GridPane {
                         }
 
                         // block check
-                        if (block == Ladders.LADDER_BLOCK.EMPTY) {
+                        if (block == LadderBlock.EMPTY) {
                             if ((columnIndex < (ladder_.getColumn() - 1)) && (mInput.length == 2)) {
                                 if (mInput[0].isEmpty() && !mInput[1].isEmpty()) {
-                                    block = Ladders.LADDER_BLOCK.BLOCK_COMMENT;
+                                    block = LadderBlock.BLOCK_COMMENT;
                                 } else {
                                     return false;
                                 }
@@ -1977,7 +1975,7 @@ public class LadderPane extends GridPane {
                             case LOAD_RISING_NOT:
                             case LOAD_FALLING:
                             case LOAD_FALLING_NOT:
-                                if (mBlock[1].startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (mBlock[1].startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                     idx = ladder_.getIdx();
                                 }
 
@@ -2021,7 +2019,7 @@ public class LadderPane extends GridPane {
                             case COMPARISON_AND_BITS:
                             case COMPARISON_OR_BITS:
                             case COMPARISON_XOR_BITS:
-                                if (mBlock[1].startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (mBlock[1].startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                     idx = ladder_.getIdx();
                                 }
 
@@ -2066,18 +2064,18 @@ public class LadderPane extends GridPane {
                             case RESET:
                             case RANDOM:
                             case SCRIPT:
-                                if (mBlock[1].startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (mBlock[1].startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                     idx = ladder_.getIdx();
                                 }
 
                                 if (ladder_.checkGridOut(grid)) {
                                     // connect
                                     for (index = columnIndex; index < (ladder_.getColumn() - 1); index++) {
-                                        if (grid.getBlock() != Ladders.LADDER_BLOCK.CONNECT_LINE) {
+                                        if (grid.getBlock() != LadderBlock.CONNECT_LINE) {
                                             ladderCommand_.blockChangeOriginal(ladder_, grid);
                                             ladderCommand_.blockClear(ladder_, grid, gridPane);
                                             ladderCommand_.blockChangeBlock(ladder_, grid, gridPane,
-                                                    Ladders.LADDER_BLOCK.CONNECT_LINE);
+                                                    LadderBlock.CONNECT_LINE);
                                             ladderCommand_.blockChangeRevised(ladder_, grid);
                                         }
                                         grid = grid.getRightLadderGrid();
@@ -2124,18 +2122,18 @@ public class LadderPane extends GridPane {
                             case SHIFT_LEFT_BITS:
                             case SHIFT_RIGHT_BITS:
                             case SIGMOID:
-                                if (mBlock[1].startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (mBlock[1].startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                     idx = ladder_.getIdx();
                                 }
 
                                 if (ladder_.checkGridOut(grid)) {
                                     // connect
                                     for (index = columnIndex; index < (ladder_.getColumn() - 1); index++) {
-                                        if (grid.getBlock() != Ladders.LADDER_BLOCK.CONNECT_LINE) {
+                                        if (grid.getBlock() != LadderBlock.CONNECT_LINE) {
                                             ladderCommand_.blockChangeOriginal(ladder_, grid);
                                             ladderCommand_.blockClear(ladder_, grid, gridPane);
                                             ladderCommand_.blockChangeBlock(ladder_, grid, gridPane,
-                                                    Ladders.LADDER_BLOCK.CONNECT_LINE);
+                                                    LadderBlock.CONNECT_LINE);
                                             ladderCommand_.blockChangeRevised(ladder_, grid);
                                         }
                                         grid = grid.getRightLadderGrid();
@@ -2177,18 +2175,18 @@ public class LadderPane extends GridPane {
                             case COUNTER:
                             case COUNTER_NOT:
                             case MOVE:
-                                if (mBlock[1].startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (mBlock[1].startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                     idx = ladder_.getIdx();
                                 }
 
                                 if (ladder_.checkGridOut(grid)) {
                                     // connect
                                     for (index = columnIndex; index < (ladder_.getColumn() - 1); index++) {
-                                        if (grid.getBlock() != Ladders.LADDER_BLOCK.CONNECT_LINE) {
+                                        if (grid.getBlock() != LadderBlock.CONNECT_LINE) {
                                             ladderCommand_.blockChangeOriginal(ladder_, grid);
                                             ladderCommand_.blockClear(ladder_, grid, gridPane);
                                             ladderCommand_.blockChangeBlock(ladder_, grid, gridPane,
-                                                    Ladders.LADDER_BLOCK.CONNECT_LINE);
+                                                    LadderBlock.CONNECT_LINE);
                                             ladderCommand_.blockChangeRevised(ladder_, grid);
                                         }
                                         grid = grid.getRightLadderGrid();
@@ -2379,19 +2377,19 @@ public class LadderPane extends GridPane {
             gridPane.setMinSize(gridContentsWidth_, gridContentsHight_);
             gridPane.setPrefSize(gridContentsWidth_, gridContentsHight_);
             gridPane.setMaxSize(gridContentsWidth_, gridContentsHight_);
-            grid.setBlock(Ladders.LADDER_BLOCK.CONTENTS);
+            grid.setBlock(LadderBlock.CONTENTS);
             gridPane.changeBlock();
         } else if (columnIndex == 0) {
             gridPane.setMinSize(gridContentsWidth_, gridMinSize_);
             gridPane.setPrefSize(gridContentsWidth_, gridMaxSize_);
             gridPane.setMaxSize(gridContentsWidth_, gridMaxSize_);
-            grid.setBlock(Ladders.LADDER_BLOCK.CONTENTS);
+            grid.setBlock(LadderBlock.CONTENTS);
             gridPane.changeBlock();
         } else if (rowIndex == 0) {
             gridPane.setMinSize(gridMinSize_, gridContentsHight_);
             gridPane.setPrefSize(gridMaxSize_, gridContentsHight_);
             gridPane.setMaxSize(gridMaxSize_, gridContentsHight_);
-            grid.setBlock(Ladders.LADDER_BLOCK.CONTENTS);
+            grid.setBlock(LadderBlock.CONTENTS);
             gridPane.changeBlock();
         } else {
             gridPane.setMinSize(gridMinSize_, gridMinSize_);
@@ -2416,12 +2414,12 @@ public class LadderPane extends GridPane {
                             }
                             break;
                         case 2:
-                            if (!PATTERN_REAL_NUMBER.matcher(grid.getAddress()).find()) {
-                                int idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+                            if (!LadderNumber.isNumber(grid.getAddress())) {
+                                int idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
 
                                 address_ = grid.getAddress();
 
-                                if (address_.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (address_.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                     idx = ladder_.getIdx();
                                 }
 
@@ -2469,7 +2467,7 @@ public class LadderPane extends GridPane {
             int idx, siz, index, size, i;
 
             tableIo = ladders_.getTableIo();
-            if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                 for (index = 0, size = getChildren().size(); index < size; index++) {
                     grid = ((LadderGridPane) getChildren().get(index)).getLadderGrid();
                     if (address.equals(grid.getAddress())) {

@@ -16,7 +16,7 @@ class LadderGridTest {
         assertEquals(2, grid.getRowIndex());
         assertEquals(1, grid.getColSpan());
         assertEquals(1, grid.getRowSpan());
-        assertEquals(Ladders.LADDER_BLOCK.EMPTY, grid.getBlock());
+        assertEquals(LadderBlock.EMPTY, grid.getBlock());
         assertEquals(0.0, grid.getBlockValue());
         assertNull(grid.getBlockScript());
         assertFalse(grid.isBlockLd());
@@ -48,12 +48,12 @@ class LadderGridTest {
         LadderGrid grid = new LadderGrid(0, 0);
 
         grid.setBlockScript("script");
-        assertTrue(grid.setBlock(Ladders.LADDER_BLOCK.LOAD));
+        assertTrue(grid.setBlock(LadderBlock.LOAD));
         assertNull(grid.getBlockScript());
 
-        assertFalse(grid.setBlock(Ladders.LADDER_BLOCK.LOAD));
+        assertFalse(grid.setBlock(LadderBlock.LOAD));
         grid.setBlockScript("keep");
-        assertFalse(grid.setBlock(Ladders.LADDER_BLOCK.LOAD));
+        assertFalse(grid.setBlock(LadderBlock.LOAD));
         assertEquals("keep", grid.getBlockScript());
     }
 
@@ -75,7 +75,7 @@ class LadderGridTest {
     void clearResetsMutableState() {
         LadderGrid grid = new LadderGrid(3, 4, 5, 6);
 
-        grid.setBlock(Ladders.LADDER_BLOCK.OUT);
+        grid.setBlock(LadderBlock.OUT);
         grid.setBlockValue(12.0);
         grid.getBlockFunctions()[0].setAddress("X1");
         grid.getBlockFunctions()[0].setValue(1.0);
@@ -114,7 +114,7 @@ class LadderGridTest {
     @Test
     void copyCreatesDeepCopyOfBlockFunctions() {
         LadderGrid grid = new LadderGrid(1, 1);
-        grid.setBlock(Ladders.LADDER_BLOCK.LOAD);
+        grid.setBlock(LadderBlock.LOAD);
         grid.setBlockValue(7.0);
         grid.setAddress("X1");
         grid.setComment("comment");

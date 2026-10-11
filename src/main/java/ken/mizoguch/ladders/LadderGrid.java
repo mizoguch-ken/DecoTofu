@@ -11,7 +11,7 @@ package ken.mizoguch.ladders;
  */
 public class LadderGrid {
 
-    public static final Ladders.LADDER_BLOCK LADDER_GRID_INITIAL_BLOCK = Ladders.LADDER_BLOCK.EMPTY;
+    public static final LadderBlock LADDER_GRID_INITIAL_BLOCK = LadderBlock.EMPTY;
     public static final double LADDER_GRID_INITIAL_BLOCK_VALUE = 0.0;
     public static final String LADDER_GRID_INITIAL_BLOCK_FUNCTION_ADDRESS = null;
     public static final double LADDER_GRID_INITIAL_BLOCK_FUNCTION_VALUE = 0.0;
@@ -83,7 +83,7 @@ public class LadderGrid {
     private LadderGrid leftLadderGrid_, upLadderGrid_, rightLadderGrid_, downLadderGrid_;
     private int inConnectNumber_, outConnectNumber_;
 
-    private Ladders.LADDER_BLOCK block_;
+    private LadderBlock block_;
     private double blockValue_;
     private String blockScript_;
     private boolean isBlockLd_;
@@ -367,7 +367,7 @@ public class LadderGrid {
      *
      * @return
      */
-    public Ladders.LADDER_BLOCK getBlock() {
+    public LadderBlock getBlock() {
         return block_;
     }
 
@@ -376,7 +376,7 @@ public class LadderGrid {
      * @param block
      * @return
      */
-    public boolean setBlock(Ladders.LADDER_BLOCK block) {
+    public boolean setBlock(LadderBlock block) {
         if (block_ != block) {
             block_ = block;
             blockScript_ = LADDER_GRID_INITIAL_BLOCK_SCRIPT;

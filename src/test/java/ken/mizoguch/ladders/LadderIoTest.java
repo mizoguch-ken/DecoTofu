@@ -31,7 +31,7 @@ class LadderIoTest {
         assertTrue(io.isLdRising());
         assertFalse(io.isLdFalling());
         // the edge is only answered by the cycle which makes it
-        io.chehckEdge();
+        io.checkEdge();
         assertFalse(io.isLdRising());
         assertFalse(io.isLdFalling());
     }
@@ -45,7 +45,23 @@ class LadderIoTest {
         assertFalse(io.isLd());
         assertFalse(io.isLdRising());
         assertTrue(io.isLdFalling());
+        io.checkEdge();
+        assertFalse(io.isLdFalling());
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    void deprecatedCheckEdgeUsesTheSameEdge() {
+        LadderIo io = new LadderIo("edge");
+
+        io.setValue(1.0);
+        assertTrue(io.isLdRising());
         io.chehckEdge();
+        assertFalse(io.isLdRising());
+
+        io.setValue(0.0);
+        assertTrue(io.isLdFalling());
+        io.checkEdge();
         assertFalse(io.isLdFalling());
     }
 

@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.regex.Pattern;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableView;
 import ken.mizoguch.console.Console;
@@ -42,9 +41,6 @@ public class Ladder {
     private int idx_;
     private String name_;
     private boolean isConnectFailed_;
-
-    private static final Pattern PATTERN_REAL_NUMBER = Pattern.compile(
-            "^[\\+\\-]?(?:((?:\\d*\\.\\d+|\\d+\\.?\\d*)(?:[eE][\\+\\-]?\\d+|))|0[xX]([0-9a-fA-F]+)|0[bB]([0-1]+))$");
 
     /**
      *
@@ -286,8 +282,8 @@ public class Ladder {
 
         connectNumberLast = 1;
         while (grid != null) {
-            if (grid.getBlock() != Ladders.LADDER_BLOCK.EMPTY) {
-                if (connectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] == 0) {
+            if (grid.getBlock() != LadderBlock.EMPTY) {
+                if (connectNumbers_[blockIndex(grid)] == 0) {
                     connectNumberLast = connectRoute(ioMap, ioTreeTable, grid, 1, connectNumberLast);
                 }
             }
@@ -305,8 +301,8 @@ public class Ladder {
             TreeTableView<LadderTreeTableIo> ioTreeTable, LadderGrid grid, int connectNumber, int connectNumberLast) {
         LadderGrid lgrid, ugrid, rgrid, dgrid;
         String address, functionAddress;
-        int idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-        int funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+        int idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+        int funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
 
         if (grid != null) {
             lgrid = grid.getLeftLadderGrid();
@@ -314,7 +310,7 @@ public class Ladder {
             rgrid = grid.getRightLadderGrid();
             dgrid = grid.getDownLadderGrid();
 
-            if (connectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] == 0) {
+            if (connectNumbers_[blockIndex(grid)] == 0) {
                 switch (grid.getBlock()) {
                     case LOAD:
                     case LOAD_NOT:
@@ -323,24 +319,18 @@ public class Ladder {
                     case LOAD_FALLING:
                     case LOAD_FALLING_NOT:
                         address = grid.getAddress();
-                        if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                        if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                             idx = idx_;
                         }
-                        if (!PATTERN_REAL_NUMBER.matcher(address).find()) {
-                            if (!ioMap.get(idx).containsKey(address)) {
-                                ioMap.get(idx).put(address, new LadderIo(address));
-                                ioTreeTable.getRoot().getChildren().get(idx).getChildren()
-                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
-                            }
+                        if (!LadderNumber.isNumber(address)) {
+                            registerIo(ioMap, ioTreeTable, idx, address);
                             grid.setInConnectNumber(connectNumber);
                             grid.setOutConnectNumber(0);
                             inGrids_.add(grid);
                             inConnectGrids_.putIfAbsent(connectNumber, new ArrayList<>());
                             inConnectGrids_.get(connectNumber).add(grid);
                         } else {
-                            writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                    + grid.getRowIndex() + "]", true);
-                            isConnectFailed_ = true;
+                            writeNumericAddressError(grid);
                         }
                         break;
                     case COMPARISON_EQUAL:
@@ -353,30 +343,20 @@ public class Ladder {
                     case COMPARISON_OR_BITS:
                     case COMPARISON_XOR_BITS:
                         address = grid.getAddress();
-                        if (!PATTERN_REAL_NUMBER.matcher(address).find()) {
-                            if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                        if (!LadderNumber.isNumber(address)) {
+                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 idx = idx_;
                             }
-                            if (!ioMap.get(idx).containsKey(address)) {
-                                ioMap.get(idx).put(address, new LadderIo(address));
-                                ioTreeTable.getRoot().getChildren().get(idx).getChildren()
-                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
-                            }
+                            registerIo(ioMap, ioTreeTable, idx, address);
                             if (!grid.getBlockFunctions()[0].isNumber()) {
                                 functionAddress = grid.getBlockFunctions()[0].getAddress();
-                                if (!PATTERN_REAL_NUMBER.matcher(functionAddress).find()) {
-                                    if (functionAddress.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (!LadderNumber.isNumber(functionAddress)) {
+                                    if (functionAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         funcIdx = idx_;
                                     }
-                                    if (!ioMap.get(funcIdx).containsKey(functionAddress)) {
-                                        ioMap.get(funcIdx).put(functionAddress, new LadderIo(functionAddress));
-                                        ioTreeTable.getRoot().getChildren().get(funcIdx).getChildren()
-                                                .add(new TreeItem<>(new LadderTreeTableIo(functionAddress)));
-                                    }
+                                    registerIo(ioMap, ioTreeTable, funcIdx, functionAddress);
                                 } else {
-                                    writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                            + grid.getRowIndex() + "]", true);
-                                    isConnectFailed_ = true;
+                                    writeNumericAddressError(grid);
                                 }
                             }
                             grid.setInConnectNumber(connectNumber);
@@ -385,9 +365,7 @@ public class Ladder {
                             inConnectGrids_.putIfAbsent(connectNumber, new ArrayList<>());
                             inConnectGrids_.get(connectNumber).add(grid);
                         } else {
-                            writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                    + grid.getRowIndex() + "]", true);
-                            isConnectFailed_ = true;
+                            writeNumericAddressError(grid);
                         }
                         break;
                     case OUT:
@@ -402,24 +380,18 @@ public class Ladder {
                     case RANDOM:
                     case SCRIPT:
                         address = grid.getAddress();
-                        if (!PATTERN_REAL_NUMBER.matcher(address).find()) {
-                            if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                        if (!LadderNumber.isNumber(address)) {
+                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 idx = idx_;
                             }
-                            if (!ioMap.get(idx).containsKey(address)) {
-                                ioMap.get(idx).put(address, new LadderIo(address));
-                                ioTreeTable.getRoot().getChildren().get(idx).getChildren()
-                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
-                            }
+                            registerIo(ioMap, ioTreeTable, idx, address);
                             grid.setInConnectNumber(connectNumber);
                             grid.setOutConnectNumber(0);
                             outGrids_.add(grid);
                             inConnectGrids_.putIfAbsent(connectNumber, new ArrayList<>());
                             inConnectGrids_.get(connectNumber).add(grid);
                         } else {
-                            writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                    + grid.getRowIndex() + "]", true);
-                            isConnectFailed_ = true;
+                            writeNumericAddressError(grid);
                         }
                         break;
                     case AND_BITS:
@@ -434,47 +406,31 @@ public class Ladder {
                     case SHIFT_RIGHT_BITS:
                     case SIGMOID:
                         address = grid.getAddress();
-                        if (!PATTERN_REAL_NUMBER.matcher(address).find()) {
-                            if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                        if (!LadderNumber.isNumber(address)) {
+                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 idx = idx_;
                             }
-                            if (!ioMap.get(idx).containsKey(address)) {
-                                ioMap.get(idx).put(address, new LadderIo(address));
-                                ioTreeTable.getRoot().getChildren().get(idx).getChildren()
-                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
-                            }
+                            registerIo(ioMap, ioTreeTable, idx, address);
                             if (!grid.getBlockFunctions()[0].isNumber()) {
                                 functionAddress = grid.getBlockFunctions()[0].getAddress();
-                                if (!PATTERN_REAL_NUMBER.matcher(functionAddress).find()) {
-                                    if (functionAddress.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (!LadderNumber.isNumber(functionAddress)) {
+                                    if (functionAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         funcIdx = idx_;
                                     }
-                                    if (!ioMap.get(funcIdx).containsKey(functionAddress)) {
-                                        ioMap.get(funcIdx).put(functionAddress, new LadderIo(functionAddress));
-                                        ioTreeTable.getRoot().getChildren().get(funcIdx).getChildren()
-                                                .add(new TreeItem<>(new LadderTreeTableIo(functionAddress)));
-                                    }
+                                    registerIo(ioMap, ioTreeTable, funcIdx, functionAddress);
                                 } else {
-                                    writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                            + grid.getRowIndex() + "]", true);
-                                    isConnectFailed_ = true;
+                                    writeNumericAddressError(grid);
                                 }
                             }
                             if (!grid.getBlockFunctions()[1].isNumber()) {
                                 functionAddress = grid.getBlockFunctions()[1].getAddress();
-                                if (!PATTERN_REAL_NUMBER.matcher(functionAddress).find()) {
-                                    if (functionAddress.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (!LadderNumber.isNumber(functionAddress)) {
+                                    if (functionAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         funcIdx = idx_;
                                     }
-                                    if (!ioMap.get(funcIdx).containsKey(functionAddress)) {
-                                        ioMap.get(funcIdx).put(functionAddress, new LadderIo(functionAddress));
-                                        ioTreeTable.getRoot().getChildren().get(funcIdx).getChildren()
-                                                .add(new TreeItem<>(new LadderTreeTableIo(functionAddress)));
-                                    }
+                                    registerIo(ioMap, ioTreeTable, funcIdx, functionAddress);
                                 } else {
-                                    writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                            + grid.getRowIndex() + "]", true);
-                                    isConnectFailed_ = true;
+                                    writeNumericAddressError(grid);
                                 }
                             }
                             grid.setInConnectNumber(connectNumber);
@@ -483,9 +439,7 @@ public class Ladder {
                             inConnectGrids_.putIfAbsent(connectNumber, new ArrayList<>());
                             inConnectGrids_.get(connectNumber).add(grid);
                         } else {
-                            writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                    + grid.getRowIndex() + "]", true);
-                            isConnectFailed_ = true;
+                            writeNumericAddressError(grid);
                         }
                         break;
                     case TIMER:
@@ -494,30 +448,20 @@ public class Ladder {
                     case COUNTER_NOT:
                     case MOVE:
                         address = grid.getAddress();
-                        if (!PATTERN_REAL_NUMBER.matcher(address).find()) {
-                            if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                        if (!LadderNumber.isNumber(address)) {
+                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 idx = idx_;
                             }
-                            if (!ioMap.get(idx).containsKey(address)) {
-                                ioMap.get(idx).put(address, new LadderIo(address));
-                                ioTreeTable.getRoot().getChildren().get(idx).getChildren()
-                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
-                            }
+                            registerIo(ioMap, ioTreeTable, idx, address);
                             if (!grid.getBlockFunctions()[0].isNumber()) {
                                 functionAddress = grid.getBlockFunctions()[0].getAddress();
-                                if (!PATTERN_REAL_NUMBER.matcher(functionAddress).find()) {
-                                    if (functionAddress.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (!LadderNumber.isNumber(functionAddress)) {
+                                    if (functionAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         funcIdx = idx_;
                                     }
-                                    if (!ioMap.get(funcIdx).containsKey(functionAddress)) {
-                                        ioMap.get(funcIdx).put(functionAddress, new LadderIo(functionAddress));
-                                        ioTreeTable.getRoot().getChildren().get(funcIdx).getChildren()
-                                                .add(new TreeItem<>(new LadderTreeTableIo(functionAddress)));
-                                    }
+                                    registerIo(ioMap, ioTreeTable, funcIdx, functionAddress);
                                 } else {
-                                    writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                            + grid.getRowIndex() + "]", true);
-                                    isConnectFailed_ = true;
+                                    writeNumericAddressError(grid);
                                 }
                             }
                             grid.setInConnectNumber(connectNumber);
@@ -526,112 +470,72 @@ public class Ladder {
                             inConnectGrids_.putIfAbsent(connectNumber, new ArrayList<>());
                             inConnectGrids_.get(connectNumber).add(grid);
                         } else {
-                            writeLog("Numeric only error in address" + " [" + grid.getColumnIndex() + ":"
-                                    + grid.getRowIndex() + "]", true);
-                            isConnectFailed_ = true;
+                            writeNumericAddressError(grid);
                         }
                         break;
                     default:
                         break;
                 }
-                connectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = connectNumber;
+                connectNumbers_[blockIndex(grid)] = connectNumber;
             } else {
-                writeLog("Connection failed" + " [" + grid.getColumnIndex() + ":" + grid.getRowIndex() + "]", true);
-                isConnectFailed_ = true;
+                writeConnectError(grid);
             }
 
             if (lgrid != null) {
-                switch (lgrid.getBlock()) {
-                    case CONNECT_LINE:
-                        if (connectNumbers_[lgrid.getColumnIndex() + (lgrid.getRowIndex() * column_)] == 0) {
-                            connectNumberLast = connectRoute(ioMap, ioTreeTable, lgrid, connectNumber,
-                                    connectNumberLast);
-                        } else if (connectNumbers_[lgrid.getColumnIndex()
-                                + (lgrid.getRowIndex() * column_)] != connectNumber) {
-                            writeLog("Connection failed" + " [" + grid.getColumnIndex() + ":" + grid.getRowIndex()
-                                    + "]->[" + lgrid.getColumnIndex() + ":" + lgrid.getRowIndex() + "]", true);
-                            isConnectFailed_ = true;
-                        }
-                        break;
-                    default:
-                        break;
+                if (lgrid.getBlock() == LadderBlock.CONNECT_LINE) {
+                    if (connectNumbers_[blockIndex(lgrid)] == 0) {
+                        connectNumberLast = connectRoute(ioMap, ioTreeTable, lgrid, connectNumber,
+                                connectNumberLast);
+                    } else if (connectNumbers_[blockIndex(lgrid)] != connectNumber) {
+                        writeConnectError(grid, lgrid);
+                    }
                 }
             }
 
             if (ugrid != null) {
                 if (grid.isVertical()) {
-                    if (connectNumbers_[ugrid.getColumnIndex() + (ugrid.getRowIndex() * column_)] == 0) {
+                    if (connectNumbers_[blockIndex(ugrid)] == 0) {
                         connectNumberLast = connectRoute(ioMap, ioTreeTable, ugrid, connectNumber, connectNumberLast);
-                    } else if (connectNumbers_[ugrid.getColumnIndex()
-                            + (ugrid.getRowIndex() * column_)] != connectNumber) {
-                        writeLog("Connection failed" + " [" + grid.getColumnIndex() + ":" + grid.getRowIndex() + "]->["
-                                + ugrid.getColumnIndex() + ":" + ugrid.getRowIndex() + "]", true);
-                        isConnectFailed_ = true;
+                    } else if (connectNumbers_[blockIndex(ugrid)] != connectNumber) {
+                        writeConnectError(grid, ugrid);
                     }
                 }
             }
 
             if (rgrid != null) {
-                switch (grid.getBlock()) {
-                    case CONNECT_LINE:
-                        if (connectNumbers_[rgrid.getColumnIndex() + (rgrid.getRowIndex() * column_)] == 0) {
-                            connectNumberLast = connectRoute(ioMap, ioTreeTable, rgrid, connectNumber,
-                                    connectNumberLast);
-                        } else if (connectNumbers_[rgrid.getColumnIndex()
-                                + (rgrid.getRowIndex() * column_)] != connectNumber) {
-                            writeLog("Connection failed" + " [" + grid.getColumnIndex() + ":" + grid.getRowIndex()
-                                    + "]->[" + rgrid.getColumnIndex() + ":" + rgrid.getRowIndex() + "]", true);
-                            isConnectFailed_ = true;
-                        }
-                        break;
-                    case LOAD:
-                    case LOAD_NOT:
-                    case LOAD_RISING:
-                    case LOAD_RISING_NOT:
-                    case LOAD_FALLING:
-                    case LOAD_FALLING_NOT:
-                    case COMPARISON_EQUAL:
-                    case COMPARISON_NOT_EQUAL:
-                    case COMPARISON_LESS:
-                    case COMPARISON_LESS_EQUAL:
-                    case COMPARISON_GREATER:
-                    case COMPARISON_GREATER_EQUAL:
-                    case COMPARISON_AND_BITS:
-                    case COMPARISON_OR_BITS:
-                    case COMPARISON_XOR_BITS:
-                        if (connectNumbers_[rgrid.getColumnIndex() + (rgrid.getRowIndex() * column_)] == 0) {
-                            grid.setOutConnectNumber(connectNumberLast + 1);
-                            outConnectGrids_.putIfAbsent(connectNumberLast + 1, new ArrayList<>());
-                            outConnectGrids_.get(connectNumberLast + 1).add(grid);
-                            connectNumberLast = connectRoute(ioMap, ioTreeTable, rgrid, connectNumberLast + 1,
-                                    connectNumberLast + 1);
-                        } else {
-                            if (grid.getOutConnectNumber() == 0) {
-                                grid.setOutConnectNumber(
-                                        connectNumbers_[rgrid.getColumnIndex() + (rgrid.getRowIndex() * column_)]);
-                                outConnectGrids_.putIfAbsent(
-                                        connectNumbers_[rgrid.getColumnIndex() + (rgrid.getRowIndex() * column_)],
-                                        new ArrayList<>());
-                                outConnectGrids_
-                                        .get(connectNumbers_[rgrid.getColumnIndex() + (rgrid.getRowIndex() * column_)])
-                                        .add(grid);
-                            }
-                        }
-                        break;
-                    default:
-                        break;
+                if (grid.getBlock() == LadderBlock.CONNECT_LINE) {
+                    if (connectNumbers_[blockIndex(rgrid)] == 0) {
+                        connectNumberLast = connectRoute(ioMap, ioTreeTable, rgrid, connectNumber,
+                                connectNumberLast);
+                    } else if (connectNumbers_[blockIndex(rgrid)] != connectNumber) {
+                        writeConnectError(grid, rgrid);
+                    }
+                } else if (grid.getBlock().isContact()) {
+                    if (connectNumbers_[blockIndex(rgrid)] == 0) {
+                        grid.setOutConnectNumber(connectNumberLast + 1);
+                        outConnectGrids_.putIfAbsent(connectNumberLast + 1, new ArrayList<>());
+                        outConnectGrids_.get(connectNumberLast + 1).add(grid);
+                        connectNumberLast = connectRoute(ioMap, ioTreeTable, rgrid, connectNumberLast + 1,
+                                connectNumberLast + 1);
+                    } else if (grid.getOutConnectNumber() == 0) {
+                        grid.setOutConnectNumber(
+                                connectNumbers_[blockIndex(rgrid)]);
+                        outConnectGrids_.putIfAbsent(
+                                connectNumbers_[blockIndex(rgrid)],
+                                new ArrayList<>());
+                        outConnectGrids_
+                                .get(connectNumbers_[blockIndex(rgrid)])
+                                .add(grid);
+                    }
                 }
             }
 
             if (dgrid != null) {
                 if (grid.isVerticalOr()) {
-                    if (connectNumbers_[dgrid.getColumnIndex() + (dgrid.getRowIndex() * column_)] == 0) {
+                    if (connectNumbers_[blockIndex(dgrid)] == 0) {
                         connectNumberLast = connectRoute(ioMap, ioTreeTable, dgrid, connectNumber, connectNumberLast);
-                    } else if (connectNumbers_[dgrid.getColumnIndex()
-                            + (dgrid.getRowIndex() * column_)] != connectNumber) {
-                        writeLog("Connection failed" + " [" + grid.getColumnIndex() + ":" + grid.getRowIndex() + "]->["
-                                + dgrid.getColumnIndex() + ":" + dgrid.getRowIndex() + "]", true);
-                        isConnectFailed_ = true;
+                    } else if (connectNumbers_[blockIndex(dgrid)] != connectNumber) {
+                        writeConnectError(grid, dgrid);
                     }
                 }
             }
@@ -646,20 +550,17 @@ public class Ladder {
      */
     public void run(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, long cycleTime) {
         LadderGrid grid;
-        int idx, funcIdx, funcIdx2, index, size;
+        int idx, funcIdx, index, size;
 
         Arrays.fill(runConnectNumbers_, 0);
         for (index = 0, size = outGrids_.size(); index < size; index++) {
             grid = outGrids_.get(index);
-            idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-            if (grid.getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                idx = idx_;
-            }
+            idx = addressIndex(grid.getAddress());
 
             if (!checkRunIo(ioMap, idx, grid)) {
                 // the io of the block is not registered : the block is only ignored, the
                 // other blocks of the ladder are run
-                runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                runConnectNumbers_[blockIndex(grid)] = -1;
                 continue;
             }
 
@@ -667,575 +568,187 @@ public class Ladder {
                 switch (grid.getBlock()) {
                     case OUT:
                         ioMap.get(idx).get(grid.getAddress()).setValue(1);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case OUT_NOT:
                         ioMap.get(idx).get(grid.getAddress()).setValueNot(0);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case OUT_RISING:
                         ioMap.get(idx).get(grid.getAddress()).setValueRising(1);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case OUT_RISING_NOT:
                         ioMap.get(idx).get(grid.getAddress()).setValueRisingNot(0);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case OUT_FALLING:
                         ioMap.get(idx).get(grid.getAddress()).setValueFalling(1);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case OUT_FALLING_NOT:
                         ioMap.get(idx).get(grid.getAddress()).setValueFallingNot(0);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case SET:
                         ioMap.get(idx).get(grid.getAddress()).setValue(1);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case RESET:
                         ioMap.get(idx).get(grid.getAddress()).resetValue();
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case AND_BITS:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue((long) grid.getBlockFunctions()[0].getValue()
-                                    & (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            & (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) grid.getBlockFunctions()[0].getValue() & (long) ioMap.get(funcIdx2)
-                                            .get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            & (long) ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress())
-                                                    .getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                (long) functionValue(ioMap, grid, 0)
+                                        & (long) functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case OR_BITS:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue((long) grid.getBlockFunctions()[0].getValue()
-                                    | (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            | (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) grid.getBlockFunctions()[0].getValue() | (long) ioMap.get(funcIdx2)
-                                            .get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            | (long) ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress())
-                                                    .getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                (long) functionValue(ioMap, grid, 0)
+                                        | (long) functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case XOR_BITS:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue((long) grid.getBlockFunctions()[0].getValue()
-                                    ^ (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            ^ (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) grid.getBlockFunctions()[0].getValue() ^ (long) ioMap.get(funcIdx2)
-                                            .get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            ^ (long) ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress())
-                                                    .getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                (long) functionValue(ioMap, grid, 0)
+                                        ^ (long) functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case NOT_BITS:
-                        if (grid.getBlockFunctions()[0].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue(~(long) grid.getBlockFunctions()[0].getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(~(long) ioMap.get(funcIdx)
-                                    .get(grid.getBlockFunctions()[0].getAddress()).getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress())
+                                .setValue(~(long) functionValue(ioMap, grid, 0));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case ADDITION:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    grid.getBlockFunctions()[0].getValue() + grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            + grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(grid.getBlockFunctions()[0].getValue()
-                                    + ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue() + ioMap
-                                            .get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                functionValue(ioMap, grid, 0) + functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case SUBTRACTION:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    grid.getBlockFunctions()[0].getValue() - grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            - grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(grid.getBlockFunctions()[0].getValue()
-                                    - ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue() - ioMap
-                                            .get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                functionValue(ioMap, grid, 0) - functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case MULTIPLICATION:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    grid.getBlockFunctions()[0].getValue() * grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            * grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(grid.getBlockFunctions()[0].getValue()
-                                    * ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue() * ioMap
-                                            .get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                functionValue(ioMap, grid, 0) * functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case DIVISION:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    grid.getBlockFunctions()[0].getValue() / grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            / grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(grid.getBlockFunctions()[0].getValue()
-                                    / ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue() / ioMap
-                                            .get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                functionValue(ioMap, grid, 0) / functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case AVERAGE:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (grid.getBlockFunctions()[0].getValue() + grid.getBlockFunctions()[1].getValue())
-                                            / 2.0);
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                            + grid.getBlockFunctions()[1].getValue()) / 2.0);
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue((grid.getBlockFunctions()[0].getValue()
-                                    + ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue())
-                                    / 2.0);
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress()).setValue(
-                                    (ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue() + ioMap
-                                            .get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue())
-                                            / 2.0);
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                (functionValue(ioMap, grid, 0) + functionValue(ioMap, grid, 1))
+                                        / 2.0);
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case SHIFT_LEFT_BITS:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue((long) grid.getBlockFunctions()[0]
-                                    .getValue() << (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress())
-                                            .getValue() << (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) grid.getBlockFunctions()[0].getValue() << (long) ioMap
-                                            .get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress())
-                                            .getValue() << (long) ioMap.get(funcIdx2)
-                                                    .get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                (long) functionValue(ioMap, grid, 0)
+                                        << (long) functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case SHIFT_RIGHT_BITS:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress()).setValue((long) grid.getBlockFunctions()[0]
-                                    .getValue() >> (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress())
-                                            .getValue() >> (long) grid.getBlockFunctions()[1].getValue());
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) grid.getBlockFunctions()[0].getValue() >> (long) ioMap
-                                            .get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((long) ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress())
-                                            .getValue() >> (long) ioMap.get(funcIdx2)
-                                                    .get(grid.getBlockFunctions()[1].getAddress()).getValue());
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                (long) functionValue(ioMap, grid, 0)
+                                        >> (long) functionValue(ioMap, grid, 1));
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case SIGMOID:
-                        if (grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((Math.tanh(grid.getBlockFunctions()[0].getValue()
-                                            * grid.getBlockFunctions()[1].getValue() / 2.0) + 1.0) / 2.0);
-                        } else if (!grid.getBlockFunctions()[0].isNumber() && grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((Math.tanh(
-                                            ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                                    * grid.getBlockFunctions()[1].getValue() / 2.0)
-                                            + 1.0) / 2.0);
-                        } else if (grid.getBlockFunctions()[0].isNumber() && !grid.getBlockFunctions()[1].isNumber()) {
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((Math
-                                            .tanh(grid.getBlockFunctions()[0].getValue() * ioMap.get(funcIdx2)
-                                                    .get(grid.getBlockFunctions()[1].getAddress()).getValue() / 2.0)
-                                            + 1.0) / 2.0);
-                        } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            funcIdx2 = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[1].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx2 = idx_;
-                            }
-                            ioMap.get(idx).get(grid.getAddress())
-                                    .setValue((Math.tanh(
-                                            ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue()
-                                                    * ioMap.get(funcIdx2).get(grid.getBlockFunctions()[1].getAddress())
-                                                            .getValue()
-                                                    / 2.0)
-                                            + 1.0) / 2.0);
-                        }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        ioMap.get(idx).get(grid.getAddress()).setValue(
+                                (Math.tanh(functionValue(ioMap, grid, 0)
+                                        * functionValue(ioMap, grid, 1) / 2.0)
+                                        + 1.0) / 2.0);
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case RANDOM:
                         ioMap.get(idx).get(grid.getAddress()).setValue(Math.random());
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case TIMER:
                         if (grid.getBlockFunctions()[0].isNumber()) {
                             ioMap.get(idx).get(grid.getAddress()).setValueTimer(1,
                                     grid.getBlockFunctions()[0].getValue(), cycleTime);
                         } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
                             if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 funcIdx = idx_;
                             }
                             ioMap.get(idx).get(grid.getAddress()).setValueTimer(1,
                                     ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue(),
                                     cycleTime);
                         }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case TIMER_NOT:
                         if (grid.getBlockFunctions()[0].isNumber()) {
                             ioMap.get(idx).get(grid.getAddress()).setValueTimerNot(1,
                                     grid.getBlockFunctions()[0].getValue(), cycleTime);
                         } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
                             if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 funcIdx = idx_;
                             }
                             ioMap.get(idx).get(grid.getAddress()).setValueTimerNot(1,
                                     ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue(),
                                     cycleTime);
                         }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case COUNTER:
                         if (grid.getBlockFunctions()[0].isNumber()) {
                             ioMap.get(idx).get(grid.getAddress()).setValueCounter(1,
                                     grid.getBlockFunctions()[0].getValue());
                         } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
                             if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 funcIdx = idx_;
                             }
                             ioMap.get(idx).get(grid.getAddress()).setValueCounter(1,
                                     ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue());
                         }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case COUNTER_NOT:
                         if (grid.getBlockFunctions()[0].isNumber()) {
                             ioMap.get(idx).get(grid.getAddress()).setValueCounterNot(1,
                                     grid.getBlockFunctions()[0].getValue());
                         } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
                             if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 funcIdx = idx_;
                             }
                             ioMap.get(idx).get(grid.getAddress()).setValueCounterNot(1,
                                     ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue());
                         }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case MOVE:
                         if (grid.getBlockFunctions()[0].isNumber()) {
                             ioMap.get(idx).get(grid.getAddress()).setValue(grid.getBlockFunctions()[0].getValue());
                         } else {
-                            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
+                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
                             if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 funcIdx = idx_;
                             }
                             ioMap.get(idx).get(grid.getAddress()).setValue(
                                     ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue());
                         }
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     case SCRIPT:
                         ioMap.get(idx).get(grid.getAddress()).setScript(grid.getBlockScript());
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = 1;
+                        runConnectNumbers_[blockIndex(grid)] = 1;
                         break;
                     default:
                         break;
@@ -1244,35 +757,35 @@ public class Ladder {
                 switch (grid.getBlock()) {
                     case OUT:
                         ioMap.get(idx).get(grid.getAddress()).setValue(0);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     case OUT_NOT:
                         ioMap.get(idx).get(grid.getAddress()).setValueNot(1);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     case OUT_RISING:
                         ioMap.get(idx).get(grid.getAddress()).setValueRising(0);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     case OUT_RISING_NOT:
                         ioMap.get(idx).get(grid.getAddress()).setValueRisingNot(1);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     case OUT_FALLING:
                         ioMap.get(idx).get(grid.getAddress()).setValueFalling(0);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     case OUT_FALLING_NOT:
                         ioMap.get(idx).get(grid.getAddress()).setValueFallingNot(1);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     case TIMER:
                         ioMap.get(idx).get(grid.getAddress()).setValueTimer(0, 0, 0);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     case TIMER_NOT:
                         ioMap.get(idx).get(grid.getAddress()).setValueTimerNot(0, 0, 0);
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     case SET:
                     case RESET:
@@ -1293,8 +806,8 @@ public class Ladder {
                     case COUNTER_NOT:
                     case MOVE:
                     case SCRIPT:
-                        ioMap.get(idx).get(grid.getAddress()).chehckEdge();
-                        runConnectNumbers_[grid.getColumnIndex() + (grid.getRowIndex() * column_)] = -1;
+                        ioMap.get(idx).get(grid.getAddress()).checkEdge();
+                        runConnectNumbers_[blockIndex(grid)] = -1;
                         break;
                     default:
                         break;
@@ -1319,11 +832,14 @@ public class Ladder {
         int funcIdx, index, size;
 
         address = grid.getAddress();
-        if ((address == null) || address.isEmpty() || isRunAddressNumber(address)) {
+        if ((address == null) || address.isEmpty()) {
             // the block uses no address of the io map
             return true;
         }
         if ((idx < 0) || (idx >= ioMap.size()) || (ioMap.get(idx).get(address) == null)) {
+            // the address of the block itself is always looked up in the io map : a
+            // number used as an address is reported instead of running the block, which
+            // would answer no io at all
             return writeRunIoError(address);
         }
 
@@ -1336,10 +852,7 @@ public class Ladder {
             if ((address == null) || address.isEmpty() || isRunAddressNumber(address)) {
                 continue;
             }
-            funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-            if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                funcIdx = idx_;
-            }
+            funcIdx = addressIndex(address);
             if ((funcIdx < 0) || (funcIdx >= ioMap.size()) || (ioMap.get(funcIdx).get(address) == null)) {
                 return writeRunIoError(address);
             }
@@ -1356,12 +869,7 @@ public class Ladder {
      * @return
      */
     private static boolean isRunAddressNumber(String address) {
-        char ch = address.charAt(0);
-
-        if (!((ch == '+') || (ch == '-') || ((ch >= '0') && (ch <= '9')))) {
-            return false;
-        }
-        return PATTERN_REAL_NUMBER.matcher(address).find();
+        return LadderNumber.isNumber(address);
     }
 
     /**
@@ -1387,14 +895,13 @@ public class Ladder {
                 int index, size;
                 for (index = 0, size = outConnectGrids_.get(connectNumber).size(); index < size; index++) {
                     ladderGrid = outConnectGrids_.get(connectNumber).get(index);
-                    if (runConnectNumbers_[ladderGrid.getColumnIndex() + (ladderGrid.getRowIndex() * column_)] == 0) {
+                    if (runConnectNumbers_[blockIndex(ladderGrid)] == 0) {
                         if (runRoute(ioMap, ladderGrid)) {
-                            runConnectNumbers_[ladderGrid.getColumnIndex() + (ladderGrid.getRowIndex() * column_)] = 1;
+                            runConnectNumbers_[blockIndex(ladderGrid)] = 1;
                             return true;
                         }
-                        runConnectNumbers_[ladderGrid.getColumnIndex() + (ladderGrid.getRowIndex() * column_)] = -1;
-                    } else if (runConnectNumbers_[ladderGrid.getColumnIndex()
-                            + (ladderGrid.getRowIndex() * column_)] > 0) {
+                        runConnectNumbers_[blockIndex(ladderGrid)] = -1;
+                    } else if (runConnectNumbers_[blockIndex(ladderGrid)] > 0) {
                         return true;
                     }
                 }
@@ -1410,10 +917,7 @@ public class Ladder {
             int idx, funcIdx;
             boolean result;
 
-            idx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-            if (grid.getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                idx = idx_;
-            }
+            idx = addressIndex(grid.getAddress());
 
             if (!checkRunIo(ioMap, idx, grid)) {
                 // the io of the block is not registered : the route does not conduct
@@ -1444,10 +948,7 @@ public class Ladder {
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() == grid.getBlockFunctions()[0]
                                 .getValue();
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() == ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue();
                     }
@@ -1457,10 +958,7 @@ public class Ladder {
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() != grid.getBlockFunctions()[0]
                                 .getValue();
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() != ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue();
                     }
@@ -1470,10 +968,7 @@ public class Ladder {
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() < grid.getBlockFunctions()[0]
                                 .getValue();
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() < ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue();
                     }
@@ -1483,10 +978,7 @@ public class Ladder {
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() <= grid.getBlockFunctions()[0]
                                 .getValue();
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() <= ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue();
                     }
@@ -1496,10 +988,7 @@ public class Ladder {
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() > grid.getBlockFunctions()[0]
                                 .getValue();
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() > ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue();
                     }
@@ -1509,10 +998,7 @@ public class Ladder {
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() >= grid.getBlockFunctions()[0]
                                 .getValue();
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = ioMap.get(idx).get(grid.getAddress()).getValue() >= ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue();
                     }
@@ -1522,10 +1008,7 @@ public class Ladder {
                         result = (((long) ioMap.get(idx).get(grid.getAddress()).getValue())
                                 & ((long) grid.getBlockFunctions()[0].getValue())) != 0;
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = (((long) ioMap.get(idx).get(grid.getAddress()).getValue()) & ((long) ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue())) != 0;
                     }
@@ -1535,10 +1018,7 @@ public class Ladder {
                         result = (((long) ioMap.get(idx).get(grid.getAddress()).getValue())
                                 | ((long) grid.getBlockFunctions()[0].getValue())) != 0;
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = (((long) ioMap.get(idx).get(grid.getAddress()).getValue()) | ((long) ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue())) != 0;
                     }
@@ -1548,10 +1028,7 @@ public class Ladder {
                         result = (((long) ioMap.get(idx).get(grid.getAddress()).getValue())
                                 ^ ((long) grid.getBlockFunctions()[0].getValue())) != 0;
                     } else {
-                        funcIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                        if (grid.getBlockFunctions()[0].getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            funcIdx = idx_;
-                        }
+                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
                         result = (((long) ioMap.get(idx).get(grid.getAddress()).getValue()) ^ ((long) ioMap.get(funcIdx)
                                 .get(grid.getBlockFunctions()[0].getAddress()).getValue())) != 0;
                     }
@@ -1570,16 +1047,13 @@ public class Ladder {
 
                     for (index = 0, size = outConnectGrids_.get(connectNumber).size(); index < size; index++) {
                         ladderGrid = outConnectGrids_.get(connectNumber).get(index);
-                        if (runConnectNumbers_[ladderGrid.getColumnIndex()
-                                + (ladderGrid.getRowIndex() * column_)] == 0) {
+                        if (runConnectNumbers_[blockIndex(ladderGrid)] == 0) {
                             if (runRoute(ioMap, ladderGrid)) {
-                                runConnectNumbers_[ladderGrid.getColumnIndex()
-                                        + (ladderGrid.getRowIndex() * column_)] = 1;
+                                runConnectNumbers_[blockIndex(ladderGrid)] = 1;
                                 return true;
                             }
-                            runConnectNumbers_[ladderGrid.getColumnIndex() + (ladderGrid.getRowIndex() * column_)] = -1;
-                        } else if (runConnectNumbers_[ladderGrid.getColumnIndex()
-                                + (ladderGrid.getRowIndex() * column_)] > 0) {
+                            runConnectNumbers_[blockIndex(ladderGrid)] = -1;
+                        } else if (runConnectNumbers_[blockIndex(ladderGrid)] > 0) {
                             return true;
                         }
                     }
@@ -1626,29 +1100,126 @@ public class Ladder {
                 }
             }
 
-            switch (grid.getBlock()) {
-                case LOAD:
-                case LOAD_NOT:
-                case LOAD_RISING:
-                case LOAD_RISING_NOT:
-                case LOAD_FALLING:
-                case LOAD_FALLING_NOT:
-                case COMPARISON_EQUAL:
-                case COMPARISON_NOT_EQUAL:
-                case COMPARISON_LESS:
-                case COMPARISON_LESS_EQUAL:
-                case COMPARISON_GREATER:
-                case COMPARISON_GREATER_EQUAL:
-                case COMPARISON_AND_BITS:
-                case COMPARISON_OR_BITS:
-                case COMPARISON_XOR_BITS:
-                    return false;
-                default:
-                    break;
+            if (grid.getBlock().isContact()) {
+                return false;
             }
             grid = rgrid;
         }
         return true;
+    }
+
+    /**
+     * the value of a function of the block : the value of the number when the function is
+     * written as a number, the value of the io of the address of the function otherwise
+     *
+     * @param ioMap
+     * @param grid
+     * @param function index of the function of the block
+     * @return the value of the function of the block
+     */
+    private double functionValue(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, LadderGrid grid,
+            int function) {
+        if (grid.getBlockFunctions()[function].isNumber()) {
+            return grid.getBlockFunctions()[function].getValue();
+        }
+        return ioMap.get(functionIndex(grid, function)).get(grid.getBlockFunctions()[function].getAddress())
+                .getValue();
+    }
+
+    /**
+     * the index of the io map which holds the io of the address of a function of the block :
+     * the io of an address which begins with the local prefix belongs to the ladder
+     *
+     * @param grid
+     * @param function index of the function of the block
+     * @return the index of the io map of the address of the function
+     */
+    private int functionIndex(LadderGrid grid, int function) {
+        if (grid.getBlockFunctions()[function].getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+            return idx_;
+        }
+        return LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+    }
+
+    /**
+     * the index of a block in the arrays of the ladder : the blocks of the ladder are kept
+     * in a row by row array of column_ blocks
+     *
+     * @param grid
+     * @return the index of the block in the arrays of the ladder
+     */
+    private int blockIndex(LadderGrid grid) {
+        return grid.getColumnIndex() + (grid.getRowIndex() * column_);
+    }
+
+    /**
+     * the index of the io map which holds the io of an address : an address which begins
+     * with the local prefix belongs to the ladder, an other address belongs to the
+     * application
+     *
+     * @param address
+     * @return the index of the io map of the address
+     */
+    private int addressIndex(String address) {
+        if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+            return idx_;
+        }
+        return LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+    }
+
+    /**
+     * the io of an address used by a block of the ladder is added to the io map and to the
+     * tree table of the io when the address is not registered yet
+     *
+     * @param ioMap
+     * @param ioTreeTable
+     * @param idx
+     * @param address
+     */
+    private void registerIo(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
+            TreeTableView<LadderTreeTableIo> ioTreeTable, int idx, String address) {
+        if (ioMap.get(idx).containsKey(address)) {
+            return;
+        }
+        ioMap.get(idx).put(address, new LadderIo(address));
+        ioTreeTable.getRoot().getChildren().get(idx).getChildren()
+                .add(new TreeItem<>(new LadderTreeTableIo(address)));
+    }
+
+    /**
+     * the address of a block which can be a number is written as a number : the block is
+     * not connected
+     *
+     * @param grid
+     */
+    private void writeNumericAddressError(LadderGrid grid) {
+        writeLog("Numeric only error in address" + " [" + grid.getColumnIndex()
+                + ":" + grid.getRowIndex() + "]", true);
+        isConnectFailed_ = true;
+    }
+
+    /**
+     * the route of the ladder is broken at the block
+     *
+     * @param grid
+     */
+    private void writeConnectError(LadderGrid grid) {
+        writeLog("Connection failed" + " [" + grid.getColumnIndex()
+                + ":" + grid.getRowIndex() + "]", true);
+        isConnectFailed_ = true;
+    }
+
+    /**
+     * the route of the ladder is broken between two blocks
+     *
+     * @param grid
+     * @param next the block the route goes to
+     */
+    private void writeConnectError(LadderGrid grid, LadderGrid next) {
+        writeLog("Connection failed" + " [" + grid.getColumnIndex()
+                + ":" + grid.getRowIndex() + "]->[" + next.getColumnIndex() + ":"
+                + next.getRowIndex() + "]", true);
+        isConnectFailed_ = true;
     }
 
     private void writeLog(final String msg, final boolean err) {

@@ -8,15 +8,15 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class LadderHistoryManagerTest {
 
-    private static LadderHistory history(Ladders.LADDER_COMMAND command) {
+    private static LadderHistory history(LadderCommandType command) {
         return new LadderHistory(command);
     }
 
     @Test
     void historyStoresCommandAndJsonLadders() {
-        LadderHistory ladderHistory = history(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
+        LadderHistory ladderHistory = history(LadderCommandType.BLOCK_CHANGE);
 
-        assertSame(Ladders.LADDER_COMMAND.BLOCK_CHANGE, ladderHistory.getCommand());
+        assertSame(LadderCommandType.BLOCK_CHANGE, ladderHistory.getCommand());
         assertNull(ladderHistory.getOriginal());
         assertNull(ladderHistory.getRevised());
 
@@ -39,8 +39,8 @@ class LadderHistoryManagerTest {
     @Test
     void pushAddsToPastsHeadAndClearsFutures() {
         LadderHistoryManager manager = new LadderHistoryManager();
-        LadderHistory first = history(Ladders.LADDER_COMMAND.LADDER_CREATE);
-        LadderHistory second = history(Ladders.LADDER_COMMAND.LADDER_REMOVE);
+        LadderHistory first = history(LadderCommandType.LADDER_CREATE);
+        LadderHistory second = history(LadderCommandType.LADDER_REMOVE);
 
         manager.push(first, -1);
         manager.push(second, -1);
@@ -54,9 +54,9 @@ class LadderHistoryManagerTest {
     @Test
     void pushTrimsPastsToGenerationLimit() {
         LadderHistoryManager manager = new LadderHistoryManager();
-        LadderHistory first = history(Ladders.LADDER_COMMAND.CHANGE_ADDRESS);
-        LadderHistory second = history(Ladders.LADDER_COMMAND.CHANGE_COMMENT);
-        LadderHistory third = history(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
+        LadderHistory first = history(LadderCommandType.CHANGE_ADDRESS);
+        LadderHistory second = history(LadderCommandType.CHANGE_COMMENT);
+        LadderHistory third = history(LadderCommandType.BLOCK_CHANGE);
 
         manager.push(first, 2);
         manager.push(second, 2);
@@ -71,7 +71,7 @@ class LadderHistoryManagerTest {
     void pushWithGenerationZeroLeavesNoPasts() {
         LadderHistoryManager manager = new LadderHistoryManager();
 
-        manager.push(history(Ladders.LADDER_COMMAND.LADDER_CREATE), 0);
+        manager.push(history(LadderCommandType.LADDER_CREATE), 0);
 
         assertTrue(manager.getPasts().isEmpty());
         assertNull(manager.getFutures());
@@ -80,7 +80,7 @@ class LadderHistoryManagerTest {
     @Test
     void undoIsDisabledForGenerationZero() {
         LadderHistoryManager manager = new LadderHistoryManager();
-        LadderHistory first = history(Ladders.LADDER_COMMAND.LADDER_CREATE);
+        LadderHistory first = history(LadderCommandType.LADDER_CREATE);
 
         manager.push(first, -1);
         assertNull(manager.undo(0));
@@ -98,8 +98,8 @@ class LadderHistoryManagerTest {
     @Test
     void undoRedoRoundTrip() {
         LadderHistoryManager manager = new LadderHistoryManager();
-        LadderHistory first = history(Ladders.LADDER_COMMAND.LADDER_CREATE);
-        LadderHistory second = history(Ladders.LADDER_COMMAND.LADDER_REMOVE);
+        LadderHistory first = history(LadderCommandType.LADDER_CREATE);
+        LadderHistory second = history(LadderCommandType.LADDER_REMOVE);
 
         manager.push(first, -1);
         manager.push(second, -1);
@@ -120,9 +120,9 @@ class LadderHistoryManagerTest {
     @Test
     void undoTrimsFuturesToGenerationLimit() {
         LadderHistoryManager manager = new LadderHistoryManager();
-        LadderHistory first = history(Ladders.LADDER_COMMAND.LADDER_CREATE);
-        LadderHistory second = history(Ladders.LADDER_COMMAND.LADDER_REMOVE);
-        LadderHistory third = history(Ladders.LADDER_COMMAND.LADDER_INSERT_ROW);
+        LadderHistory first = history(LadderCommandType.LADDER_CREATE);
+        LadderHistory second = history(LadderCommandType.LADDER_REMOVE);
+        LadderHistory third = history(LadderCommandType.LADDER_INSERT_ROW);
 
         manager.push(first, -1);
         manager.push(second, -1);
@@ -138,15 +138,15 @@ class LadderHistoryManagerTest {
     @Test
     void pushAfterUndoClearsFutures() {
         LadderHistoryManager manager = new LadderHistoryManager();
-        LadderHistory first = history(Ladders.LADDER_COMMAND.LADDER_CREATE);
-        LadderHistory second = history(Ladders.LADDER_COMMAND.LADDER_REMOVE);
+        LadderHistory first = history(LadderCommandType.LADDER_CREATE);
+        LadderHistory second = history(LadderCommandType.LADDER_REMOVE);
 
         manager.push(first, -1);
         manager.push(second, -1);
         manager.undo(-1);
         assertNotNull(manager.getFutures());
 
-        manager.push(history(Ladders.LADDER_COMMAND.BLOCK_CHANGE), -1);
+        manager.push(history(LadderCommandType.BLOCK_CHANGE), -1);
         assertNull(manager.getFutures());
     }
 
@@ -154,8 +154,8 @@ class LadderHistoryManagerTest {
     void clearRemovesAllHistory() {
         LadderHistoryManager manager = new LadderHistoryManager();
 
-        manager.push(history(Ladders.LADDER_COMMAND.LADDER_CREATE), -1);
-        manager.push(history(Ladders.LADDER_COMMAND.LADDER_REMOVE), -1);
+        manager.push(history(LadderCommandType.LADDER_CREATE), -1);
+        manager.push(history(LadderCommandType.LADDER_REMOVE), -1);
         manager.undo(-1);
         manager.clear();
 
@@ -167,7 +167,7 @@ class LadderHistoryManagerTest {
     void setSharesDequeReferencesForUnlimitedGeneration() {
         LadderHistoryManager source = new LadderHistoryManager();
         LadderHistoryManager copy = new LadderHistoryManager();
-        LadderHistory first = history(Ladders.LADDER_COMMAND.LADDER_CREATE);
+        LadderHistory first = history(LadderCommandType.LADDER_CREATE);
 
         source.push(first, -1);
         copy.set(source, -1);
@@ -182,8 +182,8 @@ class LadderHistoryManagerTest {
         LadderHistoryManager source = new LadderHistoryManager();
         LadderHistoryManager copy = new LadderHistoryManager();
 
-        source.push(history(Ladders.LADDER_COMMAND.LADDER_CREATE), -1);
-        source.push(history(Ladders.LADDER_COMMAND.LADDER_REMOVE), -1);
+        source.push(history(LadderCommandType.LADDER_CREATE), -1);
+        source.push(history(LadderCommandType.LADDER_REMOVE), -1);
         copy.set(source, 0);
 
         assertNull(copy.getPasts());
@@ -196,9 +196,9 @@ class LadderHistoryManagerTest {
         LadderHistoryManager source = new LadderHistoryManager();
         LadderHistoryManager copy = new LadderHistoryManager();
 
-        source.push(history(Ladders.LADDER_COMMAND.LADDER_CREATE), -1);
-        source.push(history(Ladders.LADDER_COMMAND.LADDER_REMOVE), -1);
-        source.push(history(Ladders.LADDER_COMMAND.LADDER_INSERT_ROW), -1);
+        source.push(history(LadderCommandType.LADDER_CREATE), -1);
+        source.push(history(LadderCommandType.LADDER_REMOVE), -1);
+        source.push(history(LadderCommandType.LADDER_INSERT_ROW), -1);
         source.undo(-1);
         source.undo(-1);
         source.undo(-1);

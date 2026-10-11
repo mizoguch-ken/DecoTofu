@@ -7,6 +7,7 @@ package ken.mizoguch.soem;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumMap;
@@ -19,6 +20,7 @@ import javafx.scene.image.Image;
 import javafx.scene.web.WebEngine;
 import javafx.stage.Stage;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.PathResolver;
 import ken.mizoguch.webviewer.plugin.WebViewerPlugin;
 import netscape.javascript.JSException;
 import netscape.javascript.JSObject;
@@ -37,7 +39,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * of a function can not carry an other javascript
      */
     private static final Pattern PATTERN_SCRIPT_FUNCTION = Pattern
-            .compile("^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$");
+            .compile("^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*\\z");
 
     private WebEngine webEngine_;
     private Worker.State state_;
@@ -89,12 +91,30 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     }
 
     /**
+     * load the shared library of SOEM : a relative path is used from the current
+     * directory when the library is there, otherwise it is used from the directory of the
+     * application because the launcher does not always set the current directory. The file
+     * has to exist : a name which is not a file would let the loader of jnr-ffi take an
+     * other library of the java library path
      *
      * @param libraryPath
-     * @return
+     * @return true when the library of the given path is loaded
      */
     public Boolean load(String libraryPath) {
-        return soem_.load(Paths.get(libraryPath));
+        Path path = PathResolver.resolvePagePath(SoemPlugin.class, libraryPath);
+
+        if (path == null) {
+            write(FUNCTION_NAME, "incorrect library path [" + libraryPath + "]", true);
+            return false;
+        }
+        if (!Files.exists(path)) {
+            write(FUNCTION_NAME, "library not found [" + libraryPath + "] in [" + PathResolver.userPath()
+                    + "] or in [" + PathResolver.applicationDirectory(SoemPlugin.class) + "]", true);
+            return false;
+        }
+        // Soem.load() answers null when the library can not be loaded : the web page gets
+        // only true or false
+        return Boolean.TRUE.equals(soem_.load(path));
     }
 
     /**
@@ -497,11 +517,21 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
 
     @Override
     public void writeStackTrace(String name, Throwable throwable) {
-        webViewer_.writeStackTrace(name, throwable);
+        if (webViewer_ != null) {
+            webViewer_.writeStackTrace(name, throwable);
+        } else {
+            // the plugin is not attached to a web page : the console of the application
+            // answers the message
+            Console.writeStackTrace(name, throwable);
+        }
     }
 
     @Override
     public void write(String name, String msg, boolean err) {
-        webViewer_.write(name, msg, err);
+        if (webViewer_ != null) {
+            webViewer_.write(name, msg, err);
+        } else {
+            Console.write(name, msg, err);
+        }
     }
 }

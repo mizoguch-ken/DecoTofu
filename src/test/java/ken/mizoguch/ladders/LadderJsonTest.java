@@ -62,7 +62,7 @@ class LadderJsonTest {
         assertNull(json.getHistoryManager());
 
         LadderHistoryManager manager = new LadderHistoryManager();
-        manager.push(new LadderHistory(Ladders.LADDER_COMMAND.LADDER_CREATE), -1);
+        manager.push(new LadderHistory(LadderCommandType.LADDER_CREATE), -1);
 
         json.setHistoryManager(manager, -1);
         assertNotNull(json.getHistoryManager());

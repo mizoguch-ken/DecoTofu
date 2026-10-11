@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
@@ -32,9 +30,6 @@ import ken.mizoguch.console.Console;
  * @author mizoguch-ken
  */
 public class LadderCommand {
-
-    private static final Pattern PATTERN_REAL_NUMBER = Pattern.compile(
-            "^[\\+\\-]?(?:((?:\\d*\\.\\d+|\\d+\\.?\\d*)(?:[eE][\\+\\-]?\\d+|))|0[xX]([0-9a-fA-F]+)|0[bB]([0-1]+))$");
 
     private final Stage stage_;
     private final List<Image> icons_;
@@ -148,9 +143,9 @@ public class LadderCommand {
                         restoreBlocks(history_.getOriginal(),
                                 ladderCreate(history_.getOriginal().getIdx(), history_.getOriginal().getName(),
                                         history_.getOriginal().getColumn(), history_.getOriginal().getRow(),
-                                        Ladders.LADDER_DEFAULT_GRID_MIN_SIZE, Ladders.LADDER_DEFAULT_GRID_MAX_SIZE,
-                                        Ladders.LADDER_DEFAULT_GRID_CONTENTS_WIDTH,
-                                        Ladders.LADDER_DEFAULT_GRID_CONTENTS_HIGHT),
+                                        LadderDefaults.LADDER_DEFAULT_GRID_MIN_SIZE, LadderDefaults.LADDER_DEFAULT_GRID_MAX_SIZE,
+                                        LadderDefaults.LADDER_DEFAULT_GRID_CONTENTS_WIDTH,
+                                        LadderDefaults.LADDER_DEFAULT_GRID_CONTENTS_HIGHT),
                                 true);
                         ladders_.getTabLadder().getSelectionModel().select(history_.getOriginal().getIdx());
                         break;
@@ -268,9 +263,9 @@ public class LadderCommand {
                         restoreBlocks(history_.getRevised(),
                                 ladderCreate(history_.getRevised().getIdx(), history_.getRevised().getName(),
                                         history_.getRevised().getColumn(), history_.getRevised().getRow(),
-                                        Ladders.LADDER_DEFAULT_GRID_MIN_SIZE, Ladders.LADDER_DEFAULT_GRID_MAX_SIZE,
-                                        Ladders.LADDER_DEFAULT_GRID_CONTENTS_WIDTH,
-                                        Ladders.LADDER_DEFAULT_GRID_CONTENTS_HIGHT),
+                                        LadderDefaults.LADDER_DEFAULT_GRID_MIN_SIZE, LadderDefaults.LADDER_DEFAULT_GRID_MAX_SIZE,
+                                        LadderDefaults.LADDER_DEFAULT_GRID_CONTENTS_WIDTH,
+                                        LadderDefaults.LADDER_DEFAULT_GRID_CONTENTS_HIGHT),
                                 true);
                         ladders_.getTabLadder().getSelectionModel().select(history_.getRevised().getIdx() - 1);
                         break;
@@ -388,12 +383,10 @@ public class LadderCommand {
      */
     public void changeAddress(int oldIdx, String oldAddress, int newIdx, String newAddress) {
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.CHANGE_ADDRESS);
+            history_ = new LadderHistory(LadderCommandType.CHANGE_ADDRESS);
             history_.setOriginal(new LadderJsonLadder(oldIdx, oldAddress, null));
             history_.setRevised(new LadderJsonLadder(newIdx, newAddress, null));
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            pushHistory();
         }
 
         LadderPane pane;
@@ -402,7 +395,7 @@ public class LadderCommand {
         int index, size, index2, size2;
 
         synchronized (ladders_.getLock()) {
-            if (newIdx == Ladders.LADDER_GLOBAL_ADDRESS_INDEX) {
+            if (newIdx == LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX) {
                 for (index = 0, size = ladders_.getLadders().length; index < size; index++) {
                     ladder = ladders_.getLadders()[index];
                     for (index2 = 0, size2 = ladder.getLadderGrids().size(); index2 < size2; index2++) {
@@ -526,17 +519,15 @@ public class LadderCommand {
         }
 
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.CHANGE_COMMENT);
+            history_ = new LadderHistory(LadderCommandType.CHANGE_COMMENT);
             history_.setOriginal(new LadderJsonLadder(idx, address, oldComment));
             history_.setRevised(new LadderJsonLadder(idx, address, comment));
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            pushHistory();
         }
 
         int index, size;
 
-        if (idx == Ladders.LADDER_GLOBAL_ADDRESS_INDEX) {
+        if (idx == LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX) {
             for (index = 0, size = tabPane.getTabs().size(); index < size; index++) {
                 ((LadderPane) ((ScrollPane) tabPane.getTabs().get(index).getContent()).getContent())
                         .setComments(address, comment);
@@ -606,18 +597,14 @@ public class LadderCommand {
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> scriptIoMap, int idx, String name, int gridColumn,
             int gridRow, double gridMinSize, double gridMaxSize, double gridContentsWidth, double gridContentsHight) {
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.LADDER_CREATE);
+            history_ = new LadderHistory(LadderCommandType.LADDER_CREATE);
             history_.setRevised(new LadderJsonLadder(idx, name, gridColumn, gridRow));
             historyManager_.push(history_, historyGeneration_);
         }
 
         treeTableView.getRoot().getChildren().add(idx,
                 new TreeItem<>(new LadderTreeTableIo(name.replace(" ", "_"), idx)));
-        ioMap.add(idx, new ConcurrentHashMap<>());
-        commentMap.add(idx, new ConcurrentHashMap<>());
-        if (scriptIoMap != null) {
-            scriptIoMap.add(idx, new ConcurrentHashMap<>());
-        }
+        LadderIoStore.addRows(ioMap, commentMap, scriptIoMap, idx);
 
         LadderPane pane = new LadderPane(ladders, idx, name, gridColumn, gridRow, gridMinSize, gridMaxSize,
                 gridContentsWidth, gridContentsHight);
@@ -652,19 +639,15 @@ public class LadderCommand {
         if (!isDisableHistory_ && !isBlockChanging_) {
             LadderPane pane = (LadderPane) ((ScrollPane) ladders_.getTabLadder().getSelectionModel().getSelectedItem()
                     .getContent()).getContent();
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.LADDER_REMOVE);
+            history_ = new LadderHistory(LadderCommandType.LADDER_REMOVE);
             history_.setOriginal(new LadderJsonLadder(pane.getLadder().getIdx(), pane.getLadder().getName(),
                     pane.getLadder().getColumn(), pane.getLadder().getRow()));
             backupBlocks(history_.getOriginal(), pane);
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            pushHistory();
         }
 
         ladders_.getTreeTableIo().getRoot().getChildren().remove(tabIndex + 1);
-        ladders_.getIoMap().remove(tabIndex + 1);
-        ladders_.getCommentMap().remove(tabIndex + 1);
-        ladders_.getScriptIoMap().remove(tabIndex + 1);
+        ladders_.getIoStore().removeLadderRow(tabIndex + 1);
 
         int index, size;
 
@@ -687,13 +670,11 @@ public class LadderCommand {
 
         if (ladder.getRow() > 2) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.LADDER_REMOVE_ROW);
+                history_ = new LadderHistory(LadderCommandType.LADDER_REMOVE_ROW);
                 history_.setOriginal(
                         new LadderJsonLadder(pane.getLadder().getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
                 backupBlocksRow(history_.getOriginal(), pane, grid.getRowIndex());
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                pushHistory();
             }
 
             LadderGrid gridBuf, gridColumnBegin;
@@ -740,7 +721,7 @@ public class LadderCommand {
                     gridPaneBuf = pane.findGridPane(gridBuf);
                     gridBuf.setRowIndex(rowIndex - 1);
                     pane.setGridRowIndex(gridPaneBuf, rowIndex - 1);
-                    if (gridBuf.getBlock() == Ladders.LADDER_BLOCK.CONTENTS) {
+                    if (gridBuf.getBlock() == LadderBlock.CONTENTS) {
                         gridPaneBuf.changeContents();
                     }
                     gridBuf = gridBuf.getRightLadderGrid();
@@ -771,12 +752,10 @@ public class LadderCommand {
             int rowSize;
 
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.LADDER_INSERT_ROW);
+                history_ = new LadderHistory(LadderCommandType.LADDER_INSERT_ROW);
                 history_.setRevised(
                         new LadderJsonLadder(pane.getLadder().getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                pushHistory();
             }
 
             // insert line
@@ -816,7 +795,7 @@ public class LadderCommand {
                     gridPaneBuf = pane.findGridPane(gridBuf);
                     gridBuf.setRowIndex(rowIndex + 1);
                     pane.setGridRowIndex(gridPaneBuf, rowIndex + 1);
-                    if (gridBuf.getBlock() == Ladders.LADDER_BLOCK.CONTENTS) {
+                    if (gridBuf.getBlock() == LadderBlock.CONTENTS) {
                         gridPaneBuf.changeContents();
                     }
                     gridBuf = gridBuf.getRightLadderGrid();
@@ -828,11 +807,9 @@ public class LadderCommand {
             return true;
         } else {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.LADDER_INSERT_ROW);
+                history_ = new LadderHistory(LadderCommandType.LADDER_INSERT_ROW);
                 history_.setRevised(new LadderJsonLadder(pane.getLadder().getIdx(), 0, ladder.getRow()));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                pushHistory();
             }
 
             // insert line
@@ -871,7 +848,7 @@ public class LadderCommand {
 
         if (idx > 1) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.LADDER_MOVE_LEFT);
+                history_ = new LadderHistory(LadderCommandType.LADDER_MOVE_LEFT);
                 history_.setOriginal(new LadderJsonLadder(ladder.getIdx()));
             }
 
@@ -885,9 +862,7 @@ public class LadderCommand {
 
             if (!isDisableHistory_ && !isBlockChanging_) {
                 history_.setRevised(new LadderJsonLadder(ladder.getIdx()));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                pushHistory();
             }
         }
     }
@@ -901,7 +876,7 @@ public class LadderCommand {
 
         if (idx < ladders_.getTabLadder().getTabs().size()) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.LADDER_MOVE_RIGHT);
+                history_ = new LadderHistory(LadderCommandType.LADDER_MOVE_RIGHT);
                 history_.setOriginal(new LadderJsonLadder(ladder.getIdx()));
             }
 
@@ -915,9 +890,7 @@ public class LadderCommand {
 
             if (!isDisableHistory_ && !isBlockChanging_) {
                 history_.setRevised(new LadderJsonLadder(ladder.getIdx()));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                pushHistory();
             }
         }
     }
@@ -930,7 +903,7 @@ public class LadderCommand {
     public void ladderChangeName(LadderPane pane, String name) {
         if (!pane.getLadder().getName().equals(name)) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.LADDER_CHANGE_NAME);
+                history_ = new LadderHistory(LadderCommandType.LADDER_CHANGE_NAME);
                 history_.setOriginal(new LadderJsonLadder(pane.getLadder().getIdx(), pane.getLadder().getName()));
             }
 
@@ -938,9 +911,7 @@ public class LadderCommand {
 
             if (!isDisableHistory_ && !isBlockChanging_) {
                 history_.setRevised(new LadderJsonLadder(pane.getLadder().getIdx(), pane.getLadder().getName()));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                pushHistory();
             }
         }
         if (pane.isChanged()) {
@@ -966,11 +937,9 @@ public class LadderCommand {
      * @return
      */
     public boolean blockClear(Ladder ladder, LadderGrid grid, LadderGridPane gridPane) {
-        if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+        if (grid.getBlock() != LadderBlock.CONTENTS) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                history_.setOriginal(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getOriginal().addBlock(backupBlock(grid));
+                startBlockChange(jsonLadderAt(ladder, grid), grid);
             }
 
             grid.clear();
@@ -983,11 +952,7 @@ public class LadderCommand {
             }
 
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getRevised().addBlock(backupBlock(grid));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                finishBlockChange(jsonLadderAt(ladder, grid), grid);
             }
             return true;
         }
@@ -1010,14 +975,14 @@ public class LadderCommand {
         blockChangeStart();
         for (index = 0, size = grids.size(); index < size; index++) {
             grid = grids.get(index);
-            if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+            if (grid.getBlock() != LadderBlock.CONTENTS) {
                 blockChangeOriginal(ladder, grid);
             }
         }
 
         for (index = 0, size = grids.size(); index < size; index++) {
             grid = grids.get(index);
-            if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+            if (grid.getBlock() != LadderBlock.CONTENTS) {
                 gridPane = pane.findGridPane(grid);
                 grid.clear();
                 gridPane.changeBlock();
@@ -1057,7 +1022,7 @@ public class LadderCommand {
         copyGrids_.clear();
         for (index = 0, size = grids.size(); index < size; index++) {
             grid = grids.get(index);
-            if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+            if (grid.getBlock() != LadderBlock.CONTENTS) {
                 copyGrids_.add(grid.copy());
             }
         }
@@ -1080,7 +1045,7 @@ public class LadderCommand {
         blockChangeStart();
         for (index = 0, size = grids.size(); index < size; index++) {
             grid = grids.get(index);
-            if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+            if (grid.getBlock() != LadderBlock.CONTENTS) {
                 blockChangeOriginal(ladder, grid);
                 copyGrids_.add(grid.copy());
             }
@@ -1088,7 +1053,7 @@ public class LadderCommand {
 
         for (index = 0, size = grids.size(); index < size; index++) {
             grid = grids.get(index);
-            if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+            if (grid.getBlock() != LadderBlock.CONTENTS) {
                 gridPane = pane.findGridPane(grid);
                 grid.clear();
                 gridPane.changeBlock();
@@ -1138,7 +1103,7 @@ public class LadderCommand {
             for (index = 0, size = copyGrids_.size(); index < size; index++) {
                 copyGrid = copyGrids_.get(index);
 
-                if (copyGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                if (copyGrid.getBlock() != LadderBlock.CONTENTS) {
                     columnIndex = copyGrid.getColumnIndex();
                     if (columnIndex < minColumnIndex) {
                         minColumnIndex = columnIndex;
@@ -1210,7 +1175,7 @@ public class LadderCommand {
             for (index = 0, size = copyGrids_.size(); index < size; index++) {
                 copyGrid = copyGrids_.get(index);
 
-                if (copyGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                if (copyGrid.getBlock() != LadderBlock.CONTENTS) {
                     grid = ladder.findGrid(columnIndex + copyGrid.getColumnIndex() - minColumnIndex,
                             rowIndex + copyGrid.getRowIndex() - minRowIndex);
                     switch (copyGrid.getBlock()) {
@@ -1280,7 +1245,7 @@ public class LadderCommand {
             for (index = 0, size = copyGrids_.size(); index < size; index++) {
                 copyGrid = copyGrids_.get(index);
 
-                if (copyGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                if (copyGrid.getBlock() != LadderBlock.CONTENTS) {
                     grid = ladder.findGrid(columnIndex + copyGrid.getColumnIndex() - minColumnIndex,
                             rowIndex + copyGrid.getRowIndex() - minRowIndex);
                     gridPane = pane.findGridPane(grid);
@@ -1374,7 +1339,7 @@ public class LadderCommand {
                                     grid.setComment(ladders_.getComment(ladder.getIdx(),
                                             LadderGrid.LADDER_GRID_INITIAL_COMMENT));
                                 } else {
-                                    if (copyGrid.getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    if (copyGrid.getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         if (ladders_.isComment(ladder.getIdx(), copyGrid.getAddress())) {
                                             grid.setComment(
                                                     ladders_.getComment(ladder.getIdx(), copyGrid.getAddress()));
@@ -1383,12 +1348,12 @@ public class LadderCommand {
                                                     copyGrid.getComment());
                                         }
                                     } else {
-                                        if (ladders_.isComment(Ladders.LADDER_GLOBAL_ADDRESS_INDEX,
+                                        if (ladders_.isComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
                                                 copyGrid.getAddress())) {
-                                            grid.setComment(ladders_.getComment(Ladders.LADDER_GLOBAL_ADDRESS_INDEX,
+                                            grid.setComment(ladders_.getComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
                                                     copyGrid.getAddress()));
                                         } else {
-                                            changeComment(Ladders.LADDER_GLOBAL_ADDRESS_INDEX, copyGrid.getAddress(),
+                                            changeComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, copyGrid.getAddress(),
                                                     copyGrid.getComment());
                                         }
                                     }
@@ -1450,7 +1415,7 @@ public class LadderCommand {
                                     grid.setComment(ladders_.getComment(ladder.getIdx(),
                                             LadderGrid.LADDER_GRID_INITIAL_COMMENT));
                                 } else {
-                                    if (copyGrid.getAddress().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    if (copyGrid.getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         if (ladders_.isComment(ladder.getIdx(), copyGrid.getAddress())) {
                                             grid.setComment(
                                                     ladders_.getComment(ladder.getIdx(), copyGrid.getAddress()));
@@ -1459,12 +1424,12 @@ public class LadderCommand {
                                                     copyGrid.getComment());
                                         }
                                     } else {
-                                        if (ladders_.isComment(Ladders.LADDER_GLOBAL_ADDRESS_INDEX,
+                                        if (ladders_.isComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
                                                 copyGrid.getAddress())) {
-                                            grid.setComment(ladders_.getComment(Ladders.LADDER_GLOBAL_ADDRESS_INDEX,
+                                            grid.setComment(ladders_.getComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
                                                     copyGrid.getAddress()));
                                         } else {
-                                            changeComment(Ladders.LADDER_GLOBAL_ADDRESS_INDEX, copyGrid.getAddress(),
+                                            changeComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, copyGrid.getAddress(),
                                                     copyGrid.getComment());
                                         }
                                     }
@@ -1505,7 +1470,7 @@ public class LadderCommand {
 
                     grid.setSelect(true);
                     gridPane.changeStrokeSelect();
-                    if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                    if (grid.getBlock() != LadderBlock.CONTENTS) {
                         grid.setSelectRange(false);
                         gridPane.changeBackGroundSelect();
                     }
@@ -1527,7 +1492,7 @@ public class LadderCommand {
                             gridPane = pane.findGridPane(grid);
                             grid.setSelect(true);
                             gridPane.changeStrokeSelect();
-                            if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                            if (grid.getBlock() != LadderBlock.CONTENTS) {
                                 grid.setSelectRange(false);
                                 gridPane.changeBackGroundSelect();
                             }
@@ -1535,7 +1500,7 @@ public class LadderCommand {
                             gridPane = pane.findGridPane(grid);
                             grid.setSelect(grid.isSelectRange());
                             gridPane.changeStrokeSelect();
-                            if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                            if (grid.getBlock() != LadderBlock.CONTENTS) {
                                 grid.setSelectRange(!grid.isSelectRange());
                                 gridPane.changeBackGroundSelect();
                             }
@@ -1545,7 +1510,7 @@ public class LadderCommand {
                         previousGridPane = pane.findGridPane(previousGrid);
                         previousGrid.setSelect(false);
                         previousGridPane.changeStrokeSelect();
-                        if (previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                        if (previousGrid.getBlock() != LadderBlock.CONTENTS) {
                             previousGrid.setSelectRange(true);
                             previousGridPane.changeBackGroundSelect();
                         }
@@ -1559,7 +1524,7 @@ public class LadderCommand {
                                 gridPane = pane.findGridPane(grid);
                                 grid.setSelect(true);
                                 gridPane.changeStrokeSelect();
-                                if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                                if (grid.getBlock() != LadderBlock.CONTENTS) {
                                     grid.setSelectRange(false);
                                     gridPane.changeBackGroundSelect();
                                 }
@@ -1569,7 +1534,7 @@ public class LadderCommand {
                                 if (previousGridPane != null) {
                                     previousGrid.setSelect(false);
                                     previousGridPane.changeStrokeSelect();
-                                    if (previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                                    if (previousGrid.getBlock() != LadderBlock.CONTENTS) {
                                         previousGrid.setSelectRange(false);
                                         previousGridPane.changeBackGroundSelect();
                                     }
@@ -1586,7 +1551,7 @@ public class LadderCommand {
                                     if (previousGridPane != null) {
                                         previousGrid.setSelect(false);
                                         previousGridPane.changeStrokeSelect();
-                                        if (previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                                        if (previousGrid.getBlock() != LadderBlock.CONTENTS) {
                                             previousGrid.setSelectRange(false);
                                             previousGridPane.changeBackGroundSelect();
                                         }
@@ -1598,7 +1563,7 @@ public class LadderCommand {
                             gridPane = pane.findGridPane(grid);
                             grid.setSelect(true);
                             gridPane.changeStrokeSelect();
-                            if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                            if (grid.getBlock() != LadderBlock.CONTENTS) {
                                 grid.setSelectRange(false);
                                 gridPane.changeBackGroundSelect();
                             }
@@ -1617,7 +1582,7 @@ public class LadderCommand {
                         previousGrid.setSelect(false);
                         previousGrid.setSelectRange(false);
                         previousGridPane = pane.findGridPane(previousGrid);
-                        if (previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                        if (previousGrid.getBlock() != LadderBlock.CONTENTS) {
                             previousGridPane.changeBackGroundSelect();
                             previousGridPane.changeStrokeSelect();
                         }
@@ -1652,7 +1617,7 @@ public class LadderCommand {
                         previousGridPane = pane.findGridPane(previousGrid);
                         previousGrid.setSelect(false);
                         previousGridPane.changeStrokeSelect();
-                        if (previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                        if (previousGrid.getBlock() != LadderBlock.CONTENTS) {
                             previousGrid.setSelectRange(true);
                             previousGridPane.changeBackGroundSelect();
                         }
@@ -1663,7 +1628,7 @@ public class LadderCommand {
                         previousGrid.setSelect(false);
                         previousGrid.setSelectRange(false);
                         previousGridPane = pane.findGridPane(previousGrid);
-                        if (previousGrid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                        if (previousGrid.getBlock() != LadderBlock.CONTENTS) {
                             previousGridPane.changeBackGroundSelect();
                             previousGridPane.changeStrokeSelect();
                         }
@@ -1686,7 +1651,7 @@ public class LadderCommand {
                 if ((!grid.equals(gridBuf)) && (!grid.isSelectRange())) {
                     grid.setSelect(false);
                     gridPane.changeStrokeSelect();
-                    if (grid.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+                    if (grid.getBlock() != LadderBlock.CONTENTS) {
                         grid.setSelectRange(true);
                         gridPane.changeBackGroundSelect();
                     }
@@ -1700,7 +1665,7 @@ public class LadderCommand {
             gridPane = pane.findGridPane(gridBuf);
             gridBuf.setSelect(true);
             gridPane.changeStrokeSelect();
-            if (gridBuf.getBlock() != Ladders.LADDER_BLOCK.CONTENTS) {
+            if (gridBuf.getBlock() != LadderBlock.CONTENTS) {
                 gridBuf.setSelectRange(false);
                 gridPane.changeBackGroundSelect();
             }
@@ -1770,7 +1735,7 @@ public class LadderCommand {
             }
             blockChangingGridPane_.clear();
             isBlockChanging_ = true;
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
+            history_ = new LadderHistory(LadderCommandType.BLOCK_CHANGE);
             return true;
         }
         return false;
@@ -1872,11 +1837,7 @@ public class LadderCommand {
     public void blockChangeVerticalOrVertical(Ladder ladder, LadderGrid previousGrid, LadderGridPane previousGridPane,
             LadderGrid grid, LadderGridPane gridPane, boolean isVertical) {
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-            history_.setOriginal(
-                    new LadderJsonLadder(ladder.getIdx(), previousGrid.getColumnIndex(), previousGrid.getRowIndex()));
-            history_.getOriginal().addBlock(backupBlock(grid));
-            history_.getOriginal().addBlock(backupBlock(previousGrid));
+            startBlockChange(jsonLadderAt(ladder, previousGrid), grid, previousGrid);
         }
 
         grid.setVerticalOr(isVertical);
@@ -1893,12 +1854,7 @@ public class LadderCommand {
         }
 
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-            history_.getRevised().addBlock(backupBlock(grid));
-            history_.getRevised().addBlock(backupBlock(previousGrid));
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            finishBlockChange(jsonLadderAt(ladder, grid), grid, previousGrid);
         }
     }
 
@@ -1914,11 +1870,7 @@ public class LadderCommand {
     public void blockChangeVerticalVerticalOr(Ladder ladder, LadderGrid previousGrid, LadderGridPane previousGridPane,
             LadderGrid grid, LadderGridPane gridPane, boolean isVertical) {
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-            history_.setOriginal(
-                    new LadderJsonLadder(ladder.getIdx(), previousGrid.getColumnIndex(), previousGrid.getRowIndex()));
-            history_.getOriginal().addBlock(backupBlock(grid));
-            history_.getOriginal().addBlock(backupBlock(previousGrid));
+            startBlockChange(jsonLadderAt(ladder, previousGrid), grid, previousGrid);
         }
 
         grid.setVertical(isVertical);
@@ -1935,12 +1887,7 @@ public class LadderCommand {
         }
 
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-            history_.getRevised().addBlock(backupBlock(grid));
-            history_.getRevised().addBlock(backupBlock(previousGrid));
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            finishBlockChange(jsonLadderAt(ladder, grid), grid, previousGrid);
         }
     }
 
@@ -1953,9 +1900,7 @@ public class LadderCommand {
      */
     public void blockChangeVertical(Ladder ladder, LadderGrid grid, LadderGridPane gridPane, boolean isVertical) {
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-            history_.setOriginal(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-            history_.getOriginal().addBlock(backupBlock(grid));
+            startBlockChange(jsonLadderAt(ladder, grid), grid);
         }
 
         grid.setVertical(isVertical);
@@ -1968,11 +1913,7 @@ public class LadderCommand {
         }
 
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-            history_.getRevised().addBlock(backupBlock(grid));
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            finishBlockChange(jsonLadderAt(ladder, grid), grid);
         }
     }
 
@@ -1985,9 +1926,7 @@ public class LadderCommand {
      */
     public void blockChangeVerticalOr(Ladder ladder, LadderGrid grid, LadderGridPane gridPane, boolean isVertical) {
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-            history_.setOriginal(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-            history_.getOriginal().addBlock(backupBlock(grid));
+            startBlockChange(jsonLadderAt(ladder, grid), grid);
         }
 
         grid.setVerticalOr(isVertical);
@@ -2000,11 +1939,7 @@ public class LadderCommand {
         }
 
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-            history_.getRevised().addBlock(backupBlock(grid));
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            finishBlockChange(jsonLadderAt(ladder, grid), grid);
         }
     }
 
@@ -2019,18 +1954,14 @@ public class LadderCommand {
     public void blockChangeConnectLineLeft(Ladder ladder, LadderGrid previousGrid, LadderGrid grid,
             LadderGridPane gridPane, boolean isConnect) {
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-            history_.setOriginal(
-                    new LadderJsonLadder(ladder.getIdx(), previousGrid.getColumnIndex(), previousGrid.getRowIndex()));
-            history_.getOriginal().addBlock(backupBlock(grid));
-            history_.getOriginal().addBlock(backupBlock(previousGrid));
+            startBlockChange(jsonLadderAt(ladder, previousGrid), grid, previousGrid);
         }
 
         grid.clear();
         if (isConnect) {
-            grid.setBlock(Ladders.LADDER_BLOCK.CONNECT_LINE);
+            grid.setBlock(LadderBlock.CONNECT_LINE);
         } else {
-            grid.setBlock(Ladders.LADDER_BLOCK.EMPTY);
+            grid.setBlock(LadderBlock.EMPTY);
         }
         gridPane.changeBlock();
 
@@ -2041,12 +1972,7 @@ public class LadderCommand {
         }
 
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-            history_.getRevised().addBlock(backupBlock(grid));
-            history_.getRevised().addBlock(backupBlock(previousGrid));
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            finishBlockChange(jsonLadderAt(ladder, grid), grid, previousGrid);
         }
     }
 
@@ -2061,18 +1987,14 @@ public class LadderCommand {
     public void blockChangeConnectLineRight(Ladder ladder, LadderGrid previousGrid, LadderGrid grid,
             LadderGridPane previousGridPane, boolean isConnect) {
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-            history_.setOriginal(
-                    new LadderJsonLadder(ladder.getIdx(), previousGrid.getColumnIndex(), previousGrid.getRowIndex()));
-            history_.getOriginal().addBlock(backupBlock(grid));
-            history_.getOriginal().addBlock(backupBlock(previousGrid));
+            startBlockChange(jsonLadderAt(ladder, previousGrid), grid, previousGrid);
         }
 
         previousGrid.clear();
         if (isConnect) {
-            previousGrid.setBlock(Ladders.LADDER_BLOCK.CONNECT_LINE);
+            previousGrid.setBlock(LadderBlock.CONNECT_LINE);
         } else {
-            previousGrid.setBlock(Ladders.LADDER_BLOCK.EMPTY);
+            previousGrid.setBlock(LadderBlock.EMPTY);
         }
         previousGridPane.changeBlock();
 
@@ -2083,12 +2005,7 @@ public class LadderCommand {
         }
 
         if (!isDisableHistory_ && !isBlockChanging_) {
-            history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-            history_.getRevised().addBlock(backupBlock(grid));
-            history_.getRevised().addBlock(backupBlock(previousGrid));
-            if (checkDelta()) {
-                historyManager_.push(history_, historyGeneration_);
-            }
+            finishBlockChange(jsonLadderAt(ladder, grid), grid, previousGrid);
         }
     }
 
@@ -2101,12 +2018,10 @@ public class LadderCommand {
      * @return
      */
     public boolean blockChangeBlock(Ladder ladder, LadderGrid grid, LadderGridPane gridPane,
-            Ladders.LADDER_BLOCK block) {
+            LadderBlock block) {
         if (!grid.getBlock().equals(block)) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                history_.setOriginal(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getOriginal().addBlock(backupBlock(grid));
+                startBlockChange(jsonLadderAt(ladder, grid), grid);
             }
 
             grid.setBlock(block);
@@ -2119,11 +2034,7 @@ public class LadderCommand {
             }
 
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getRevised().addBlock(backupBlock(grid));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                finishBlockChange(jsonLadderAt(ladder, grid), grid);
             }
             return true;
         }
@@ -2141,9 +2052,7 @@ public class LadderCommand {
     public boolean blockChangeAddress(Ladder ladder, LadderGrid grid, LadderGridPane gridPane, String address) {
         if (!grid.getAddress().equals(address)) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                history_.setOriginal(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getOriginal().addBlock(backupBlock(grid));
+                startBlockChange(jsonLadderAt(ladder, grid), grid);
             }
 
             grid.setAddress(address);
@@ -2153,15 +2062,15 @@ public class LadderCommand {
             if (LadderGrid.LADDER_GRID_INITIAL_ADDRESS.equals(address)) {
                 grid.setComment(ladders_.getComment(ladder.getIdx(), LadderGrid.LADDER_GRID_INITIAL_COMMENT));
             } else {
-                if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                     if (ladders_.isComment(ladder.getIdx(), address)) {
                         grid.setComment(ladders_.getComment(ladder.getIdx(), address));
                     } else {
                         grid.setComment(LadderGrid.LADDER_GRID_INITIAL_COMMENT);
                     }
                 } else {
-                    if (ladders_.isComment(Ladders.LADDER_GLOBAL_ADDRESS_INDEX, address)) {
-                        grid.setComment(ladders_.getComment(Ladders.LADDER_GLOBAL_ADDRESS_INDEX, address));
+                    if (ladders_.isComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address)) {
+                        grid.setComment(ladders_.getComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address));
                     } else {
                         grid.setComment(LadderGrid.LADDER_GRID_INITIAL_COMMENT);
                     }
@@ -2176,11 +2085,7 @@ public class LadderCommand {
             }
 
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getRevised().addBlock(backupBlock(grid));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                finishBlockChange(jsonLadderAt(ladder, grid), grid);
             }
             return true;
         }
@@ -2198,9 +2103,7 @@ public class LadderCommand {
     public boolean blockChangeComment(Ladder ladder, LadderGrid grid, LadderGridPane gridPane, String comment) {
         if (!grid.getComment().equals(comment)) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                history_.setOriginal(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getOriginal().addBlock(backupBlock(grid));
+                startBlockChange(jsonLadderAt(ladder, grid), grid);
             }
 
             grid.setComment(comment);
@@ -2213,11 +2116,7 @@ public class LadderCommand {
             }
 
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getRevised().addBlock(backupBlock(grid));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                finishBlockChange(jsonLadderAt(ladder, grid), grid);
             }
             return true;
         }
@@ -2248,10 +2147,7 @@ public class LadderCommand {
                 if (blockFunctions.get(i).address != null) {
                     if (!blockFunctions.get(i).address.equals(grid.getBlockFunctions()[i].getAddress())) {
                         if (!changed && !isDisableHistory_ && !isBlockChanging_) {
-                            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                            history_.setOriginal(
-                                    new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                            history_.getOriginal().addBlock(backupBlock(grid));
+                            startBlockChange(jsonLadderAt(ladder, grid), grid);
                         }
 
                         grid.getBlockFunctions()[i].setAddress(blockFunctions.get(i).address);
@@ -2264,10 +2160,7 @@ public class LadderCommand {
                     if ((blockFunctions.get(i).value != grid.getBlockFunctions()[i].getValue())
                             || (blockFunctions.get(i).radix != grid.getBlockFunctions()[i].getRadix())) {
                         if (!isDisableHistory_ && !isBlockChanging_) {
-                            history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                            history_.setOriginal(
-                                    new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                            history_.getOriginal().addBlock(backupBlock(grid));
+                            startBlockChange(jsonLadderAt(ladder, grid), grid);
                         }
 
                         grid.getBlockFunctions()[i].setAddress(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_ADDRESS);
@@ -2291,12 +2184,7 @@ public class LadderCommand {
                 }
 
                 if (!isDisableHistory_ && !isBlockChanging_) {
-                    history_.setRevised(
-                            new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                    history_.getRevised().addBlock(backupBlock(grid));
-                    if (checkDelta()) {
-                        historyManager_.push(history_, historyGeneration_);
-                    }
+                    finishBlockChange(jsonLadderAt(ladder, grid), grid);
                 }
             }
         }
@@ -2314,113 +2202,36 @@ public class LadderCommand {
      */
     public boolean blockChangeFunctionValue(Ladder ladder, LadderGrid grid, LadderGridPane gridPane,
             String functionValue, int index) {
-        Matcher mRealNumber = PATTERN_REAL_NUMBER.matcher(functionValue);
+        LadderNumber.Value number = LadderNumber.parse(functionValue);
 
-        if (mRealNumber.find()) {
-            if (mRealNumber.group(1) != null) {
-                if ((grid.getBlockFunctions()[index].getValue() != Double.parseDouble(mRealNumber.group(1)))
-                        || (grid.getBlockFunctions()[index].getRadix() != 10)) {
-                    if (!isDisableHistory_ && !isBlockChanging_) {
-                        history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                        history_.setOriginal(
-                                new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                        history_.getOriginal().addBlock(backupBlock(grid));
-                    }
-
-                    grid.getBlockFunctions()[index].setAddress(LadderGrid.LADDER_GRID_INITIAL_ADDRESS);
-                    grid.getBlockFunctions()[index].setValue(Double.parseDouble(mRealNumber.group(1)));
-                    grid.getBlockFunctions()[index].setRadix(10);
-                    grid.getBlockFunctions()[index].setNumber(true);
-                    gridPane.changeBlockFunction();
-
-                    if (isBlockChanging_) {
-                        blockChangingGridPane_.add(gridPane);
-                    } else {
-                        gridPane.setEditing(true);
-                    }
-
-                    if (!isDisableHistory_ && !isBlockChanging_) {
-                        history_.setRevised(
-                                new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                        history_.getRevised().addBlock(backupBlock(grid));
-                        if (checkDelta()) {
-                            historyManager_.push(history_, historyGeneration_);
-                        }
-                    }
-                    return true;
+        if (number != null) {
+            if ((grid.getBlockFunctions()[index].getValue() != number.getValue())
+                    || (grid.getBlockFunctions()[index].getRadix() != number.getRadix())) {
+                if (!isDisableHistory_ && !isBlockChanging_) {
+                    startBlockChange(jsonLadderAt(ladder, grid), grid);
                 }
-            } else if (mRealNumber.group(2) != null) {
-                if ((grid.getBlockFunctions()[index].getValue() != Long.parseLong(mRealNumber.group(2), 16))
-                        || (grid.getBlockFunctions()[index].getRadix() != 16)) {
-                    if (!isDisableHistory_ && !isBlockChanging_) {
-                        history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                        history_.setOriginal(
-                                new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                        history_.getOriginal().addBlock(backupBlock(grid));
-                    }
 
-                    grid.getBlockFunctions()[index].setAddress(LadderGrid.LADDER_GRID_INITIAL_ADDRESS);
-                    grid.getBlockFunctions()[index].setValue(Long.parseLong(mRealNumber.group(2), 16));
-                    grid.getBlockFunctions()[index].setRadix(16);
-                    grid.getBlockFunctions()[index].setNumber(true);
-                    gridPane.changeBlockFunction();
+                grid.getBlockFunctions()[index].setAddress(LadderGrid.LADDER_GRID_INITIAL_ADDRESS);
+                grid.getBlockFunctions()[index].setValue(number.getValue());
+                grid.getBlockFunctions()[index].setRadix(number.getRadix());
+                grid.getBlockFunctions()[index].setNumber(true);
+                gridPane.changeBlockFunction();
 
-                    if (isBlockChanging_) {
-                        blockChangingGridPane_.add(gridPane);
-                    } else {
-                        gridPane.setEditing(true);
-                    }
-
-                    if (!isDisableHistory_ && !isBlockChanging_) {
-                        history_.setRevised(
-                                new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                        history_.getRevised().addBlock(backupBlock(grid));
-                        if (checkDelta()) {
-                            historyManager_.push(history_, historyGeneration_);
-                        }
-                    }
-                    return true;
+                if (isBlockChanging_) {
+                    blockChangingGridPane_.add(gridPane);
+                } else {
+                    gridPane.setEditing(true);
                 }
-            } else if (mRealNumber.group(3) != null) {
-                if ((grid.getBlockFunctions()[index].getValue() != Long.parseLong(mRealNumber.group(3), 2))
-                        || (grid.getBlockFunctions()[index].getRadix() != 2)) {
-                    if (!isDisableHistory_ && !isBlockChanging_) {
-                        history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                        history_.setOriginal(
-                                new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                        history_.getOriginal().addBlock(backupBlock(grid));
-                    }
 
-                    grid.getBlockFunctions()[index].setAddress(LadderGrid.LADDER_GRID_INITIAL_ADDRESS);
-                    grid.getBlockFunctions()[index].setValue(Long.parseLong(mRealNumber.group(3), 2));
-                    grid.getBlockFunctions()[index].setRadix(2);
-                    grid.getBlockFunctions()[index].setNumber(true);
-                    gridPane.changeBlockFunction();
-
-                    if (isBlockChanging_) {
-                        blockChangingGridPane_.add(gridPane);
-                    } else {
-                        gridPane.setEditing(true);
-                    }
-
-                    if (!isDisableHistory_ && !isBlockChanging_) {
-                        history_.setRevised(
-                                new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                        history_.getRevised().addBlock(backupBlock(grid));
-                        if (checkDelta()) {
-                            historyManager_.push(history_, historyGeneration_);
-                        }
-                    }
-                    return true;
+                if (!isDisableHistory_ && !isBlockChanging_) {
+                    finishBlockChange(jsonLadderAt(ladder, grid), grid);
                 }
+                return true;
             }
         } else {
             if (!functionValue.equals(grid.getBlockFunctions()[index].getAddress())) {
                 if (!isDisableHistory_ && !isBlockChanging_) {
-                    history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                    history_.setOriginal(
-                            new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                    history_.getOriginal().addBlock(backupBlock(grid));
+                    startBlockChange(jsonLadderAt(ladder, grid), grid);
                 }
 
                 grid.getBlockFunctions()[index].setAddress(functionValue);
@@ -2436,12 +2247,7 @@ public class LadderCommand {
                 }
 
                 if (!isDisableHistory_ && !isBlockChanging_) {
-                    history_.setRevised(
-                            new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                    history_.getRevised().addBlock(backupBlock(grid));
-                    if (checkDelta()) {
-                        historyManager_.push(history_, historyGeneration_);
-                    }
+                    finishBlockChange(jsonLadderAt(ladder, grid), grid);
                 }
                 return true;
             }
@@ -2460,9 +2266,7 @@ public class LadderCommand {
     public boolean blockChangeScript(Ladder ladder, LadderGrid grid, LadderGridPane gridPane, String script) {
         if (!script.equals(grid.getBlockScript())) {
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_ = new LadderHistory(Ladders.LADDER_COMMAND.BLOCK_CHANGE);
-                history_.setOriginal(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getOriginal().addBlock(backupBlock(grid));
+                startBlockChange(jsonLadderAt(ladder, grid), grid);
             }
 
             grid.setBlockScript(script);
@@ -2475,11 +2279,7 @@ public class LadderCommand {
             }
 
             if (!isDisableHistory_ && !isBlockChanging_) {
-                history_.setRevised(new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex()));
-                history_.getRevised().addBlock(backupBlock(grid));
-                if (checkDelta()) {
-                    historyManager_.push(history_, historyGeneration_);
-                }
+                finishBlockChange(jsonLadderAt(ladder, grid), grid);
             }
             return true;
         }
@@ -2747,8 +2547,8 @@ public class LadderCommand {
         return restoreBlocks(jsonLadder,
                 ladderCreate(ladders, tabPane, treeTableView, ioMap, commentMap, scriptIoMap, jsonLadder.getIdx(),
                         jsonLadder.getName(), jsonLadder.getColumn(), jsonLadder.getRow(),
-                        Ladders.LADDER_DEFAULT_GRID_MIN_SIZE, Ladders.LADDER_DEFAULT_GRID_MAX_SIZE,
-                        Ladders.LADDER_DEFAULT_GRID_CONTENTS_WIDTH, Ladders.LADDER_DEFAULT_GRID_CONTENTS_HIGHT),
+                        LadderDefaults.LADDER_DEFAULT_GRID_MIN_SIZE, LadderDefaults.LADDER_DEFAULT_GRID_MAX_SIZE,
+                        LadderDefaults.LADDER_DEFAULT_GRID_CONTENTS_WIDTH, LadderDefaults.LADDER_DEFAULT_GRID_CONTENTS_HIGHT),
                 isEditing);
     }
 
@@ -2883,7 +2683,7 @@ public class LadderCommand {
             writeLog("Data format unexpected error" + " [block]", true);
             return false;
         }
-        blockChangeBlock(pane.getLadder(), grid, gridPane, Ladders.LADDER_BLOCK.valueOf(jsonBlock.getBlock()));
+        blockChangeBlock(pane.getLadder(), grid, gridPane, LadderBlock.valueOf(jsonBlock.getBlock()));
 
         if (jsonBlock.isVertical() == null) {
             writeLog("Data format unexpected error" + " [vertical]", true);
@@ -3065,6 +2865,54 @@ public class LadderCommand {
             }
         }
         return true;
+    }
+
+    /**
+     * the position of the history of a block change : the ladder and the position of a block
+     *
+     * @param ladder
+     * @param grid
+     * @return the json ladder at the position of the block
+     */
+    private LadderJsonLadder jsonLadderAt(Ladder ladder, LadderGrid grid) {
+        return new LadderJsonLadder(ladder.getIdx(), grid.getColumnIndex(), grid.getRowIndex());
+    }
+
+    /**
+     * a block change is started : keep the original content of the blocks
+     *
+     * @param jsonLadder the ladder and the position of the history
+     * @param grids the blocks to keep
+     */
+    private void startBlockChange(LadderJsonLadder jsonLadder, LadderGrid... grids) {
+        history_ = new LadderHistory(LadderCommandType.BLOCK_CHANGE);
+        history_.setOriginal(jsonLadder);
+        for (LadderGrid grid : grids) {
+            history_.getOriginal().addBlock(backupBlock(grid));
+        }
+    }
+
+    /**
+     * a block change is finished : keep the revised content of the blocks and push the history
+     *
+     * @param jsonLadder the ladder and the position of the history
+     * @param grids the blocks to keep
+     */
+    private void finishBlockChange(LadderJsonLadder jsonLadder, LadderGrid... grids) {
+        history_.setRevised(jsonLadder);
+        for (LadderGrid grid : grids) {
+            history_.getRevised().addBlock(backupBlock(grid));
+        }
+        pushHistory();
+    }
+
+    /**
+     * the current history is pushed only when the original and the revised are different
+     */
+    private void pushHistory() {
+        if (checkDelta()) {
+            historyManager_.push(history_, historyGeneration_);
+        }
     }
 
     private boolean checkDelta() {

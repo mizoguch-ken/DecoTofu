@@ -46,19 +46,21 @@ class LadderValueStringConverterTest {
     }
 
     /**
-     * Current implementation passes prefixed literals such as "0x10" to
-     * Long.parseLong with an explicit radix, which rejects the prefix.
-     * This test documents that the literal forms throw today (suspected bug).
+     * a hexadecimal or a binary literal is read without its prefix : the prefixes are kept
+     * only to show the value, so that "0x10" answers 16 instead of failing on the prefix
      */
     @Test
-    void hexAndBinaryLiteralsCurrentlyThrowNumberFormatException() {
+    void hexAndBinaryLiteralsAreParsedWithTheirRadix() {
         LadderValueStringConverter converter = new LadderValueStringConverter();
 
-        assertEquals(Double.valueOf(3.0), converter.fromString("3.0"));
-        assertThrows(NumberFormatException.class, () -> converter.fromString("0x10"));
-        assertThrows(NumberFormatException.class, () -> converter.fromString("0X1F"));
-        assertThrows(NumberFormatException.class, () -> converter.fromString("0b101"));
-        // value stays unchanged because parsing fails before assignment
-        assertEquals("3.0", converter.toString(null));
+        assertEquals(Double.valueOf(16.0), converter.fromString("0x10"));
+        assertEquals("0x10", converter.toString(null));
+        assertEquals(Double.valueOf(31.0), converter.fromString("0X1F"));
+        assertEquals("0x1f", converter.toString(null));
+        assertEquals(Double.valueOf(5.0), converter.fromString("0b101"));
+        assertEquals("0b101", converter.toString(null));
+        // the decimal notation is back when a decimal value is given
+        assertEquals(Double.valueOf(3.5), converter.fromString("3.5"));
+        assertEquals("3.5", converter.toString(null));
     }
 }

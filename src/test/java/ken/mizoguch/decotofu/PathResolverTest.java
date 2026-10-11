@@ -103,4 +103,66 @@ class PathResolverTest {
             System.setProperty("user.dir", userDir);
         }
     }
+
+    @Test
+    void resolvePagePathRefusesAnUnusablePath() {
+        assertNull(PathResolver.resolvePagePath(PathResolverTest.class, null));
+        assertNull(PathResolver.resolvePagePath(PathResolverTest.class, ""));
+        assertNull(PathResolver.resolvePagePath(PathResolverTest.class, "bad\0path"));
+    }
+
+    @Test
+    void resolvePagePathKeepsAnAbsolutePath() {
+        Path absolute = tempDir.resolve("absolute.json");
+
+        assertEquals(absolute, PathResolver.resolvePagePath(PathResolverTest.class, absolute.toString()));
+    }
+
+    @Test
+    void resolvePagePathUsesTheCurrentDirectoryWhenTheFileIsThere() throws Exception {
+        Files.writeString(tempDir.resolve("page_here.json"), "{}");
+        String userDir = System.getProperty("user.dir");
+
+        try {
+            System.setProperty("user.dir", tempDir.toString());
+            assertEquals(tempDir.resolve("page_here.json").toAbsolutePath(),
+                    PathResolver.resolvePagePath(PathResolverTest.class, "page_here.json"));
+        } finally {
+            System.setProperty("user.dir", userDir);
+        }
+    }
+
+    @Test
+    void resolvePagePathUsesTheApplicationDirectoryForAFileOfTheApplication() {
+        String userDir = System.getProperty("user.dir");
+
+        try {
+            System.setProperty("user.dir", tempDir.toString());
+            // the current directory holds no pom.xml : the file is taken from the
+            // directory of the application, which is found from the running classes
+            Path resolved = PathResolver.resolvePagePath(PathResolverTest.class, "pom.xml", "pom.xml");
+
+            assertTrue(Files.exists(resolved));
+            assertEquals("pom.xml", resolved.getFileName().toString());
+            assertNotEquals(tempDir.resolve("pom.xml").toAbsolutePath(), resolved);
+        } finally {
+            System.setProperty("user.dir", userDir);
+        }
+    }
+
+    @Test
+    void resolvePagePathKeepsTheCurrentDirectoryForAMissingFile() {
+        String userDir = System.getProperty("user.dir");
+
+        try {
+            System.setProperty("user.dir", tempDir.toString());
+            // the file is in no directory : it is used from the current directory so that
+            // a file which is going to be created is created where the user expects it
+            assertEquals(tempDir.resolve("decoTofuNoSuchFileXyz.json").toAbsolutePath(),
+                    PathResolver.resolvePagePath(PathResolverTest.class, "decoTofuNoSuchFileXyz.json",
+                            "decoTofuNoSuchMarkerXyz"));
+        } finally {
+            System.setProperty("user.dir", userDir);
+        }
+    }
 }

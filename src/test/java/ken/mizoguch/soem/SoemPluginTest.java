@@ -28,5 +28,28 @@ class SoemPluginTest {
         assertFalse(SoemPlugin.isScriptFunction("on Error"));
         assertFalse(SoemPlugin.isScriptFunction(".onError"));
         assertFalse(SoemPlugin.isScriptFunction("onError."));
+        // the end of the pattern is the end of the name, not the end of a line
+        assertFalse(SoemPlugin.isScriptFunction("onError\n"));
+        assertFalse(SoemPlugin.isScriptFunction("onError\r\n"));
+    }
+
+    @Test
+    void anUnusableLibraryPathIsRefused() {
+        SoemPlugin plugin = new SoemPlugin(new Soem());
+
+        // the plugin is not attached to a web page : the messages are answered by the
+        // console of the application and no library is loaded
+        assertFalse(plugin.load(null));
+        assertFalse(plugin.load(""));
+    }
+
+    @Test
+    void aLibraryWhichIsNotAFileIsRefused() {
+        SoemPlugin plugin = new SoemPlugin(new Soem());
+
+        // the given file exists in no directory : the loader of jnr-ffi is not left search
+        // an other library of the java library path
+        assertFalse(plugin.load("decoTofuNoSuchLibraryXyz"));
+        assertFalse(plugin.load("decoTofuNoSuchLibraryXyz/decoTofuNoSuchLibraryXyz.dll"));
     }
 }

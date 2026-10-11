@@ -205,8 +205,12 @@
  * ラダーはladders.connect()で接続され、ladders.run()でサイクル実行される
  * an error of the ladder cycle is reported and the cycle is stopped when the error is repeated
  * ラダーサイクルのエラーは報告され、エラーが続く場合はサイクルが停止する
+ * an io which is not registered is reported only once and its block is ignored by the cycle
+ * 登録されていないI/Oは一度だけ報告され、そのブロックはサイクルが無視する
  * the SCR block script of a loaded ladder is run after its confirmation, and it is removed when the confirmation is refused
  * 読み込んだラダーのSCRブロックのスクリプトは確認後に実行され、確認が拒否された場合は除去される
+ * the scripts are removed when they can not be confirmed, as when a page loads the ladder without the user
+ * ユーザーの確認ができない場合(ページによる読み込みなど)もスクリプトは除去される
  * ladder/properties.xml keeps the ladder settings : HISTORY_GENERATION, IDEAL_CYCLE_TIME, LADDER_SCRIPT_ENABLE
  * ladder/properties.xml にはラダーの設定 HISTORY_GENERATION, IDEAL_CYCLE_TIME, LADDER_SCRIPT_ENABLE が保存される
 
@@ -216,6 +220,10 @@
 
  * the functions are added to the window object after the page loading is succeeded
  * 関数はページの読み込み成功後にwindowオブジェクトに追加される
+ * a file path given to a function is used from the current directory, and it is taken from the directory of the application when the file is not in the current directory
+ * 関数に渡すファイルパスは現在のディレクトリ基準で、そこにファイルが無い場合はアプリケーションのディレクトリから使われる
+ * a name given for a notification is a javascript function name only : a name which carries an other script is refused
+ * 通知に渡す名前はjavascriptの関数名だけで、他のスクリプトを含む名前は拒否される
 
 [stage]
 

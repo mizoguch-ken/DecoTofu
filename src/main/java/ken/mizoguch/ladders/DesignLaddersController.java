@@ -417,14 +417,14 @@ public class DesignLaddersController implements Initializable {
     private Path ladderPath_;
 
     private CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap_;
-    private Tab selectedTab_;
-    private ScrollPane selectedScrollPane_;
-    private ObservableList<TreeItem<LadderTreeTableIo>> ovTreeTable_, ovTreeTableChild_;
-    private LadderTreeTableIo ladderTreeTableIo_;
-    private int treeTableIndex_, treeTableChildIndex_, treeTableSize_, treeTableChildSize_;
-    private double treeTableValue_;
 
-    private boolean viewRefresh_, isShowing_, isShown_;
+    /**
+     * viewRefresh_ and isShown_ are answered to the cycle of the ladder : the cycle task
+     * reads them while the javafx application thread changes them with the events of the
+     * window, so they have to be volatile
+     */
+    private volatile boolean viewRefresh_, isShown_;
+    private boolean isShowing_;
 
     private void addEventDesign() {
         // root
@@ -781,7 +781,7 @@ public class DesignLaddersController implements Initializable {
                             tableIo.getItems().clear();
 
                             address = treTableIo.getAddress();
-                            if (address.startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 for (index = 0, size = tabLadder.getTabs().size(); index < size; index++) {
                                     pane = (LadderPane) ((ScrollPane) tabLadder.getTabs().get(index).getContent())
                                             .getContent();
@@ -841,7 +841,7 @@ public class DesignLaddersController implements Initializable {
                                 break;
                             }
                         }
-                        if ((Ladders.LADDER_GLOBAL_ADDRESS_INDEX < idx) && (idx < ovTreeTable.size())) {
+                        if ((LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX < idx) && (idx < ovTreeTable.size())) {
                             ladders_.ladderChangeTabName(idx, event.getNewValue());
                         }
                     } else {
@@ -855,13 +855,13 @@ public class DesignLaddersController implements Initializable {
                             }
                         }
                         if (idx < ovTreeTable.size()) {
-                            int oldIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (event.getOldValue().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                            int oldIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+                            if (event.getOldValue().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 oldIdx = idx;
                             }
 
-                            int newIdx = Ladders.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (event.getNewValue().startsWith(Ladders.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                            int newIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+                            if (event.getNewValue().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                 newIdx = idx;
                             }
 
@@ -1157,32 +1157,50 @@ public class DesignLaddersController implements Initializable {
             viewRefresh_ = false;
             Platform.runLater(() -> {
                 // cycletime
-                lblCycleTime.setText(Long.toString(cumulativeCycleTime / cumulativeCycleTimeCount) + "ns");
+                lblCycleTime.setText(Long.toString(cumulativeCycleTime
+                        / Math.max(1, cumulativeCycleTimeCount)) + "ns");
 
                 // io map
                 ioMap_ = ladders_.getIoMap();
 
-                // ladder refresh
-                selectedTab_ = tabLadder.getSelectionModel().getSelectedItem();
-                if (selectedTab_ != null) {
-                    selectedScrollPane_ = (ScrollPane) selectedTab_.getContent();
-                    ((LadderPane) selectedScrollPane_.getContent()).refreshView(ioMap_, selectedScrollPane_);
+                // ladder refresh : the variables of the refresh are local, because the
+                // refresh of the next cycle can be queued before this one is done
+                Tab selectedTab = tabLadder.getSelectionModel().getSelectedItem();
+
+                if (selectedTab != null) {
+                    ScrollPane selectedScrollPane = (ScrollPane) selectedTab.getContent();
+
+                    ((LadderPane) selectedScrollPane.getContent()).refreshView(ioMap_, selectedScrollPane);
                 }
 
-                // tree table refresh
-                ovTreeTable_ = treeTableIo.getRoot().getChildren();
-                for (treeTableIndex_ = 0, treeTableSize_ = ovTreeTable_
-                        .size(); treeTableIndex_ < treeTableSize_; treeTableIndex_++) {
-                    ovTreeTableChild_ = ovTreeTable_.get(treeTableIndex_).getChildren();
-                    if (ovTreeTable_.get(treeTableIndex_).isExpanded()) {
-                        for (treeTableChildIndex_ = 0, treeTableChildSize_ = ovTreeTableChild_
-                                .size(); treeTableChildIndex_ < treeTableChildSize_; treeTableChildIndex_++) {
-                            ladderTreeTableIo_ = ovTreeTableChild_.get(treeTableChildIndex_).getValue();
-                            treeTableValue_ = ioMap_.get(treeTableIndex_).get(ladderTreeTableIo_.getAddress())
-                                    .getValue();
-                            if (treeTableValue_ != ladderTreeTableIo_.getValue()) {
-                                ladderTreeTableIo_.setValue(treeTableValue_);
-                            }
+                // tree table refresh : the row of the tree answers the ladder of the io map
+                ObservableList<TreeItem<LadderTreeTableIo>> ladderRows = treeTableIo.getRoot().getChildren();
+
+                for (int ladderIndex = 0; ladderIndex < ladderRows.size(); ladderIndex++) {
+                    TreeItem<LadderTreeTableIo> ladderRow = ladderRows.get(ladderIndex);
+
+                    if (!ladderRow.isExpanded() || (ladderIndex >= ioMap_.size())) {
+                        continue;
+                    }
+                    ConcurrentHashMap<String, LadderIo> ladderIoMap = ioMap_.get(ladderIndex);
+
+                    for (TreeItem<LadderTreeTableIo> ioRow : ladderRow.getChildren()) {
+                        LadderTreeTableIo tableIo = ioRow.getValue();
+                        LadderIo ladderIo;
+
+                        if (tableIo == null) {
+                            continue;
+                        }
+                        ladderIo = ladderIoMap.get(tableIo.getAddress());
+                        if (ladderIo == null) {
+                            // the io of the row is not registered any more : the cycle does
+                            // not answer it, so the value of the row is left as it is
+                            continue;
+                        }
+                        double value = ladderIo.getValue();
+
+                        if (value != tableIo.getValue()) {
+                            tableIo.setValue(value);
                         }
                     }
                 }
@@ -1549,14 +1567,6 @@ public class DesignLaddersController implements Initializable {
         ladderPath_ = null;
 
         ioMap_ = null;
-        selectedTab_ = null;
-        selectedScrollPane_ = null;
-        ladderTreeTableIo_ = null;
-        treeTableIndex_ = 0;
-        treeTableChildIndex_ = 0;
-        treeTableSize_ = 0;
-        treeTableChildSize_ = 0;
-        treeTableValue_ = 0.0;
 
         viewRefresh_ = true;
         isShowing_ = false;

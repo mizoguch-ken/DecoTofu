@@ -434,7 +434,7 @@ public class LadderGridPane extends AnchorPane {
                 label = new Label();
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
-                label.setFont(Font.font(Ladders.LADDER_DEFAULT_GRID_CONTENTS_HIGHT * 0.618));
+                label.setFont(Font.font(LadderDefaults.LADDER_DEFAULT_GRID_CONTENTS_HIGHT * 0.618));
                 label.setTextFill(contentsFontColor_);
                 grpBlock_.getChildren().add(label); // number
 
@@ -1113,7 +1113,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_EQUAL.toCommand());
+                label = new Label(LadderBlock.COMPARISON_EQUAL.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|=|-
@@ -1163,7 +1163,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_NOT_EQUAL.toCommand());
+                label = new Label(LadderBlock.COMPARISON_NOT_EQUAL.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|<>|-
@@ -1213,7 +1213,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_LESS.toCommand());
+                label = new Label(LadderBlock.COMPARISON_LESS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|<|-
@@ -1263,7 +1263,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_LESS_EQUAL.toCommand());
+                label = new Label(LadderBlock.COMPARISON_LESS_EQUAL.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|<=|-
@@ -1313,7 +1313,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_GREATER.toCommand());
+                label = new Label(LadderBlock.COMPARISON_GREATER.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|>|-
@@ -1363,7 +1363,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_GREATER_EQUAL.toCommand());
+                label = new Label(LadderBlock.COMPARISON_GREATER_EQUAL.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|>=|-
@@ -1413,7 +1413,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_AND_BITS.toCommand());
+                label = new Label(LadderBlock.COMPARISON_AND_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|&|-
@@ -1463,7 +1463,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_OR_BITS.toCommand());
+                label = new Label(LadderBlock.COMPARISON_OR_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|||-
@@ -1513,7 +1513,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |-
-                label = new Label(Ladders.LADDER_BLOCK.COMPARISON_XOR_BITS.toCommand());
+                label = new Label(LadderBlock.COMPARISON_XOR_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|^|-
@@ -1555,7 +1555,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.SET.toCommand());
+                label = new Label(LadderBlock.SET.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|SET|
@@ -1596,7 +1596,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.RESET.toCommand());
+                label = new Label(LadderBlock.RESET.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|RES|
@@ -1645,7 +1645,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.AND_BITS.toCommand());
+                label = new Label(LadderBlock.AND_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|AND|
@@ -1695,7 +1695,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.OR_BITS.toCommand());
+                label = new Label(LadderBlock.OR_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|OR|
@@ -1745,7 +1745,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.XOR_BITS.toCommand());
+                label = new Label(LadderBlock.XOR_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|XOR|
@@ -1791,7 +1791,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.NOT_BITS.toCommand());
+                label = new Label(LadderBlock.NOT_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|NOT|
@@ -1841,7 +1841,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.ADDITION.toCommand());
+                label = new Label(LadderBlock.ADDITION.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|ADD|
@@ -1891,7 +1891,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.SUBTRACTION.toCommand());
+                label = new Label(LadderBlock.SUBTRACTION.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|SUB|
@@ -1941,7 +1941,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.MULTIPLICATION.toCommand());
+                label = new Label(LadderBlock.MULTIPLICATION.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|MUL|
@@ -1991,7 +1991,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.DIVISION.toCommand());
+                label = new Label(LadderBlock.DIVISION.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|DIV|
@@ -2041,7 +2041,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.AVERAGE.toCommand());
+                label = new Label(LadderBlock.AVERAGE.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|AVE|
@@ -2091,7 +2091,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.SHIFT_LEFT_BITS.toCommand());
+                label = new Label(LadderBlock.SHIFT_LEFT_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|SFL|
@@ -2141,7 +2141,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.SHIFT_RIGHT_BITS.toCommand());
+                label = new Label(LadderBlock.SHIFT_RIGHT_BITS.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|SFR|
@@ -2191,7 +2191,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.SIGMOID.toCommand());
+                label = new Label(LadderBlock.SIGMOID.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|SIG|
@@ -2233,7 +2233,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.RANDOM.toCommand());
+                label = new Label(LadderBlock.RANDOM.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|RND|
@@ -2278,7 +2278,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.TIMER.toCommand());
+                label = new Label(LadderBlock.TIMER.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|TIM|
@@ -2328,7 +2328,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -|/|
-                label = new Label(Ladders.LADDER_BLOCK.TIMER.toCommand());
+                label = new Label(LadderBlock.TIMER.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|/TIM|
@@ -2374,7 +2374,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.COUNTER.toCommand());
+                label = new Label(LadderBlock.COUNTER.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|CNT|
@@ -2424,7 +2424,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -|/|
-                label = new Label(Ladders.LADDER_BLOCK.COUNTER.toCommand());
+                label = new Label(LadderBlock.COUNTER.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|/CNT|
@@ -2470,7 +2470,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.MOVE.toCommand());
+                label = new Label(LadderBlock.MOVE.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|MOV|
@@ -2516,7 +2516,7 @@ public class LadderGridPane extends AnchorPane {
                 line.setStroke(baseStrokeColor_);
                 line.setStrokeWidth(baseStrokeWidth_);
                 grpBlock_.getChildren().add(line); // -| |
-                label = new Label(Ladders.LADDER_BLOCK.SCRIPT.toCommand());
+                label = new Label(LadderBlock.SCRIPT.toCommand());
                 label.setAlignment(Pos.CENTER);
                 label.setTextAlignment(TextAlignment.CENTER);
                 grpBlock_.getChildren().add(label); // -|SCR|

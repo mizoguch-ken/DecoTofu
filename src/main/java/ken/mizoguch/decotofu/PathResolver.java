@@ -145,6 +145,62 @@ public class PathResolver {
     }
 
     /**
+     * path of a file given by the javascript of a page or by a plugin : an absolute path
+     * is used as it is, a relative path is used from the current directory when the file
+     * exists there to keep the behaviour of the previous versions, otherwise it is used
+     * from the directory of the application because the launcher of the application does
+     * not always set the current directory
+     *
+     * @param applicationClass class used to locate the directory of the application
+     * @param path path given by the page
+     * @param markers files and directories which identify the directory of the application
+     * @return the path to use, null when the given path can not be used
+     */
+    public static Path resolvePagePath(Class<?> applicationClass, String path, String... markers) {
+        Path given;
+
+        if ((path == null) || path.isEmpty()) {
+            return null;
+        }
+        try {
+            given = Paths.get(path);
+        } catch (InvalidPathException ex) {
+            return null;
+        }
+        if (given.isAbsolute()) {
+            return given;
+        }
+        // the current directory is the one of the user.dir property, as in resolve() :
+        // toAbsolutePath() would use the directory the virtual machine was started in,
+        // which is not the directory kept in the property
+        Path userPath = userPath().toAbsolutePath().resolve(given);
+
+        if (Files.exists(userPath)) {
+            return userPath;
+        }
+        Path applicationPath = resolve(applicationClass, markers).resolve(given);
+
+        if (Files.exists(applicationPath)) {
+            return applicationPath;
+        }
+        // the file exists in no directory : the current directory is kept so that a file
+        // which is going to be created is created where the previous versions created it
+        return userPath;
+    }
+
+    /**
+     * path of a file given by the javascript of a page or by a plugin, from the directory
+     * of the DecoTofu application
+     *
+     * @param applicationClass class used to locate the directory of the application
+     * @param path path given by the page
+     * @return the path to use, null when the given path can not be used
+     */
+    public static Path resolvePagePath(Class<?> applicationClass, String path) {
+        return resolvePagePath(applicationClass, path, APPLICATION_MARKERS);
+    }
+
+    /**
      * first directory of the java class path, kept as a fallback for the old launchers
      *
      * @return the directory, null when the class path is unusable

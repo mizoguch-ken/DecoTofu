@@ -5,23 +5,9 @@
  */
 package ken.mizoguch.ladders;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -31,31 +17,19 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
-import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.web.WebEngine;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import ken.mizoguch.console.Console;
-import ken.mizoguch.decotofu.JavaLibrary;
 import ken.mizoguch.soem.Soem;
-import org.apache.fontbox.ttf.TrueTypeCollection;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType0Font;
 
 /**
  *
@@ -63,126 +37,10 @@ import org.apache.pdfbox.pdmodel.font.PDType0Font;
  */
 public class Ladders extends Service<Void> {
 
-    public static final long LADDER_VIEW_REFRESH_CYCLE_TIME = TimeUnit.MILLISECONDS.toNanos(100);
-    public static final int LADDER_DEFAULT_GRID_COLUMN = 10;
-    public static final int LADDER_DEFAULT_GRID_ROW = 10;
-    public static final double LADDER_DEFAULT_GRID_MIN_SIZE = 78.912;
-    public static final double LADDER_DEFAULT_GRID_MAX_SIZE = LADDER_DEFAULT_GRID_MIN_SIZE * 122.966;
-    public static final double LADDER_DEFAULT_GRID_CONTENTS_WIDTH = LADDER_DEFAULT_GRID_MIN_SIZE * 0.382;
-    public static final double LADDER_DEFAULT_GRID_CONTENTS_HIGHT = LADDER_DEFAULT_GRID_CONTENTS_WIDTH * 0.618;
-
-    public static final int LADDER_GLOBAL_ADDRESS_INDEX = 0;
-    public static final String LADDER_LOCAL_ADDRESS_PREFIX = ".";
-
     /**
      * margin added to the ideal cycle time when the end of a cycle is awaited
      */
     private static final long LADDER_CYCLE_STOP_WAIT_MILLIS = 1000;
-
-    /**
-     * number of the cycle errors accepted before the cycle is stopped
-     */
-    private static final int LADDER_CYCLE_ERROR_LIMIT = 100;
-
-    /**
-     *
-     */
-    public static enum LADDER_BLOCK {
-        // Contents
-        CONTENTS(""),
-        // Empty
-        EMPTY(""),
-        // Comment
-        BLOCK_COMMENT(";"),
-        // Connect
-        CONNECT_LINE(""),
-        // Load
-        LOAD("LD"),
-        LOAD_NOT("/LD"),
-        LOAD_RISING("@LD"),
-        LOAD_RISING_NOT("/@LD"),
-        LOAD_FALLING("%LD"),
-        LOAD_FALLING_NOT("/%LD"),
-        // Out
-        OUT("OUT"),
-        OUT_NOT("/OUT"),
-        OUT_RISING("@OUT"),
-        OUT_RISING_NOT("/@OUT"),
-        OUT_FALLING("%OUT"),
-        OUT_FALLING_NOT("/%OUT"),
-        // Load Function
-        COMPARISON_EQUAL("="),
-        COMPARISON_NOT_EQUAL("<>"),
-        COMPARISON_LESS("<"),
-        COMPARISON_LESS_EQUAL("<="),
-        COMPARISON_GREATER(">"),
-        COMPARISON_GREATER_EQUAL(">="),
-        COMPARISON_AND_BITS("&"),
-        COMPARISON_OR_BITS("|"),
-        COMPARISON_XOR_BITS("^"),
-        // Out Function
-        SET("SET"),
-        RESET("RES"),
-        AND_BITS("AND"),
-        OR_BITS("OR"),
-        XOR_BITS("XOR"),
-        NOT_BITS("NOT"),
-        ADDITION("ADD"),
-        SUBTRACTION("SUB"),
-        MULTIPLICATION("MUL"),
-        DIVISION("DIV"),
-        AVERAGE("AVE"),
-        SHIFT_LEFT_BITS("SFL"),
-        SHIFT_RIGHT_BITS("SFR"),
-        SIGMOID("SIG"),
-        RANDOM("RND"),
-        TIMER("TIM"),
-        TIMER_NOT("/TIM"),
-        COUNTER("CNT"),
-        COUNTER_NOT("/CNT"),
-        MOVE("MOV"),
-        // Collaboration
-        SCRIPT("SCR");
-
-        private final String command_;
-
-        private LADDER_BLOCK(final String command) {
-            command_ = command;
-        }
-
-        public String toCommand() {
-            return command_;
-        }
-
-        public static LADDER_BLOCK get(String command) {
-            command = command.toUpperCase(Locale.getDefault());
-            for (LADDER_BLOCK value : LADDER_BLOCK.values()) {
-                if (value.command_.equals(command)) {
-                    return value;
-                }
-            }
-            return EMPTY;
-        }
-    }
-
-    /**
-     *
-     */
-    public static enum LADDER_COMMAND {
-        // root
-        CHANGE_ADDRESS,
-        CHANGE_COMMENT,
-        // ladder
-        LADDER_CREATE,
-        LADDER_REMOVE,
-        LADDER_REMOVE_ROW,
-        LADDER_INSERT_ROW,
-        LADDER_MOVE_LEFT,
-        LADDER_MOVE_RIGHT,
-        LADDER_CHANGE_NAME,
-        // block
-        BLOCK_CHANGE;
-    }
 
     private final DesignLaddersController ladderController_;
     private final TabPane tabLadder_;
@@ -191,22 +49,41 @@ public class Ladders extends Service<Void> {
 
     private Stage stage_;
     private List<Image> icons_;
-    private WebEngine webEngine_;
-    private Worker.State state_;
-    private Soem soem_;
     private LadderCommand ladderCommand_;
     private int historyGeneration_;
-    private final CopyOnWriteArrayList<LadderRegisterSoemIo> registerSoemIn_, registerSoemOut_;
-    private Path filePath_;
-    private final String newLineCharacter_ = "\r\n";
+    /**
+     * the registrations of the ladders : the web page which runs the javascript of the scripts and
+     * the addresses of the slaves of a soem bus
+     */
+    private final LadderRegister register_;
+    /**
+     * the tabs of the editor : the ladder of a tab, the name and the selection of the tabs
+     */
+    private final LadderTabs tabs_;
+    /**
+     * the keys of the editor : the keys which create, remove, rename a ladder or run a file of the
+     * ladders
+     */
+    private final LadderKeyHandler keyHandler_;
+    /**
+     * the file of the ladders : the path of the ladder shown by the editor and the json of the
+     * ladder read from and written to a file
+     */
+    private final LadderFileStore fileStore_;
+    /**
+     * the files of the editor : a new ladder, a ladder loaded from a file, the ladder saved to a
+     * file and the ladders exported to a pdf file
+     */
+    private final LadderFileActions fileActions_;
 
     private final Object lock_ = new Object();
     private volatile Ladder[] ladders_;
-    private ObservableList<TreeItem<LadderTreeTableIo>> ovScript_;
-    private int laddersSize_, scriptIndex_, scriptSize_;
-    private final CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap_;
-    private final CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap_;
-    private final CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> scriptIoMap_;
+    private int laddersSize_;
+    /**
+     * the io of the ladders : the store owns the maps which the editor and the cycle of the ladder
+     * use as their live io
+     */
+    private final LadderIoStore ioStore_;
     private long idealCycleTime_;
     private volatile boolean isCycling_, isChanged_;
     /**
@@ -219,8 +96,6 @@ public class Ladders extends Service<Void> {
      * which has just been started
      */
     private volatile AtomicBoolean cycleFinished_;
-
-    private final Gson gson_ = new GsonBuilder().setPrettyPrinting().create();
 
     /**
      *
@@ -235,22 +110,20 @@ public class Ladders extends Service<Void> {
 
         stage_ = null;
         icons_ = null;
-        webEngine_ = null;
-        state_ = Worker.State.READY;
-        soem_ = null;
         ladderCommand_ = null;
         historyGeneration_ = 0;
-        registerSoemIn_ = new CopyOnWriteArrayList<>();
-        registerSoemOut_ = new CopyOnWriteArrayList<>();
-        filePath_ = null;
+        fileStore_ = new LadderFileStore();
 
         ladders_ = null;
         laddersSize_ = 0;
-        scriptIndex_ = 0;
-        scriptSize_ = 0;
-        ioMap_ = new CopyOnWriteArrayList<>();
-        commentMap_ = new CopyOnWriteArrayList<>();
-        scriptIoMap_ = new CopyOnWriteArrayList<>();
+        ioStore_ = new LadderIoStore(lock_);
+        register_ = new LadderRegister(ioStore_, (address) -> {
+            treeTableIo_.getRoot().getChildren().get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).getChildren()
+                    .add(new TreeItem<>(new LadderTreeTableIo(address)));
+        });
+        tabs_ = new LadderTabs(this);
+        keyHandler_ = new LadderKeyHandler(this);
+        fileActions_ = new LadderFileActions(this);
         idealCycleTime_ = 0;
         isChanged_ = false;
         isCycling_ = false;
@@ -264,6 +137,43 @@ public class Ladders extends Service<Void> {
      */
     public DesignLaddersController getDesignController() {
         return ladderController_;
+    }
+
+    /**
+     * the stage of the editor : the owner of the dialogs which ask a name or a file to the user
+     *
+     * @return the stage of the editor, null before the start up of the editor
+     */
+    Stage getStage() {
+        return stage_;
+    }
+
+    /**
+     * the icons of the editor : the icons given to the dialogs which ask a name or a file to the
+     * user
+     *
+     * @return the icons of the editor, null before the start up of the editor
+     */
+    List<Image> getIcons() {
+        return icons_;
+    }
+
+    /**
+     * mark the ladders changed or not since the last save of the ladder file
+     *
+     * @param changed true when the ladders are changed
+     */
+    void setChanged(boolean changed) {
+        isChanged_ = changed;
+    }
+
+    /**
+     * the tabs of the editor : the ladder of a tab, the name and the selection of the tabs
+     *
+     * @return the tabs of the editor
+     */
+    LadderTabs getTabs() {
+        return tabs_;
     }
 
     /**
@@ -316,26 +226,84 @@ public class Ladders extends Service<Void> {
 
     /**
      *
-     * @return
+     * @return the io of the ladders : the live map of the store
      */
     public CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> getIoMap() {
-        return ioMap_;
+        return ioStore_.getIoMap();
     }
 
     /**
      *
-     * @return
+     * @return the comments of the addresses of the ladders : the live map of the store
      */
     public CopyOnWriteArrayList<ConcurrentHashMap<String, String>> getCommentMap() {
-        return commentMap_;
+        return ioStore_.getCommentMap();
     }
 
     /**
      *
-     * @return
+     * @return the io written by the javascript of the script blocks : the live map of the store
      */
     public CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> getScriptIoMap() {
-        return scriptIoMap_;
+        return ioStore_.getScriptIoMap();
+    }
+
+    /**
+     * the store of the io : the cycle of the ladder and the editor share the same io
+     *
+     * @return the store of the io
+     */
+    LadderIoStore getIoStore() {
+        return ioStore_;
+    }
+
+    /**
+     *
+     * @return the store of the file of the ladders
+     */
+    LadderFileStore getFileStore() {
+        return fileStore_;
+    }
+
+    /**
+     *
+     * @return the soem used by the cycle, null when no slave is registered
+     */
+    Soem getSoem() {
+        return register_.getSoem();
+    }
+
+    /**
+     *
+     * @return the inputs registered on the soem slaves
+     */
+    CopyOnWriteArrayList<LadderRegisterSoemIo> getRegisterSoemIn() {
+        return register_.getRegisterSoemIn();
+    }
+
+    /**
+     *
+     * @return the outputs registered on the soem slaves
+     */
+    CopyOnWriteArrayList<LadderRegisterSoemIo> getRegisterSoemOut() {
+        return register_.getRegisterSoemOut();
+    }
+
+    /**
+     *
+     * @return the number of the ladders run by the cycle
+     */
+    int getLaddersSize() {
+        return laddersSize_;
+    }
+
+    /**
+     * the cycling flag is cleared by the task of the cycle when it ends
+     *
+     * @param isCycling
+     */
+    void setCycling(boolean isCycling) {
+        isCycling_ = isCycling;
     }
 
     /**
@@ -358,7 +326,7 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public boolean isComment(int idx, String address) {
-        return commentMap_.get(idx).containsKey(address);
+        return ioStore_.hasComment(idx, address);
     }
 
     /**
@@ -368,7 +336,7 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public String getComment(int idx, String address) {
-        return commentMap_.get(idx).get(address);
+        return ioStore_.comment(idx, address);
     }
 
     /**
@@ -393,7 +361,7 @@ public class Ladders extends Service<Void> {
      * @param value
      */
     public void setValueDirect(String address, double value) {
-        setValueDirect(LADDER_GLOBAL_ADDRESS_INDEX, address, value);
+        setValueDirect(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address, value);
     }
 
     /**
@@ -403,42 +371,46 @@ public class Ladders extends Service<Void> {
      * @param value
      */
     public void setValueDirect(int idx, String address, double value) {
-        if (!ioMap_.get(idx).containsKey(address)) {
-            ioMap_.get(idx).put(address, new LadderIo(address));
+        if (ioStore_.createIo(idx, address)) {
             treeTableIo_.getRoot().getChildren().get(idx).getChildren()
                     .add(new TreeItem<>(new LadderTreeTableIo(address, value)));
         }
 
-        ovScript_ = treeTableIo_.getRoot().getChildren().get(idx).getChildren();
-        for (scriptIndex_ = 0, scriptSize_ = ovScript_.size(); scriptIndex_ < scriptSize_; scriptIndex_++) {
-            if (address.equals(ovScript_.get(scriptIndex_).getValue().getAddress())) {
-                ovScript_.get(scriptIndex_).getValue().setValue(value);
+        changeTreeTableIoValue(idx, address, value);
+        ioStore_.setDirect(idx, address, value);
+    }
+
+    /**
+     * value of the view of the io of an address of a ladder
+     *
+     * @param idx
+     * @param address
+     * @param value
+     */
+    private void changeTreeTableIoValue(int idx, String address, double value) {
+        ObservableList<TreeItem<LadderTreeTableIo>> rows;
+        int index, size;
+
+        rows = treeTableIo_.getRoot().getChildren().get(idx).getChildren();
+        for (index = 0, size = rows.size(); index < size; index++) {
+            if (address.equals(rows.get(index).getValue().getAddress())) {
+                rows.get(index).getValue().setValue(value);
                 break;
             }
         }
-
-        synchronized (lock_) {
-            ioMap_.get(idx).get(address).setValue(value);
-            scriptIoMap_.get(idx).putIfAbsent(address, new LadderIo(address));
-            scriptIoMap_.get(idx).get(address).setValue(value);
-            scriptIoMap_.get(idx).get(address).setCycled(true);
-        }
     }
 
-    private void allClear() {
+    /**
+     * clear the io, the tabs and the history of the editor : the cycle of the ladder is stopped
+     * before the maps which the cycle reads are cleared
+     */
+    void allClear() {
         stopLadder();
 
         // wait the end of the current cycle and clear the io of the cycle
         synchronized (lock_) {
-            if (registerSoemIn_ != null) {
-                registerSoemIn_.clear();
-            }
-            if (registerSoemOut_ != null) {
-                registerSoemOut_.clear();
-            }
-            ioMap_.clear();
-            commentMap_.clear();
-            scriptIoMap_.clear();
+            register_.clearSoem();
+            ioStore_.clear();
             ladders_ = null;
         }
 
@@ -452,16 +424,7 @@ public class Ladders extends Service<Void> {
      * @param workFilePath
      */
     public void setWorkFilePath(String workFilePath) {
-        if (workFilePath != null) {
-            if (workFilePath.isEmpty()) {
-                filePath_ = null;
-            } else {
-                filePath_ = Paths.get(workFilePath);
-                if (!Files.isDirectory(filePath_)) {
-                    filePath_ = filePath_.getParent();
-                }
-            }
-        }
+        fileStore_.setWorkFilePath(workFilePath);
     }
 
     /**
@@ -469,29 +432,14 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public String getWorkFilePath() {
-        if (filePath_ == null) {
-            return "";
-        } else {
-            return filePath_.toString();
-        }
+        return fileStore_.getWorkFilePath();
     }
 
     /**
-     *
+     * a new ladder of the editor : the io of the editor and the tabs of the ladders are cleared
      */
     public void ladderNew() {
-        allClear();
-
-        // global
-        treeTableIo_.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
-                new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
-        ioMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-        commentMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-        scriptIoMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-
-        ladderCommand_.ladderCreate(LADDER_GLOBAL_ADDRESS_INDEX + 1, "Ladders", LADDER_DEFAULT_GRID_COLUMN,
-                LADDER_DEFAULT_GRID_ROW, LADDER_DEFAULT_GRID_MIN_SIZE, LADDER_DEFAULT_GRID_MAX_SIZE,
-                LADDER_DEFAULT_GRID_CONTENTS_WIDTH, LADDER_DEFAULT_GRID_CONTENTS_HIGHT);
+        fileActions_.ladderNew();
     }
 
     /**
@@ -499,25 +447,7 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public boolean ladderNewTab() {
-        StringBuilder name = new StringBuilder("Ladders");
-        int index, size;
-
-        for (index = 0, size = tabLadder_.getTabs().size(); index < size; index++) {
-            if (checkTabName(name.toString())) {
-                break;
-            }
-            name.delete(0, name.length());
-            name.append("Ladders").append(" ").append(index + 1);
-        }
-        index = tabLadder_.getTabs().size() + 1;
-        LadderPane pane = ladderCommand_.ladderCreate(index, name.toString(), LADDER_DEFAULT_GRID_COLUMN,
-                LADDER_DEFAULT_GRID_ROW, LADDER_DEFAULT_GRID_MIN_SIZE, LADDER_DEFAULT_GRID_MAX_SIZE,
-                LADDER_DEFAULT_GRID_CONTENTS_WIDTH, LADDER_DEFAULT_GRID_CONTENTS_HIGHT);
-        tabLadder_.getSelectionModel().select(pane.getLadder().getIdx() - 1);
-        isChanged_ = true;
-
-        setTitle();
-        return true;
+        return tabs_.create();
     }
 
     /**
@@ -526,11 +456,7 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public boolean ladderRemoveTab(int index) {
-        ladderCommand_.ladderRemove(index);
-        isChanged_ = true;
-
-        setTitle();
-        return true;
+        return tabs_.remove(index);
     }
 
     /**
@@ -539,37 +465,7 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public boolean ladderChangeTabName(LadderPane pane) {
-        TextInputDialog alert = new TextInputDialog(pane.getLadder().getName());
-
-        alert.initOwner(stage_);
-        alert.initStyle(StageStyle.UTILITY);
-        if (!icons_.isEmpty()) {
-            ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
-        }
-
-        alert.setTitle("Rename");
-        alert.setHeaderText(null);
-        alert.setContentText(null);
-        alert.setGraphic(null);
-        Optional<String> result = alert.showAndWait();
-        stage_.requestFocus();
-
-        if (result.isPresent()) {
-            String name = result.get().trim();
-            if (checkTabName(name)) {
-                treeTableIo_.getRoot().getChildren().get(pane.getLadder().getIdx()).getValue()
-                        .setAddress(name.replace(" ", "_"));
-                pane.setChanged(true);
-                ladderCommand_.ladderChangeName(pane, name);
-                isChanged_ = true;
-
-                setTitle();
-                return true;
-            } else {
-                writeLog("Duplicate names", true);
-            }
-        }
-        return false;
+        return tabs_.rename(pane);
     }
 
     /**
@@ -579,1409 +475,49 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public boolean ladderChangeTabName(int idx, String name) {
-        name = name.trim();
-        if (checkTabName(name)) {
-            LadderPane pane = (LadderPane) ((ScrollPane) tabLadder_.getTabs().get(idx - 1).getContent()).getContent();
-            treeTableIo_.getRoot().getChildren().get(idx).getValue().setAddress(name.replace(" ", "_"));
-            pane.setChanged(true);
-            ladderCommand_.ladderChangeName(pane, name);
-            isChanged_ = true;
-
-            setTitle();
-            return true;
-        } else {
-            writeLog("Duplicate names", true);
-        }
-        return false;
+        return tabs_.rename(idx, name);
     }
 
     /**
-     *
-     * @param name
-     * @return
-     */
-    private boolean checkTabName(String name) {
-        if (name != null) {
-            int index, size;
-
-            name = name.replace(" ", "_");
-            for (index = 0, size = tabLadder_.getTabs().size(); index < size; index++) {
-                if (((LadderPane) ((ScrollPane) tabLadder_.getTabs().get(index).getContent()).getContent()).getLadder()
-                        .getName().equals(name)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
-    private Path ladderOpen(TabPane tabPane, TreeTableView<LadderTreeTableIo> treeTableView, Path file) {
-        return ladderOpen(tabPane, treeTableView, ioMap_, commentMap_, file);
-    }
-
-    private Path ladderOpen(TabPane tabPane, TreeTableView<LadderTreeTableIo> treeTableView,
-            CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
-            CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap, Path file) {
-        if (file == null) {
-            FileChooser fileChooser = new FileChooser();
-
-            if (filePath_ != null) {
-                if (filePath_.getParent() != null) {
-                    if (Files.exists(filePath_.getParent())) {
-                        fileChooser.setInitialDirectory(filePath_.getParent().toFile());
-                    }
-                }
-            }
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON", "*.json"));
-            File fcfile = fileChooser.showOpenDialog(stage_);
-            if (fcfile == null) {
-                return null;
-            }
-            file = fcfile.toPath();
-        }
-
-        LadderJson ladderJson = ladderJsonOpen(file);
-        if (ladderJson == null) {
-            return null;
-        }
-
-        // the script blocks of a file run their javascript in the web page with the apis
-        // of the application : the user decides if they are kept
-        int scriptCount = countLadderScripts(ladderJson);
-
-        if (scriptCount > 0) {
-            if (!confirmLadderScripts(scriptCount, file)) {
-                removeLadderScripts(ladderJson);
-                writeLog("ladder scripts removed [" + scriptCount + "] [" + file.getFileName() + "]", true);
-            }
-        }
-
-        // allClear() destroys the ladder of the editor : it is kept as a backup to be
-        // restored when the loaded file can not be displayed
-        LadderJson backup = ladderJsonSave(tabPane, ioMap, commentMap);
-        // the history of the backup is not restored : the undo history is left empty
-        backup.setHistoryManager(new LadderHistoryManager(), -1);
-
-        allClear();
-        addGlobalRow();
-
-        if (ladderJsonLoad(this, tabPane, treeTableView, ioMap, commentMap, scriptIoMap_, ladderJson)) {
-            return file;
-        }
-
-        // the file was readable but the ladder could not be restored : use the backup
-        writeLog("load failed [" + file.getFileName() + "]", true);
-        if (!ladderRestoreBackup(backup, tabPane, treeTableView, ioMap, commentMap)) {
-            writeLog("the ladder backup could not be restored", true);
-        }
-        return null;
-    }
-
-    /**
-     * add the global address row of the ladder list
-     */
-    private void addGlobalRow() {
-        treeTableIo_.getRoot().getChildren().add(LADDER_GLOBAL_ADDRESS_INDEX,
-                new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LADDER_GLOBAL_ADDRESS_INDEX)));
-        ioMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-        commentMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-        scriptIoMap_.add(LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
-    }
-
-    /**
-     * restore a ladder backed up before allClear() : the undo history is disabled, so
-     * that the failure of a load is not added to the history of the user
-     *
-     * @param backup
-     * @param tabPane
-     * @param treeTableView
-     * @param ioMap
-     * @param commentMap
-     * @return
-     */
-    private boolean ladderRestoreBackup(LadderJson backup, TabPane tabPane,
-            TreeTableView<LadderTreeTableIo> treeTableView,
-            CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
-            CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap) {
-        boolean restore;
-
-        ladderCommand_.setDisableHistory(true);
-        try {
-            allClear();
-            addGlobalRow();
-            restore = ladderJsonLoad(this, tabPane, treeTableView, ioMap, commentMap, scriptIoMap_, backup);
-        } finally {
-            ladderCommand_.setDisableHistory(false);
-        }
-        return restore;
-    }
-
-    /**
-     * number of the blocks which hold a script in a ladder json
-     *
-     * @param ladderJson
-     * @return
-     */
-    static int countLadderScripts(LadderJson ladderJson) {
-        List<LadderJsonLadder> ladders;
-        List<LadderJsonBlock> blocks;
-        int count = 0;
-
-        if (ladderJson == null) {
-            return 0;
-        }
-        ladders = ladderJson.getLadders();
-        if (ladders == null) {
-            return 0;
-        }
-        for (LadderJsonLadder ladder : ladders) {
-            blocks = ladder.getBlocks();
-            if (blocks == null) {
-                continue;
-            }
-            for (LadderJsonBlock block : blocks) {
-                if (block.hasScript()) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    /**
-     * remove the scripts of a ladder json, so that a ladder loaded from a file is used
-     * without the javascript of its script blocks
-     *
-     * @param ladderJson
-     * @return the number of the removed scripts
-     */
-    static int removeLadderScripts(LadderJson ladderJson) {
-        List<LadderJsonLadder> ladders;
-        List<LadderJsonBlock> blocks;
-        int count = 0;
-
-        if (ladderJson == null) {
-            return 0;
-        }
-        ladders = ladderJson.getLadders();
-        if (ladders == null) {
-            return 0;
-        }
-        for (LadderJsonLadder ladder : ladders) {
-            blocks = ladder.getBlocks();
-            if (blocks == null) {
-                continue;
-            }
-            for (LadderJsonBlock block : blocks) {
-                if (block.hasScript()) {
-                    block.removeScript();
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    /**
-     * ask the user if the scripts of a ladder loaded from a file have to be kept
-     *
-     * @param count number of the script blocks
-     * @param file
-     * @return true when the scripts are kept
-     */
-    private boolean confirmLadderScripts(int count, Path file) {
-        Alert alert;
-        Optional<ButtonType> result;
-
-        if (!isScriptEnable_) {
-            return false;
-        }
-        if (!Platform.isFxApplicationThread()) {
-            // a dialog can not be shown from an other thread : the scripts are kept when
-            // the configuration enables them
-            return true;
-        }
-
-        alert = new Alert(Alert.AlertType.CONFIRMATION);
-        if (!icons_.isEmpty()) {
-            ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
-        }
-        alert.setTitle("Ladder");
-        alert.getDialogPane().setHeaderText(null);
-        alert.getDialogPane().setContentText("Run Scripts Program? [" + count + "] "
-                + ((file != null) ? file.getFileName().toString() : ""));
-        alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
-        result = alert.showAndWait();
-        // a closed dialog never runs the scripts of a file
-        return result.orElse(ButtonType.NO) == ButtonType.YES;
-    }
-
-    private Path ladderSave() {
-        if (filePath_ == null) {
-            return ladderSaveAs();
-        } else if (Files.exists(filePath_)) {
-            if (Files.isRegularFile(filePath_)) {
-                return ladderSave(filePath_);
-            } else {
-                return ladderSaveAs();
-            }
-        } else {
-            return ladderSaveAs();
-        }
-    }
-
-    private Path ladderSave(Path file) {
-        if (file != null) {
-            try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(Files.newOutputStream(file), "UTF-8");
-                    BufferedReader bufferedReader = new BufferedReader(
-                            new StringReader(gson_.toJson(ladderJsonSave(tabLadder_, ioMap_, commentMap_))))) {
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    outputStreamWriter.write(line);
-                    if (bufferedReader.ready()) {
-                        outputStreamWriter.write(newLineCharacter_);
-                    }
-                }
-
-                Tab tab;
-                LadderPane pane;
-                int index, size;
-
-                for (index = 0, size = tabLadder_.getTabs().size(); index < size; index++) {
-                    tab = tabLadder_.getTabs().get(index);
-                    pane = (LadderPane) ((ScrollPane) tab.getContent()).getContent();
-                    pane.setChanged(false);
-                    tab.setText(pane.getLadder().getName());
-                }
-                return file;
-            } catch (IOException ex) {
-                Console.writeStackTrace(Ladders.class.getName(), ex);
-            }
-        }
-        return null;
-    }
-
-    private Path ladderSaveAs() {
-        FileChooser fileChooser = new FileChooser();
-
-        if (filePath_ != null) {
-            if (filePath_.getParent() != null) {
-                if (Files.exists(filePath_.getParent())) {
-                    fileChooser.setInitialDirectory(filePath_.getParent().toFile());
-                }
-            }
-        }
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON", "*.json"));
-        File fcfile = fileChooser.showSaveDialog(stage_);
-        if (fcfile != null) {
-            return ladderSave(fcfile.toPath());
-        }
-        return null;
-    }
-
-    private PDPage pdfNewPage(PDDocument doc, PDRectangle rectangle) {
-        PDPage page = new PDPage(rectangle);
-        doc.addPage(page);
-        return page;
-    }
-
-    private PDPageContentStream pdfPageBeginGrid(PDDocument doc, PDPage page, PDFont font, float fontSize,
-            float lineWidth, float marginTop, float marginLeft) throws IOException {
-        PDPageContentStream contentStream = new PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND,
-                true, true);
-        contentStream.setFont(font, fontSize);
-        contentStream.setLeading(font.getFontDescriptor().getFontBoundingBox().getHeight() / 1000f * fontSize);
-        contentStream.setLineWidth(lineWidth);
-        return contentStream;
-    }
-
-    private void pdfPageEndGrid(PDPageContentStream contentStream) throws IOException {
-        contentStream.close();
-    }
-
-    private Path ladderExportPdf(Path file) {
-        if (file != null) {
-            try (PDDocument doc = new PDDocument();
-                    TrueTypeCollection ttc = new TrueTypeCollection(
-                        this.getClass().getClassLoader().getResourceAsStream("font/MyricaM.TTC"))) {
-                PDRectangle rectangle = PDRectangle.A4;
-                PDPage page;
-                PDPageContentStream contentStream;
-                PDFont font = PDType0Font.load(doc, ttc.getFontByName("MyricaMM"), true);
-                float margin = 20f * 25.4f / 72f;
-                float fontSize = 7.54f;
-                float textWidth, textHeight;
-                float gridWidth, gridHeight;
-                float fontWidth = font.getFontDescriptor().getFontBoundingBox().getWidth() / 1000f * fontSize;
-                float fontHeight = font.getFontDescriptor().getFontBoundingBox().getHeight() / 1000f * fontSize;
-                float pageShowMinWidth = margin;
-                float pageShowMaxWidth = rectangle.getWidth() - margin;
-                float pageShowMinHeight = margin;
-                float pageShowMaxHeight = rectangle.getHeight() - margin;
-                float lineWidth = 1f;
-                float contentsSize = font.getFontDescriptor().getFontBoundingBox().getWidth() / 1000f * fontSize * 4f;
-                float gridSize = (rectangle.getWidth() - (pageShowMinWidth * 2f) - contentsSize) / 10f;
-                float gridSize2 = gridSize / 2f;
-                float gridSize3 = gridSize / 3f;
-                float gridSize4 = gridSize / 4f;
-                float gridSize6 = gridSize / 6f;
-                float gridSize12 = gridSize / 12f;
-
-                LadderJson ladderJson = ladderJsonSave(tabLadder_);
-                List<LadderJsonLadder> jsonLadders = ladderJson.getLadders();
-
-                String name, address, comment, line, content, c;
-                int index, size, index2, size2, column, row, i;
-
-                size = jsonLadders.size();
-                List<LadderJsonBlock> jsonBlocks;
-                LadderJsonBlock jsonBlock;
-                for (index = 0; index < size; index++) {
-                    column = 0;
-                    row = 0;
-                    name = jsonLadders.get(index).getName();
-                    page = pdfNewPage(doc, rectangle);
-                    gridWidth = pageShowMinWidth + contentsSize;
-                    gridHeight = rectangle.getHeight() - pageShowMinHeight - contentsSize;
-                    contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth, pageShowMinWidth,
-                            pageShowMinHeight);
-                    if (getFileName() == null) {
-                        // page header name & title
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(
-                                ((pageShowMaxWidth - (font.getStringWidth(name) / 1000f * fontSize)) / 2f)
-                                        + pageShowMinWidth + fontWidth,
-                                pageShowMaxHeight - fontHeight);
-                        contentStream.showText(name);
-                        contentStream.endText();
-                        gridHeight += fontHeight;
-                    } else {
-                        // page header name
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(((pageShowMaxWidth
-                                - (font.getStringWidth(name + " [" + getFileName() + "]") / 1000f * fontSize)) / 2f)
-                                + pageShowMinWidth + fontWidth, pageShowMaxHeight - fontHeight);
-                        contentStream.showText(name + " [" + getFileName() + "]");
-                        contentStream.endText();
-                        gridHeight += fontHeight;
-                    }
-
-                    for (i = 1; i < LADDER_DEFAULT_GRID_COLUMN; i++) {
-                        contentStream.beginText();
-                        content = String.valueOf(i);
-                        contentStream.newLineAtOffset(gridWidth + (gridSize * (i - 1)) + gridSize2
-                                + ((font.getStringWidth(content) / 1000f * fontSize) / 2f), gridHeight);
-                        contentStream.showText(content);
-                        contentStream.endText();
-                    }
-
-                    jsonBlocks = jsonLadders.get(index).getBlocks();
-                    size2 = jsonBlocks.size();
-                    for (index2 = 0; index2 < size2; index2++) {
-                        jsonBlock = jsonBlocks.get(index2);
-                        if (row < jsonBlock.getRowIndex()) {
-                            gridWidth = pageShowMinWidth + contentsSize;
-                            column = 0;
-                            for (; row < jsonBlock.getRowIndex(); row++) {
-                                if (row > 0) {
-                                    gridHeight -= gridSize;
-                                }
-                                if (gridHeight < (pageShowMinHeight + gridSize)) {
-                                    pdfPageEndGrid(contentStream);
-                                    page = pdfNewPage(doc, rectangle);
-                                    contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth,
-                                            pageShowMinWidth, pageShowMinHeight);
-                                    gridHeight = rectangle.getHeight() - pageShowMinHeight - contentsSize;
-
-                                    for (i = 1; i < LADDER_DEFAULT_GRID_COLUMN; i++) {
-                                        contentStream.beginText();
-                                        content = String.valueOf(i);
-                                        contentStream.newLineAtOffset(
-                                                gridWidth + (gridSize * (i - 1)) + gridSize2
-                                                        + ((font.getStringWidth(content) / 1000f * fontSize) / 2f),
-                                                gridHeight);
-                                        contentStream.showText(content);
-                                        contentStream.endText();
-                                    }
-                                }
-
-                                contentStream.beginText();
-                                content = String.valueOf(row + 1);
-                                contentStream.newLineAtOffset(gridWidth
-                                        + ((-contentsSize + (font.getStringWidth(content) / 1000f * fontSize)) / 2f),
-                                        gridHeight - gridSize2);
-                                contentStream.showText(content);
-                                contentStream.endText();
-                            }
-                        }
-                        if (column < jsonBlock.getColumnIndex()) {
-                            if (column == 0) {
-                                column = 1;
-                            }
-                            gridWidth += (jsonBlock.getColumnIndex() - column) * gridSize;
-                            column = jsonBlock.getColumnIndex();
-                        }
-
-                        address = jsonBlock.getAddress();
-                        if (address == null) {
-                            comment = jsonBlock.getComment();
-                        } else {
-                            if (address.startsWith(LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                comment = getComment(index + 1, jsonBlock.getAddress());
-                            } else {
-                                comment = getComment(LADDER_GLOBAL_ADDRESS_INDEX, jsonBlock.getAddress());
-                            }
-                        }
-                        if (jsonBlock.isVertical()) {
-                            contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                            contentStream.lineTo(gridWidth, gridHeight);
-                        }
-                        if (jsonBlock.isVerticalOr()) {
-                            contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                            contentStream.lineTo(gridWidth, gridHeight - gridSize);
-                        }
-                        contentStream.stroke();
-
-                        switch (Ladders.LADDER_BLOCK.valueOf(jsonBlock.getBlock())) {
-                            case BLOCK_COMMENT:
-                                textWidth = gridWidth;
-                                textHeight = gridHeight;
-
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                for (i = 0; i < comment.length(); i++) {
-                                    c = comment.substring(i, i + 1);
-                                    textWidth += font.getStringWidth(c) / 1000 * fontSize;
-                                    if (textWidth > (gridWidth + gridSize - fontWidth)) {
-                                        textHeight += fontHeight;
-                                        if (textHeight > (gridHeight + gridSize - fontHeight)) {
-                                            break;
-                                        }
-                                        contentStream.newLine();
-                                        textWidth = gridWidth;
-                                    }
-                                    contentStream.showText(c);
-                                }
-                                contentStream.endText();
-                                break;
-                            case CONNECT_LINE:
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
-                                contentStream.stroke();
-                                break;
-                            case LOAD:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -| |-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
-                                contentStream.stroke();
-                                break;
-                            case LOAD_NOT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -| |-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
-                                // -|/|-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                contentStream.stroke();
-                                break;
-                            case LOAD_RISING:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -| |-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
-                                // -|↑|-
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
-                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
-                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
-                                contentStream.stroke();
-                                break;
-                            case LOAD_RISING_NOT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -| |-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
-                                // -|/|-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -|/↑|-
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
-                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
-                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
-                                contentStream.stroke();
-                                break;
-                            case LOAD_FALLING:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -| |-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
-                                // -|↓|-
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
-                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
-                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
-                                contentStream.stroke();
-                                break;
-                            case LOAD_FALLING_NOT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -| |-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
-                                // -|/|-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -|/↓|-
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
-                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
-                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
-                                contentStream.stroke();
-                                break;
-                            case OUT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -(
-                                contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
-                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
-                                contentStream.stroke();
-                                break;
-                            case OUT_NOT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -(
-                                contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
-                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
-                                // -(/)
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
-                                contentStream.stroke();
-                                break;
-                            case OUT_RISING:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -(
-                                contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
-                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
-                                // -(↑)
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
-                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
-                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
-                                contentStream.stroke();
-                                break;
-                            case OUT_RISING_NOT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -(
-                                contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
-                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
-                                // -(/)
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
-                                // -(/↑)
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
-                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
-                                        gridHeight - gridSize2 + gridSize4 - gridSize12);
-                                contentStream.stroke();
-                                break;
-                            case OUT_FALLING:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -(
-                                contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
-                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
-                                // -(↓)
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
-                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
-                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
-                                contentStream.stroke();
-                                break;
-                            case OUT_FALLING_NOT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -(
-                                contentStream.moveTo(gridWidth + gridSize3, gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth, gridHeight - gridSize2, gridWidth + gridSize3,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -( )
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.curveTo2(gridWidth + gridSize, gridHeight - gridSize2,
-                                        gridWidth + gridSize - gridSize3, gridHeight - gridSize2 - gridSize4);
-                                // -(/)
-                                contentStream.moveTo(gridWidth + gridSize - gridSize3,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize3, gridHeight - gridSize2 - gridSize4);
-                                // -(/↓)
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 - gridSize12,
-                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
-                                contentStream.moveTo(gridWidth + gridSize2, gridHeight - gridSize2 - gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize2 + gridSize12,
-                                        gridHeight - gridSize2 - gridSize4 + gridSize12);
-                                contentStream.stroke();
-                                break;
-                            case COMPARISON_EQUAL:
-                            case COMPARISON_NOT_EQUAL:
-                            case COMPARISON_LESS:
-                            case COMPARISON_LESS_EQUAL:
-                            case COMPARISON_GREATER:
-                            case COMPARISON_GREATER_EQUAL:
-                            case COMPARISON_AND_BITS:
-                            case COMPARISON_OR_BITS:
-                            case COMPARISON_XOR_BITS:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                if (jsonBlock.getBlockFunctions().get(0).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address);
-                                } else {
-                                    switch (jsonBlock.getBlockFunctions().get(0).radix) {
-                                        case 10:
-                                            contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
-                                            break;
-                                        case 16:
-                                            contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
-                                            break;
-                                        case 2:
-                                            contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
-                                            break;
-                                    }
-                                }
-                                contentStream.endText();
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -| |-
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize, gridHeight - gridSize2);
-                                contentStream.stroke();
-                                // command
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6,
-                                        gridHeight - gridSize2 + gridSize6);
-                                contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
-                                contentStream.endText();
-                                break;
-                            case SET:
-                            case RESET:
-                            case RANDOM:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                contentStream.stroke();
-                                // command
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6,
-                                        gridHeight - gridSize2 + gridSize6);
-                                contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
-                                contentStream.endText();
-                                break;
-                            case NOT_BITS:
-                            case TIMER:
-                            case COUNTER:
-                            case MOVE:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                if (jsonBlock.getBlockFunctions().get(0).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address);
-                                } else {
-                                    switch (jsonBlock.getBlockFunctions().get(0).radix) {
-                                        case 10:
-                                            contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
-                                            break;
-                                        case 16:
-                                            contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
-                                            break;
-                                        case 2:
-                                            contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
-                                            break;
-                                    }
-                                }
-                                contentStream.endText();
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                contentStream.stroke();
-                                // command
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6,
-                                        gridHeight - gridSize2 + gridSize6);
-                                contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
-                                contentStream.endText();
-                                break;
-                            case TIMER_NOT:
-                            case COUNTER_NOT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                if (jsonBlock.getBlockFunctions().get(0).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address);
-                                } else {
-                                    switch (jsonBlock.getBlockFunctions().get(0).radix) {
-                                        case 10:
-                                            contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
-                                            break;
-                                        case 16:
-                                            contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
-                                            break;
-                                        case 2:
-                                            contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
-                                            break;
-                                    }
-                                }
-                                contentStream.endText();
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                // -|/|
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                contentStream.stroke();
-                                // command
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6,
-                                        gridHeight - gridSize2 + gridSize6);
-                                contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
-                                contentStream.endText();
-                                break;
-                            case AND_BITS:
-                            case OR_BITS:
-                            case XOR_BITS:
-                            case ADDITION:
-                            case SUBTRACTION:
-                            case MULTIPLICATION:
-                            case DIVISION:
-                            case AVERAGE:
-                            case SHIFT_LEFT_BITS:
-                            case SHIFT_RIGHT_BITS:
-                            case SIGMOID:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                if (jsonBlock.getBlockFunctions().get(0).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address);
-                                } else {
-                                    switch (jsonBlock.getBlockFunctions().get(0).radix) {
-                                        case 10:
-                                            contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
-                                            break;
-                                        case 16:
-                                            contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
-                                            break;
-                                        case 2:
-                                            contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
-                                            break;
-                                    }
-                                }
-                                contentStream.endText();
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6,
-                                        gridHeight - gridSize2 - gridSize6);
-                                if (jsonBlock.getBlockFunctions().get(1).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(1).address);
-                                } else {
-                                    switch (jsonBlock.getBlockFunctions().get(1).radix) {
-                                        case 10:
-                                            contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(1).value));
-                                            break;
-                                        case 16:
-                                            contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(1).value.longValue(), 16));
-                                            break;
-                                        case 2:
-                                            contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(1).value.longValue(), 2));
-                                            break;
-                                    }
-                                }
-                                contentStream.endText();
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                contentStream.stroke();
-                                // command
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6,
-                                        gridHeight - gridSize2 + gridSize6);
-                                contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
-                                contentStream.endText();
-                                break;
-                            case SCRIPT:
-                                // address
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize6);
-                                contentStream.showText(address);
-                                contentStream.endText();
-                                // comment
-                                if (comment != null) {
-                                    contentStream.beginText();
-                                    contentStream.newLineAtOffset(gridWidth, gridHeight - gridSize + gridSize6);
-                                    contentStream.showText(comment);
-                                    contentStream.endText();
-                                }
-                                // script
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                contentStream.showText(jsonBlock.getBlockScript());
-                                contentStream.endText();
-                                // -
-                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2);
-                                // -|
-                                contentStream.moveTo(gridWidth + gridSize6, gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize6, gridHeight - gridSize2 - gridSize4);
-                                // -| |
-                                contentStream.moveTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 + gridSize4);
-                                contentStream.lineTo(gridWidth + gridSize - gridSize6,
-                                        gridHeight - gridSize2 - gridSize4);
-                                contentStream.stroke();
-                                // command
-                                contentStream.beginText();
-                                contentStream.newLineAtOffset(gridWidth + gridSize6,
-                                        gridHeight - gridSize2 + gridSize6);
-                                contentStream.showText(LADDER_BLOCK.valueOf(jsonBlock.getBlock()).toCommand());
-                                contentStream.endText();
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    pdfPageEndGrid(contentStream);
-                }
-
-                // page footer count
-                for (index = 0; index < doc.getNumberOfPages(); index++) {
-                    line = (index + 1) + " / " + doc.getNumberOfPages();
-                    contentStream = pdfPageBeginGrid(doc, doc.getPage(index), font, fontSize, lineWidth,
-                            pageShowMinWidth, pageShowMinHeight);
-                    contentStream.beginText();
-                    contentStream
-                            .newLineAtOffset(((pageShowMaxWidth - (font.getStringWidth(line) / 1000f * fontSize)) / 2f)
-                                    + pageShowMinWidth + fontWidth, pageShowMinHeight);
-                    contentStream.showText(line);
-                    contentStream.endText();
-                    pdfPageEndGrid(contentStream);
-                }
-
-                doc.save(file.toFile());
-                return file;
-            } catch (IOException ex) {
-                Console.writeStackTrace(Ladders.class.getName(), ex);
-            }
-        }
-        return null;
-    }
-
-    private Path ladderExportPdf() {
-        FileChooser fileChooser = new FileChooser();
-
-        if (filePath_ != null) {
-            if (filePath_.getParent() != null) {
-                if (Files.exists(filePath_.getParent())) {
-                    fileChooser.setInitialDirectory(filePath_.getParent().toFile());
-                }
-            }
-            if (!Files.isDirectory(filePath_)) {
-                fileChooser.setInitialFileName(JavaLibrary.removeFileExtension(filePath_.getFileName()));
-            }
-        }
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
-        File fcfile = fileChooser.showSaveDialog(stage_);
-        if (fcfile != null) {
-            return ladderExportPdf(fcfile.toPath());
-        }
-        return null;
-    }
-
-    /**
+     * the json representation of a file of the ladders, read without changing the editor
      *
      * @param file
-     * @return
+     * @return the json representation, null when the file can not be read
      */
     public LadderJson ladderJsonOpen(Path file) {
-        if (file != null) {
-            if (Files.isRegularFile(file) && Files.isReadable(file)) {
-                try {
-                    return gson_.fromJson(Files.readString(file, StandardCharsets.UTF_8), LadderJson.class);
-                } catch (JsonParseException ex) {
-                    // the file is not a valid ladder json : the caller keeps the current ladder
-                    writeLog("json parse error [" + file.getFileName() + "]", true);
-                    Console.writeStackTrace(Ladders.class.getName(), ex);
-                } catch (IOException ex) {
-                    Console.writeStackTrace(Ladders.class.getName(), ex);
-                }
-            }
-        }
-        return null;
+        return fileActions_.ladderJsonOpen(file);
     }
 
     /**
+     * the ladders of a json representation : the ladders are restored without the history of the
+     * user, so that a file which the difference of two ladders shows is never mixed with the undo
+     * history of the editor
      *
-     * @param ladders
+     * @param ladders the editor which shows the ladders, null when the ladders are only shown for the
+     *                difference of two files
      * @param tabPane
      * @param treeTableView
      * @param ioMap
      * @param commentMap
-     * @param scriptIoMap
+     * @param scriptIoMap null when the maps do not belong to a cycle
      * @param ladderJson
-     * @return
+     * @return true when the ladders of the json representation are shown
      */
     public boolean ladderJsonLoad(Ladders ladders, TabPane tabPane, TreeTableView<LadderTreeTableIo> treeTableView,
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
             CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap,
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> scriptIoMap, LadderJson ladderJson) {
-        ladderCommand_.setDisableHistory(true);
-        try {
-            // ladder
-            if (!ladderCommand_.restoreLadders(ladders, tabPane, treeTableView, ioMap, commentMap, scriptIoMap,
-                    ladderJson, false)) {
-                return false;
-            }
-
-            // comments
-            if (!ladderCommand_.restoreComments(tabPane, treeTableView, ioMap, commentMap, ladderJson)) {
-                return false;
-            }
-
-            // history
-            if (ladders != null) {
-                if (ladderJson.getHistoryManager() != null) {
-                    ladderCommand_.setHistoryManager(ladderJson.getHistoryManager());
-                }
-            }
-
-            ladderCommand_.setDisableHistory(false);
-            return true;
-        } catch (Exception ex) {
-            Console.writeStackTrace(Ladders.class.getName(), ex);
-        }
-        ladderCommand_.setDisableHistory(false);
-        return false;
+        return fileActions_.ladderJsonLoad(ladders, tabPane, treeTableView, ioMap, commentMap, scriptIoMap, ladderJson);
     }
 
     /**
+     * the json representation of the ladders which the editor shows, with the history of the user
      *
      * @param tabPane
-     * @return
+     * @return the json representation
      */
     public LadderJson ladderJsonSave(TabPane tabPane) {
-        return ladderJsonSave(tabPane, ioMap_, commentMap_);
-    }
-
-    private LadderJson ladderJsonSave(TabPane tabPane, CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
-            CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap) {
-        LadderJson ladderJson = new LadderJson();
-
-        // ladder
-        ladderCommand_.backupLadders(ladderJson, tabPane);
-
-        // comments
-        ladderCommand_.backupComments(ladderJson, ioMap, commentMap);
-
-        // historys
-        ladderJson.setHistoryManager(ladderCommand_.getHistoryManager(), -1);
-
-        return ladderJson;
+        return fileActions_.ladderJsonSave(tabPane);
     }
 
     /**
@@ -1997,17 +533,7 @@ public class Ladders extends Service<Void> {
             treeTableIo_.getRoot().getChildren().set(idx, treeTableIo_.getRoot().getChildren().get(idx - 1));
             treeTableIo_.getRoot().getChildren().set(idx - 1, treeItem);
 
-            ConcurrentHashMap<String, LadderIo> ioMap = ioMap_.get(idx);
-            ioMap_.set(idx, ioMap_.get(idx - 1));
-            ioMap_.set(idx - 1, ioMap);
-
-            ConcurrentHashMap<String, String> commentMap = commentMap_.get(idx);
-            commentMap_.set(idx, commentMap_.get(idx - 1));
-            commentMap_.set(idx - 1, commentMap);
-
-            ConcurrentHashMap<String, LadderIo> scriptIoMap = scriptIoMap_.get(idx);
-            scriptIoMap_.set(idx, scriptIoMap_.get(idx - 1));
-            scriptIoMap_.set(idx - 1, scriptIoMap);
+            ioStore_.swapLadderRows(idx, idx - 1);
 
             ladderCommand_.ladderMoveLeft(ladder);
             isChanged_ = true;
@@ -2031,17 +557,7 @@ public class Ladders extends Service<Void> {
             treeTableIo_.getRoot().getChildren().set(idx, treeTableIo_.getRoot().getChildren().get(idx + 1));
             treeTableIo_.getRoot().getChildren().set(idx + 1, treeItem);
 
-            ConcurrentHashMap<String, LadderIo> ioMap = ioMap_.get(idx);
-            ioMap_.set(idx, ioMap_.get(idx + 1));
-            ioMap_.set(idx + 1, ioMap);
-
-            ConcurrentHashMap<String, String> commentMap = commentMap_.get(idx);
-            commentMap_.set(idx, commentMap_.get(idx + 1));
-            commentMap_.set(idx + 1, commentMap);
-
-            ConcurrentHashMap<String, LadderIo> scriptIoMap = scriptIoMap_.get(idx);
-            scriptIoMap_.set(idx, scriptIoMap_.get(idx + 1));
-            scriptIoMap_.set(idx + 1, scriptIoMap);
+            ioStore_.swapLadderRows(idx, idx + 1);
 
             ladderCommand_.ladderMoveRight(ladder);
             isChanged_ = true;
@@ -2065,14 +581,7 @@ public class Ladders extends Service<Void> {
      * @param tabPane
      */
     public void ladderChangeSelectNext(TabPane tabPane) {
-        int index = tabPane.getSelectionModel().getSelectedIndex();
-        int size = tabPane.getTabs().size();
-
-        if (index < (size - 1)) {
-            ladderCommand_.ladderChangeSelect(index + 1);
-        } else {
-            ladderCommand_.ladderChangeSelect(0);
-        }
+        tabs_.selectNext();
     }
 
     /**
@@ -2080,14 +589,7 @@ public class Ladders extends Service<Void> {
      * @param tabPane
      */
     public void ladderChangeSelectPrevious(TabPane tabPane) {
-        int index = tabLadder_.getSelectionModel().getSelectedIndex();
-        int size = tabLadder_.getTabs().size();
-
-        if (index > 0) {
-            ladderCommand_.ladderChangeSelect(index - 1);
-        } else {
-            ladderCommand_.ladderChangeSelect(size - 1);
-        }
+        tabs_.selectPrevious();
     }
 
     /**
@@ -2170,114 +672,10 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public boolean onKeyPressed(LadderPane pane, KeyEvent event, ScrollPane scrollPane) {
-        Tab tab = tabLadder_.getSelectionModel().getSelectedItem();
-        if (tab != null) {
-            switch (event.getCode()) {
-                case TAB:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        ladderChangeSelectNext(tabLadder_);
-                        return true;
-                    } else if (event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        ladderChangeSelectPrevious(tabLadder_);
-                        return true;
-                    }
-                    break;
-                case F2:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        ladderChangeTabName(pane);
-                        return true;
-                    }
-                    break;
-                case F4:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        if (!isCycling_) {
-                            ladderRemoveTab(tabLadder_.getSelectionModel().getSelectedIndex());
-                            return true;
-                        }
-                        return false;
-                    }
-                    break;
-                case LEFT:
-                    if (!event.isShiftDown() && !event.isShortcutDown() && event.isAltDown()) {
-                        if (!isCycling_) {
-                            ladderMoveLeft(pane.getLadder());
-                            return true;
-                        }
-                        return false;
-                    }
-                    break;
-                case RIGHT:
-                    if (!event.isShiftDown() && !event.isShortcutDown() && event.isAltDown()) {
-                        if (!isCycling_) {
-                            ladderMoveRight(pane.getLadder());
-                            return true;
-                        }
-                        return false;
-                    }
-                    break;
-                case N:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        fileNew();
-                        return true;
-                    }
-                    break;
-                case O:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        if (fileOpen(null)) {
-                            ladderController_.addRecentFile(getFilePath().toString());
-                        }
-                        return true;
-                    }
-                    break;
-                case S:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        if (fileSave()) {
-                            ladderController_.addRecentFile(getFilePath().toString());
-                        }
-                        return true;
-                    } else if (!event.isShiftDown() && event.isShortcutDown() && event.isAltDown()) {
-                        if (fileSaveAs()) {
-                            ladderController_.addRecentFile(getFilePath().toString());
-                        }
-                        return true;
-                    }
-                    break;
-                case T:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        ladderNewTab();
-                        return true;
-                    }
-                    break;
-                case Y:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        redo(tab, pane);
-                        return true;
-                    }
-                    break;
-                case Z:
-                    if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
-                        undo(tab, pane);
-                        return true;
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-            if (pane.onKeyPressed(event, scrollPane)) {
-                if (pane.isChanged()) {
-                    isChanged_ = true;
-
-                    tab.setText(pane.getLadder().getName() + " *");
-                    setTitle();
-                    return true;
-                }
-            }
-        }
-        return false;
+        return keyHandler_.handle(pane, event, scrollPane);
     }
 
-    private void setTitle() {
+    void setTitle() {
         String fileName = getFileName();
 
         if (fileName == null) {
@@ -2306,7 +704,7 @@ public class Ladders extends Service<Void> {
         ladderCommand_ = new LadderCommand(stage_, icons_, this);
         ladderCommand_.setHistoryGeneration(historyGeneration_);
 
-        filePath_ = ladderPath;
+        fileStore_.setFilePath(ladderPath);
         ladderNew();
         return false;
     }
@@ -2320,181 +718,13 @@ public class Ladders extends Service<Void> {
         cancel();
     }
 
-    /**
-     * io of a global address : an address can be removed from the io map while the cycle
-     * is running, so a null answer only skips the io of the cycle
-     *
-     * @param address
-     * @return the io of the address, null when the address is not registered
-     */
-    private LadderIo globalLadderIo(String address) {
-        ConcurrentHashMap<String, LadderIo> ioMap;
-
-        if ((address == null) || ioMap_.isEmpty()) {
-            return null;
-        }
-        ioMap = ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX);
-        if (ioMap == null) {
-            return null;
-        }
-        return ioMap.get(address);
-    }
-
     @Override
     protected Task<Void> createTask() {
-        final AtomicBoolean finished = new AtomicBoolean(false);
+        LadderCycleTask task;
 
-        cycleFinished_ = finished;
-        return new Task<Void>() {
-            @Override
-            protected Void call() {
-                try {
-                    Map.Entry<String, LadderIo> entry;
-                    LadderRegisterSoemIo registerSoemIo;
-                    LadderIo cycleIo;
-                    Long registerSoemValue;
-                    long cycleTime, minCycleTime, maxCycleTime, cumulativeCycleTime, cumulativeCycleTimeCount, nanoTime,
-                            nanoTimeOld, waitTime;
-                    int cycleErrorCount, index, size;
-
-                    ladderController_.runViewRunning(true);
-
-                    cycleTime = 0;
-                    minCycleTime = Long.MAX_VALUE;
-                    maxCycleTime = 0;
-                    cumulativeCycleTime = 0;
-                    cumulativeCycleTimeCount = 0;
-                    cycleErrorCount = 0;
-
-                    nanoTimeOld = System.nanoTime();
-                    while (isCycling_ && !isCancelled()) {
-                        boolean refreshView = false;
-                        try {
-                            synchronized (lock_) {
-                                // soem
-                                if (soem_ != null) {
-                                    for (index = 0, size = registerSoemOut_.size(); index < size; index++) {
-                                        registerSoemIo = registerSoemOut_.get(index);
-                                        cycleIo = globalLadderIo(registerSoemIo.getAddress());
-                                        if (cycleIo != null) {
-                                            soem_.out(registerSoemIo.getSlave(), registerSoemIo.getBitsOffset(),
-                                                    registerSoemIo.getBitsMask(), (long) cycleIo.getValue());
-                                        }
-                                    }
-                                    for (index = 0, size = registerSoemIn_.size(); index < size; index++) {
-                                        registerSoemIo = registerSoemIn_.get(index);
-                                        registerSoemValue = soem_.in(registerSoemIo.getSlave(),
-                                                registerSoemIo.getBitsOffset(), registerSoemIo.getBitsMask());
-                                        cycleIo = globalLadderIo(registerSoemIo.getAddress());
-                                        if ((registerSoemValue != null) && (cycleIo != null)) {
-                                            cycleIo.setValue(registerSoemValue);
-                                        }
-                                    }
-                                }
-
-                                // script io
-                                for (index = 0; index < scriptIoMap_.size(); index++) {
-                                    if (!scriptIoMap_.get(index).isEmpty()) {
-                                        for (Iterator<Map.Entry<String, LadderIo>> iterator = scriptIoMap_.get(index)
-                                                .entrySet().iterator(); iterator.hasNext();) {
-                                            entry = iterator.next();
-                                            cycleIo = ioMap_.get(index).get(entry.getKey());
-                                            if (cycleIo == null) {
-                                                // the io of the script does not exist any more
-                                                iterator.remove();
-                                            } else if (entry.getValue().isCycled()) {
-                                                cycleIo.chehckEdge();
-                                                iterator.remove();
-                                            } else {
-                                                cycleIo.setValue(entry.getValue().getValue());
-                                                entry.getValue().setCycled(true);
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // ladder
-                                Ladder[] laddersLocal = ladders_;
-                                if (laddersLocal != null) {
-                                    for (index = 0; index < laddersSize_; index++) {
-                                        laddersLocal[index].run(ioMap_, cycleTime);
-                                    }
-                                }
-
-                                // refresh view
-                                refreshView = (LADDER_VIEW_REFRESH_CYCLE_TIME - cumulativeCycleTime) < 0;
-                            }
-                            cycleErrorCount = 0;
-                        } catch (Exception ex) {
-                            // the error of a cycle does not stop the cycle thread : an
-                            // error which is repeated stops the cycle, because the ladder
-                            // would be run in an unknown state
-                            if (cycleErrorCount == 0) {
-                                Console.writeStackTrace(Ladders.class.getName(), ex);
-                            } else {
-                                writeLog("cycle error : " + ex, true);
-                            }
-                            if (++cycleErrorCount > LADDER_CYCLE_ERROR_LIMIT) {
-                                writeLog("the ladder cycle is stopped after " + cycleErrorCount + " errors", true);
-                                isCycling_ = false;
-                            }
-                        }
-                        // refreshLadder only queues an asynchronous update : keep the lock for io and ladder state
-                        if (refreshView) {
-                            ladderController_.refreshLadder(cumulativeCycleTime, cumulativeCycleTimeCount);
-                            cumulativeCycleTime = 0;
-                            cumulativeCycleTimeCount = 0;
-                        }
-
-                        // ideal cycletime
-                        waitTime = idealCycleTime_ - cycleTime;
-                        if (waitTime > 0) {
-                            try {
-                                TimeUnit.NANOSECONDS.sleep(waitTime);
-                            } catch (InterruptedException ex) {
-                                // the task has been interrupted : the cycle has to end,
-                                // otherwise the sleep would answer immediately again
-                                Thread.currentThread().interrupt();
-                                isCycling_ = false;
-                            }
-                        }
-
-                        // cycletimme
-                        nanoTime = System.nanoTime();
-                        cycleTime = nanoTime - nanoTimeOld;
-                        if (cycleTime > 0) {
-                            if ((cycleTime - minCycleTime) < 0) {
-                                minCycleTime = cycleTime;
-                                ladderController_.setMinCycleTime(minCycleTime);
-                            } else if ((cycleTime - maxCycleTime) > 0) {
-                                maxCycleTime = cycleTime;
-                                ladderController_.setMaxCycleTime(maxCycleTime);
-                            }
-                            cumulativeCycleTime += cycleTime;
-                            cumulativeCycleTimeCount++;
-                            nanoTimeOld = nanoTime;
-                        }
-                    }
-                } catch (Exception ex) {
-                    if (ex instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                    }
-                    // an unexpected error of the cycle stops the cycle : the ladder is
-                    // started again by the user with a new task
-                    Console.writeStackTrace(Ladders.class.getName(), ex);
-                } finally {
-                    try {
-                        ladderController_.runViewRunning(false);
-                    } finally {
-                        // isCycling_ is cleared before the finish flag, so awaitCycleStop()
-                        // never answers a cycle which is still running as finished
-                        isCycling_ = false;
-                        finished.set(true);
-                    }
-                }
-                return null;
-            }
-        };
+        task = new LadderCycleTask(this);
+        cycleFinished_ = task.getFinished();
+        return task;
     }
 
     public int getHistoryGeneration() {
@@ -2535,154 +765,27 @@ public class Ladders extends Service<Void> {
     }
 
     public Boolean isRegistered(Object object) {
-        if (object != null) {
-            if (object instanceof WebEngine) {
-                if (webEngine_ != null) {
-                    return webEngine_.equals(object);
-                }
-            }
-            return false;
-        }
-        return null;
+        return register_.isRegistered(object);
     }
 
     public void register(WebEngine webEngine, Worker.State state) {
-        if ((webEngine != null) && (state != null)) {
-            webEngine_ = webEngine;
-            state_ = state;
-            for (int idx = 0; idx < ioMap_.size(); idx++) {
-                ioMap_.get(idx).entrySet().forEach((entry) -> {
-                    entry.getValue().setWebEngineState(webEngine_, state_);
-                });
-            }
-        }
+        register_.register(webEngine, state);
     }
 
     public Boolean registerIn(Object... objects) {
-        if (objects != null) {
-            switch (objects.length) {
-                case 5:
-                    if ((objects[0] instanceof Soem) && (objects[1] instanceof String)
-                            && (objects[2] instanceof Integer) && (objects[3] instanceof Long)
-                            && (objects[4] instanceof Long)) {
-                        if (soem_ == null) {
-                            soem_ = (Soem) objects[0];
-                            if (registerSoemIn_ != null) {
-                                registerSoemIn_.clear();
-                            }
-                            if (registerSoemOut_ != null) {
-                                registerSoemOut_.clear();
-                            }
-                        }
-
-                        String address = ((String) objects[1]).trim();
-                        if (!address.startsWith(LADDER_LOCAL_ADDRESS_PREFIX) && !address.contains(" ")) {
-                            if (!ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).containsKey(address)) {
-                                ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).put(address, new LadderIo(address));
-                                treeTableIo_.getRoot().getChildren().get(LADDER_GLOBAL_ADDRESS_INDEX).getChildren()
-                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
-                            }
-
-                            int slave = (int) objects[2];
-                            long bitsOffset = (long) objects[3];
-                            long bitsMask = (long) objects[4];
-                            for (int index = 0, size = registerSoemIn_.size(); index < size; index++) {
-                                if (registerSoemIn_.get(index).getAddress().equals(address)) {
-                                    if ((registerSoemIn_.get(index).getSlave() != slave)
-                                            || (registerSoemIn_.get(index).getBitsOffset() != bitsOffset)
-                                            || (registerSoemIn_.get(index).getBitsMask() != bitsMask)) {
-                                        registerSoemIn_.remove(index);
-                                        registerSoemIn_
-                                                .add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
-                                    }
-                                    return true;
-                                }
-                            }
-                            registerSoemIn_.add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
-                            return true;
-                        }
-                    }
-                    break;
-            }
-            return false;
-        }
-        return null;
+        return register_.registerIn(objects);
     }
 
     public Boolean registerOut(Object... objects) {
-        if (objects != null) {
-            switch (objects.length) {
-                case 5:
-                    if ((objects[0] instanceof Soem) && (objects[1] instanceof String)
-                            && (objects[2] instanceof Integer) && (objects[3] instanceof Long)
-                            && (objects[4] instanceof Long)) {
-                        if (soem_ == null) {
-                            soem_ = (Soem) objects[0];
-                            if (registerSoemIn_ != null) {
-                                registerSoemIn_.clear();
-                            }
-                            if (registerSoemOut_ != null) {
-                                registerSoemOut_.clear();
-                            }
-                        }
-
-                        String address = ((String) objects[1]).trim();
-                        if (!address.startsWith(LADDER_LOCAL_ADDRESS_PREFIX) && !address.contains(" ")) {
-                            if (!ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).containsKey(address)) {
-                                ioMap_.get(LADDER_GLOBAL_ADDRESS_INDEX).put(address, new LadderIo(address));
-                                treeTableIo_.getRoot().getChildren().get(LADDER_GLOBAL_ADDRESS_INDEX).getChildren()
-                                        .add(new TreeItem<>(new LadderTreeTableIo(address)));
-                            }
-
-                            int slave = (int) objects[2];
-                            long bitsOffset = (long) objects[3];
-                            long bitsMask = (long) objects[4];
-                            for (int index = 0, size = registerSoemOut_.size(); index < size; index++) {
-                                if (registerSoemOut_.get(index).getAddress().equals(address)) {
-                                    if ((registerSoemOut_.get(index).getSlave() != slave)
-                                            || (registerSoemOut_.get(index).getBitsOffset() != bitsOffset)
-                                            || (registerSoemOut_.get(index).getBitsMask() != bitsMask)) {
-                                        registerSoemOut_.remove(index);
-                                        registerSoemOut_
-                                                .add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
-                                    }
-                                    return true;
-                                }
-                            }
-                            registerSoemOut_.add(new LadderRegisterSoemIo(address, (int) objects[2], (long) objects[3],
-                                    (long) objects[4]));
-                            return true;
-                        }
-                    }
-                    break;
-            }
-            return false;
-        }
-        return null;
+        return register_.registerOut(objects);
     }
 
     public void unregister(Object object) {
-        if (object != null) {
-            if (object instanceof WebEngine) {
-                webEngine_ = null;
-                state_ = Worker.State.READY;
-            } else if (object instanceof Soem) {
-                if (registerSoemIn_ != null) {
-                    registerSoemIn_.clear();
-                }
-                if (registerSoemOut_ != null) {
-                    registerSoemOut_.clear();
-                }
-                soem_ = null;
-            }
-        }
+        register_.unregister(object);
     }
 
     public Double getValue(String address) {
-        if (!address.startsWith(LADDER_LOCAL_ADDRESS_PREFIX)) {
-            return getValue(LADDER_GLOBAL_ADDRESS_INDEX, address);
-        }
-        return null;
+        return ioStore_.value(address);
     }
 
     /**
@@ -2692,15 +795,12 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public Double getValue(int idx, String address) {
-        if (ioMap_.get(idx).containsKey(address)) {
-            return ioMap_.get(idx).get(address).getValue();
-        }
-        return null;
+        return ioStore_.value(idx, address);
     }
 
     public void setValue(String address, double value) {
-        if (!address.startsWith(LADDER_LOCAL_ADDRESS_PREFIX)) {
-            setValue(LADDER_GLOBAL_ADDRESS_INDEX, address, value);
+        if (!address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+            setValue(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address, value);
         }
     }
 
@@ -2711,25 +811,13 @@ public class Ladders extends Service<Void> {
      * @param value
      */
     public void setValue(int idx, String address, double value) {
-        if (!ioMap_.get(idx).containsKey(address)) {
-            ioMap_.get(idx).put(address, new LadderIo(address));
+        if (ioStore_.createIo(idx, address)) {
             treeTableIo_.getRoot().getChildren().get(idx).getChildren()
                     .add(new TreeItem<>(new LadderTreeTableIo(address, value)));
         }
 
-        ovScript_ = treeTableIo_.getRoot().getChildren().get(idx).getChildren();
-        for (scriptIndex_ = 0, scriptSize_ = ovScript_.size(); scriptIndex_ < scriptSize_; scriptIndex_++) {
-            if (address.equals(ovScript_.get(scriptIndex_).getValue().getAddress())) {
-                ovScript_.get(scriptIndex_).getValue().setValue(value);
-                break;
-            }
-        }
-
-        synchronized (lock_) {
-            scriptIoMap_.get(idx).putIfAbsent(address, new LadderIo(address));
-            scriptIoMap_.get(idx).get(address).setValue(value);
-            scriptIoMap_.get(idx).get(address).setCycled(false);
-        }
+        changeTreeTableIoValue(idx, address, value);
+        ioStore_.setScript(idx, address, value);
     }
 
     public boolean connectLadder() {
@@ -2737,7 +825,7 @@ public class Ladders extends Service<Void> {
         int index;
 
         // check connect
-        if (checkConnectLadder(tabLadder_, treeTableIo_, ioMap_)) {
+        if (checkConnectLadder(tabLadder_, treeTableIo_, ioStore_.getIoMap())) {
             synchronized (lock_) {
                 // connect
                 laddersSize_ = tabLadder_.getTabs().size();
@@ -2745,10 +833,10 @@ public class Ladders extends Service<Void> {
                 for (index = 0; index < laddersSize_; index++) {
                     pane = (LadderPane) ((ScrollPane) tabLadder_.getTabs().get(index).getContent()).getContent();
                     ladders_[index] = pane.getLadder().copy();
-                    ladders_[index].connectLadder(ioMap_, treeTableIo_);
+                    ladders_[index].connectLadder(ioStore_.getIoMap(), treeTableIo_);
                 }
             }
-            register(webEngine_, state_);
+            register_.registerWeb();
             return true;
         }
         return false;
@@ -2777,14 +865,21 @@ public class Ladders extends Service<Void> {
         return true;
     }
 
-    public boolean runStartLadder() {
-        if (!isCycling_ && (ladders_ != null) && (!ioMap_.isEmpty())) {
+    public synchronized boolean runStartLadder() {
+        if (!isCycling_ && (ladders_ != null) && !ioStore_.isEmpty()) {
+            // the synchronized start refuses a second start asked while the first one is
+            // not done yet : the cycle of the ladder would be started twice
             isCycling_ = true;
             if (Platform.isFxApplicationThread()) {
-                startLadder();
+                if (!startLadder()) {
+                    isCycling_ = false;
+                    return false;
+                }
             } else {
                 Platform.runLater(() -> {
-                    startLadder();
+                    if (!startLadder()) {
+                        isCycling_ = false;
+                    }
                 });
             }
             return true;
@@ -2792,12 +887,24 @@ public class Ladders extends Service<Void> {
         return false;
     }
 
-    private void startLadder() {
-        if (getState() == State.READY) {
-            start();
-        } else {
-            restart();
+    /**
+     * start the task of the cycle of the ladder : the service refuses a start which is not
+     * allowed by its state, so the caller has to clear the cycling flag when nothing started
+     *
+     * @return true when the cycle task was started
+     */
+    private boolean startLadder() {
+        try {
+            if (getState() == State.READY) {
+                start();
+            } else {
+                restart();
+            }
+            return true;
+        } catch (IllegalStateException ex) {
+            Console.writeStackTrace(Ladders.class.getName(), ex);
         }
+        return false;
     }
 
     public void stopLadder() {
@@ -2818,7 +925,7 @@ public class Ladders extends Service<Void> {
      * @return
      */
     private long cycleStopTimeoutMillis() {
-        return TimeUnit.NANOSECONDS.toMillis(idealCycleTime_ + LADDER_VIEW_REFRESH_CYCLE_TIME)
+        return TimeUnit.NANOSECONDS.toMillis(idealCycleTime_ + LadderDefaults.LADDER_VIEW_REFRESH_CYCLE_TIME)
                 + LADDER_CYCLE_STOP_WAIT_MILLIS;
     }
 
@@ -2847,139 +954,62 @@ public class Ladders extends Service<Void> {
         return finished.get() && !isCycling_;
     }
 
-    private void fileNotFound(Path file) {
-        if (file != null) {
-            writeLog("File Not Found" + ": " + file.toString(), true);
-        } else {
-            writeLog("File Not Found", true);
-        }
-    }
-
     /**
+     * ask the user what has to be done with the changes of the ladders which the editor shows
      *
-     * @return
+     * @return the answer of the user, null when the ladders hold no change
      */
     public ButtonType fileSavedCheck() {
-        ButtonType response = null;
-
-        if (isChanged_) {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            if (!icons_.isEmpty()) {
-                ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
-            }
-            alert.setTitle("Ladder");
-            alert.getDialogPane().setHeaderText(null);
-            alert.getDialogPane().setContentText("Save Changes Program?");
-            alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
-            Optional<ButtonType> result = alert.showAndWait();
-            // the dialog can be closed without an answer : it is a cancel, not an error
-            response = result.orElse(ButtonType.CANCEL);
-        }
-        return response;
-    }
-
-    public boolean fileNew() {
-        if (!saveChanges(fileSavedCheck())) {
-            // the changes are kept : a new ladder is not created
-            return false;
-        }
-        ladderNew();
-        filePath_ = null;
-        isChanged_ = false;
-        setTitle();
-        return true;
+        return fileActions_.fileSavedCheck();
     }
 
     /**
-     * apply the answer of fileSavedCheck() : the current ladder is kept when the save
-     * failed, so that fileNew() and fileOpen() can not destroy edited data
+     * a new ladder of the editor : the changes of the current ladder are saved or discarded before
+     * the editor is cleared
      *
-     * @param response answer of fileSavedCheck(), null when the ladder was saved
-     * @return true when the current ladder can be replaced
+     * @return true when the new ladder is created
      */
-    private boolean saveChanges(ButtonType response) {
-        if (response == null) {
-            // nothing to save
-            return true;
-        }
-        if (response == ButtonType.YES) {
-            if (ladderSave() == null) {
-                writeLog("save failed : the current ladder is kept", true);
-                return false;
-            }
-            return true;
-        }
-        // ButtonType.NO discards the changes on purpose, ButtonType.CANCEL and a closed
-        // dialog keep the current ladder
-        return response == ButtonType.NO;
+    public boolean fileNew() {
+        return fileActions_.fileNew();
     }
 
+    /**
+     * an other ladder loaded from a file : the changes of the current ladder are saved or discarded
+     * before the editor is cleared
+     *
+     * @param filePath the file of a ladder, null when the user chooses the file
+     * @return true when an other ladder is loaded
+     */
     public boolean fileOpen(Path filePath) {
-        Path file;
-
-        if (!saveChanges(fileSavedCheck())) {
-            // the changes are kept : an other ladder is not loaded
-            return false;
-        }
-        file = ladderOpen(tabLadder_, treeTableIo_, filePath);
-        if (file == null) {
-            if (filePath != null) {
-                fileNotFound(filePath);
-            }
-        } else {
-            filePath_ = file;
-            isChanged_ = false;
-            setTitle();
-            return true;
-        }
-        return false;
-    }
-
-    public boolean fileSave() {
-        Path file = ladderSave();
-
-        if (file != null) {
-            filePath_ = file;
-            isChanged_ = false;
-            setTitle();
-            return true;
-        }
-        return false;
+        return fileActions_.fileOpen(filePath);
     }
 
     /**
      *
-     * @return
+     * @return true when the ladders are saved
+     */
+    public boolean fileSave() {
+        return fileActions_.fileSave();
+    }
+
+    /**
+     *
+     * @return true when the ladders are saved to a file chosen by the user
      */
     public boolean fileSaveAs() {
-        Path file = ladderSaveAs();
-
-        if (file != null) {
-            filePath_ = file;
-            isChanged_ = false;
-            setTitle();
-            return true;
-        }
-        return false;
+        return fileActions_.fileSaveAs();
     }
 
     /**
      *
-     * @return
+     * @return true when the ladders are exported to a pdf file
      */
     public boolean exportPdf() {
-        Path file = ladderExportPdf();
-        return file != null;
+        return fileActions_.exportPdf();
     }
 
     public String getFileName() {
-        if (filePath_ == null) {
-            return null;
-        }
-        if (Files.isDirectory(filePath_)) {
-            return null;
-        }
-        return filePath_.getFileName().toString();
+        return fileStore_.getFileName();
     }
 
     /**
@@ -2987,10 +1017,10 @@ public class Ladders extends Service<Void> {
      * @return
      */
     public Path getFilePath() {
-        return filePath_;
+        return fileStore_.getFilePath();
     }
 
-    private void writeLog(final String msg, final boolean err) {
+    void writeLog(final String msg, final boolean err) {
         Console.write(Ladders.class.getName(), msg, err);
     }
 }
