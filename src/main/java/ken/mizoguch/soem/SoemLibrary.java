@@ -380,9 +380,18 @@ public interface SoemLibrary {
             Pointer DCtime, int timeout);
 
     // SoemEtherCATMain
-    public SoemEtherCATMain.ec_adaptert ec_find_adapters();
+    /**
+     * the adapters of the machine as the linked list of ec_adaptert. The head of
+     * the list is answered as a pointer and not as a struct : jnr-ffi answers a
+     * struct by allocating java memory for it, so the null of a machine that has
+     * no adapter to offer would be released by the native free() as if it came
+     * from the native heap. ec_free_adapters_list() releases the list from the
+     * head it was answered with, releasing an element in the middle of the list
+     * leaks the elements in front of it.
+     */
+    public Pointer ec_adapters();
 
-    public void ec_free_adapters(SoemEtherCATMain.ec_adaptert adapter);
+    public void ec_free_adapters_list(Pointer list);
 
     public @u_int8_t int ec_nextmbxcnt(@u_int8_t int cnt);
 

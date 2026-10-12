@@ -7,7 +7,7 @@ package ken.mizoguch.soem;
 
 import com.google.gson.Gson;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +56,12 @@ public class Soem {
      * nanoseconds in one millisecond
      */
     private static final long EC_NSEC_PER_MILLIS = 1000000;
+
+    /**
+     * upper limit of the adapters walked by find_adapters() : a linked list
+     * broken in a circle never comes back
+     */
+    private static final int ADAPTERS_MAX = 1024;
 
     /**
      * lock of the native calls of the context of SOEM. The monitor task, the
@@ -396,21 +402,51 @@ public class Soem {
         return null;
     }
 
+    /**
+     * the network adapters of the machine that SOEM can open
+     *
+     * @return a JSON object {"description" : "adapter name", ...} in the order
+     * the machine reports them, "{}" when the machine has no adapter for SOEM,
+     * null when the shared library of SOEM is not loaded or the call failed
+     */
     public String find_adapters() {
         if (soem_ != null) {
-            Map<String, String> adapters = new HashMap<>();
+            // the order of the machine is kept : the description is only a label
+            // for the user, the name behind it is what SOEM opens
+            Map<String, String> adapters = new LinkedHashMap<>();
+            Pointer list = null;
 
             try {
-                SoemEtherCATMain.ec_adaptert findAdapters = soem_.ec_find_adapters();
-                SoemEtherCATMain.ec_adaptert findAdapter = findAdapters;
-                while (findAdapter != null) {
-                    adapters.put(findAdapter.desc.get(), findAdapter.name.get());
-                    findAdapter = findAdapter.getNext(runtime_);
+                list = soem_.ec_adapters();
+                if (list != null) {
+                    SoemEtherCATMain.ec_adaptert adapter = new SoemEtherCATMain.ec_adaptert(runtime_);
+
+                    adapter.useMemory(list);
+                    for (int i = 0; (adapter != null) && (i < ADAPTERS_MAX); i++) {
+                        String name = adapter.name.get();
+
+                        if ((name != null) && !name.isEmpty()) {
+                            String desc = adapter.desc.get();
+
+                            adapters.put((desc == null) ? name : desc, name);
+                        }
+                        adapter = adapter.getNext(runtime_);
+                    }
                 }
-                soem_.ec_free_adapters(findAdapters);
+                if (adapters.isEmpty()) {
+                    // an empty answer is a machine without adapter or a shared
+                    // library of an other build : the user has to know which one
+                    Console.write(Soem.class.getName(), "find_adapters : no adapter found", true);
+                }
                 return gson_.toJson(adapters);
-            } catch (IllegalArgumentException | StackOverflowError | ClassCastException ex) {
+            } catch (IllegalArgumentException | ClassCastException | StackOverflowError | UnsatisfiedLinkError ex) {
+                // UnsatisfiedLinkError : the shared library is from a build that
+                // does not export ec_adapters() yet
                 Console.writeStackTrace(Soem.class.getName(), ex);
+            } finally {
+                if (list != null) {
+                    soem_.ec_free_adapters_list(list);
+                }
             }
         }
         return null;
