@@ -28,8 +28,8 @@
  * JavaFX(javafx.web, javafx.fxml, javafx.swing, javafx.controls)を含むJava 17以上のJDK
  * Maven 3 or later
  * Maven 3 以上
- * CMake 2.8.0 or later, Visual Studio (Windows) and Npcap installed in WinPcap API-compatible Mode, to build the SOEM shared library
- * SOEM共有ライブラリの作成にはCMake 2.8.0以上、Visual Studio(Windows)、WinPcap API互換モードでのNpcapのインストールが必要
+ * CMake 3.28 or later, Visual Studio (Windows) and Npcap installed in WinPcap API-compatible Mode, to build the SOEM shared library of https://github.com/mizoguch-ken/DecoTofu-SOEM
+ * SOEM共有ライブラリ( https://github.com/mizoguch-ken/DecoTofu-SOEM )の作成にはCMake 3.28以上、Visual Studio(Windows)、WinPcap API互換モードでのNpcapのインストールが必要
 ### <u>Build</u>
 
 ### <u>ビルド</u>
@@ -38,6 +38,8 @@
 
  * the executable jar with the dependencies is created as target/DecoTofu.jar
  * 依存ライブラリを含む実行可能jarが target/DecoTofu.jar として作成される
+ * the jar with the classifier bin and the dependency reduced pom are created too, the dependency reduced pom is not a part of the repository
+ * classifierがbinのjarと依存を削減したpomも作成されますが、依存を削減したpomはリポジトリに含まれません
 
     mvn test
 
@@ -51,6 +53,8 @@
 
  * web/index.html is loaded at startup, and it is created from a template when it does not exist
  * 起動時に web/index.html が読み込まれ、存在しない場合はテンプレートから作成される
+ * the page created from the template keeps the title DecoTofu and an empty body
+ * テンプレートから作成されるページはタイトルがDecoTofuで本文は空です
  * the window title is the title of the loaded page
  * ウィンドウのタイトルは読み込まれたページのタイトル
  * properties.xml keeps the window settings : STAGE_MAXIMIZED, STAGE_WIDTH, STAGE_HEIGHT
@@ -111,9 +115,9 @@
     src/main/resources/font              : fonts used by the PDF export
     src/main/resources/LICENSES          : licenses shown by stage.showLicenses()
     src/test/java                        : unit tests
-    web                                  : the page and the plug-ins used by the WebViewer
-    web/index.html                       : the page loaded at startup
-    web/plugins                          : plug-in jar files loaded at startup
+    web                                  : the Ace editor and the page used by the WebViewer
+    web/index.html                       : the page loaded at startup, the kitchen sink page of the Ace editor here
+    web/plugins                          : plug-in jar files loaded at startup, built in the WebPlugins repository
     properties.xml                       : window settings
     ladder/properties.xml                : ladder editor settings
 
@@ -129,6 +133,14 @@
  * web/plugins ディレクトリは任意で、存在するときプラグインが読み込まれる
  * when the page loading is succeeded, setup() of the page is called if it is defined
  * ページの読み込みが成功したとき、定義されていればページのsetup()が呼び出される
+ * the plug-ins are built in https://github.com/mizoguch-ken/WebPlugins : its jar keeps its module name without a version (Serial.jar, Db.jar, Dbg.jar, File.jar, Ftp.jar, Jasper.jar, OnlineArt.jar, WebCam.jar, CapAiClient.jar, CapAiClient2.jar, CapAiClient3.jar, CapAiServer.jar)
+ * プラグインは https://github.com/mizoguch-ken/WebPlugins で作成され、jarはバージョンを含まないモジュール名です(Serial.jar, Db.jar, Dbg.jar, File.jar, Ftp.jar, Jasper.jar, OnlineArt.jar, WebCam.jar, CapAiClient.jar, CapAiClient2.jar, CapAiClient3.jar, CapAiServer.jar)
+ * the page asks a plug-in for the licenses of the libraries it carries : plug-in.licenses() is a public method of the plug-in, its text is kept in the licenses.txt of the package of the plug-in
+ * ページはプラグインが含むライブラリのライセンスを要求します : plug-in.licenses()はプラグインのpublicメソッドで、その文はプラグインのパッケージのlicenses.txtに保持されます
+ * a jar whose Main-Class does not implement WebViewerPlugin is not used, a plug-in which can not be loaded is reported and the other plug-ins are still loaded
+ * Main-ClassがWebViewerPluginを実装しないjarは使われず、読み込めないプラグインは報告されますが、他のプラグインは読み込まれます
+ * the plug-ins and their functions are described in the wiki : https://github.com/mizoguch-ken/DecoTofu/wiki/Plugins
+ * プラグインとその関数はwikiのPlug-insページに説明があります
 
     public class MyPlugin implements WebViewerPlugin {
 
@@ -336,11 +348,28 @@
 * Long soem.out(int slave, long bitsOffset, long bitsMask, long value)
 * String soem.find_adapters()
 * String soem.slaveinfo(boolean printSDO, boolean printMAP)
+### <u>Wiki</u>
+
+### <u>Wiki</u>
+
+ * the wiki pages describe the features and the plug-ins : https://github.com/mizoguch-ken/DecoTofu/wiki
+ * wikiのページが機能とプラグインを説明しています : https://github.com/mizoguch-ken/DecoTofu/wiki
+ * application : [Build and Run](https://github.com/mizoguch-ken/DecoTofu/wiki/BuildAndRun), [WebViewer](https://github.com/mizoguch-ken/DecoTofu/wiki/WebViewer), [Script API](https://github.com/mizoguch-ken/DecoTofu/wiki/ScriptAPI), [Plug-ins](https://github.com/mizoguch-ken/DecoTofu/wiki/Plugins)
+ * アプリケーション : Build and Run、WebViewer、Script API、Plug-ins
+ * ladder : [Ladders](https://github.com/mizoguch-ken/DecoTofu/wiki/Ladders)
+ * ラダー : Ladders
+ * EtherCAT : [EtherCAT](https://github.com/mizoguch-ken/DecoTofu/wiki/EtherCAT)
+ * EtherCAT : EtherCAT
+ * plug-ins : [Serial](https://github.com/mizoguch-ken/DecoTofu/wiki/Serial), [Serial Test](https://github.com/mizoguch-ken/DecoTofu/wiki/SerialTest), [OnlineArt](https://github.com/mizoguch-ken/DecoTofu/wiki/OnlineArt), [Db](https://github.com/mizoguch-ken/DecoTofu/wiki/Db), [File](https://github.com/mizoguch-ken/DecoTofu/wiki/File), [Ftp](https://github.com/mizoguch-ken/DecoTofu/wiki/Ftp), [Jasper](https://github.com/mizoguch-ken/DecoTofu/wiki/Jasper), [WebCam](https://github.com/mizoguch-ken/DecoTofu/wiki/WebCam), [Dbg](https://github.com/mizoguch-ken/DecoTofu/wiki/Dbg), [CapAi](https://github.com/mizoguch-ken/DecoTofu/wiki/CapAi)
+ * プラグイン : Serial、Serial Test、OnlineArt、Db、File、Ftp、Jasper、WebCam、Dbg、CapAi
 ### <u>Configuration</u>
 
 ### <u>設定</u>
 
-- [EtherCAT](https://github.com/mizoguch-ken/GcodeFX/wiki/EtherCAT)
+- [EtherCAT](https://github.com/mizoguch-ken/DecoTofu/wiki/EtherCAT)
+  - the shared library of SOEM is built by the user in https://github.com/mizoguch-ken/DecoTofu-SOEM
+- [EtherCAT of GcodeFX](https://github.com/mizoguch-ken/GcodeFX/wiki/EtherCAT)
+  - the configuration of the SOEM shared library of the other application of the same binding
   - [Example](https://github.com/mizoguch-ken/GcodeFX/wiki/EtherCAT#example)
 ### <u>Example</u>
 
@@ -349,8 +378,8 @@
 - [Ladders](https://github.com/mizoguch-ken/DecoTofu/wiki/Ladders)
 - [Serial Test](https://github.com/mizoguch-ken/DecoTofu/wiki/SerialTest)
 
- * web/index.html of this project is the Serial Test page
- * このプロジェクトの web/index.html はSerial Testのページ
+ * the index page of the web directory of this repository is the kitchen sink page of the Ace editor, the page of the Serial Test example is written in its wiki page
+ * このリポジトリのwebディレクトリのindexページはAceエディタのkitchen sinkページで、Serial Testの例のページはそのwikiのページに書かれています
 
 ### <u>Licenses</u>
 
@@ -376,5 +405,5 @@
  * web ディレクトリには Ace エディタ(ace-builds 1.44.0)が含まれており、BSD-3-Clause で、その文は web/LICENSE です
  * JavaFX is not a part of this project, it is provided by the JDK and the terms of JavaFX itself apply (OpenJFX : GPL-2.0 with the Classpath Exception)
  * JavaFXはこのプロジェクトの一部ではなくJDKが提供するもので、JavaFX自身の条件に従います(OpenJFX : Classpath Exception付きGPL-2.0)
- * the SOEM shared library is not a part of this project either, it is not in this repository and it must be built by the user from the SOEM source
- * SOEM共有ライブラリもこのプロジェクトには含まれておらず、ユーザーがSOEMのソースから作成する必要があります
+ * the SOEM shared library is not a part of this project either, it must be built by the user from the SOEM source : https://github.com/mizoguch-ken/DecoTofu-SOEM
+ * SOEM共有ライブラリもこのプロジェクトには含まれておらず、ユーザーがSOEMのソースから作成します : https://github.com/mizoguch-ken/DecoTofu-SOEM
