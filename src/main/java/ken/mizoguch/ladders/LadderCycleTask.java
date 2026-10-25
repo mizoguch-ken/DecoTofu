@@ -90,17 +90,17 @@ class LadderCycleTask extends Task<Void> {
                         if (soem != null) {
                             for (index = 0, size = registerSoemOut.size(); index < size; index++) {
                                 registerSoemIo = registerSoemOut.get(index);
-                                cycleIo = ioStore.globalIo(registerSoemIo.getAddress());
+                                cycleIo = ioStore.globalIo(registerSoemIo.address());
                                 if (cycleIo != null) {
-                                    soem.out(registerSoemIo.getSlave(), registerSoemIo.getBitsOffset(),
-                                            registerSoemIo.getBitsMask(), (long) cycleIo.getValue());
+                                    soem.out(registerSoemIo.slave(), registerSoemIo.bitsOffset(),
+                                            registerSoemIo.bitsMask(), (long) cycleIo.getValue());
                                 }
                             }
                             for (index = 0, size = registerSoemIn.size(); index < size; index++) {
                                 registerSoemIo = registerSoemIn.get(index);
-                                registerSoemValue = soem.in(registerSoemIo.getSlave(),
-                                        registerSoemIo.getBitsOffset(), registerSoemIo.getBitsMask());
-                                cycleIo = ioStore.globalIo(registerSoemIo.getAddress());
+                                registerSoemValue = soem.in(registerSoemIo.slave(),
+                                        registerSoemIo.bitsOffset(), registerSoemIo.bitsMask());
+                                cycleIo = ioStore.globalIo(registerSoemIo.address());
                                 if ((registerSoemValue != null) && (cycleIo != null)) {
                                     cycleIo.setValue(registerSoemValue);
                                 }
@@ -165,8 +165,10 @@ class LadderCycleTask extends Task<Void> {
                 }
             }
         } catch (Exception ex) {
-            if (ex instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
+            switch (ex) {
+                case InterruptedException interrupted -> Thread.currentThread().interrupt();
+                default -> {
+                }
             }
             // an unexpected error of the cycle stops the cycle : the ladder is
             // started again by the user with a new task

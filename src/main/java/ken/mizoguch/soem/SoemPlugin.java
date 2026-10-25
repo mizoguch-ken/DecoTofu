@@ -302,36 +302,26 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     public Integer sdoWrite(int slave, int index, int subIndex, int byteSize, Object value) {
         byte[] bytes = null;
 
-        if (value instanceof Number) {
-            switch (byteSize) {
-                case 1:
-                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
-                            .put(((Number) value).byteValue()).array();
-                    break;
-                case 2:
-                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
-                            .putShort(((Number) value).shortValue()).array();
-                    break;
-                case 4:
-                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
-                            .putInt(((Number) value).intValue()).array();
-                    break;
-                case 8:
-                    bytes = ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
-                            .putLong(((Number) value).longValue()).array();
-                    break;
-            }
-        } else if (value instanceof JSObject) {
-            Object length = ((JSObject) value).getMember("length");
+        if (value instanceof Number number) {
+            bytes = switch (byteSize) {
+                case 1 -> ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
+                        .put(number.byteValue()).array();
+                case 2 -> ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
+                        .putShort(number.shortValue()).array();
+                case 4 -> ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
+                        .putInt(number.intValue()).array();
+                case 8 -> ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
+                        .putLong(number.longValue()).array();
+                default -> null;
+            };
+        } else if (value instanceof JSObject object) {
+            Object length = object.getMember("length");
 
-            if (length instanceof Number) {
-                Object buf;
-
-                bytes = new byte[((Number) length).intValue()];
+            if (length instanceof Number lengthNumber) {
+                bytes = new byte[lengthNumber.intValue()];
                 for (int i = 0; i < bytes.length; i++) {
-                    buf = ((JSObject) value).getSlot(i);
-                    if (buf instanceof Number) {
-                        bytes[i] = ((Number) buf).byteValue();
+                    if (object.getSlot(i) instanceof Number slot) {
+                        bytes[i] = slot.byteValue();
                     }
                 }
             }

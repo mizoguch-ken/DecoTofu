@@ -27,7 +27,13 @@ public class SoemSlaveInfo {
 
     public class SlaveInfo {
 
+        public SlaveInfo() {
+        }
+
         public class SM {
+
+            public SM() {
+            }
 
             Integer Index;
             Integer StartAddress;
@@ -38,6 +44,9 @@ public class SoemSlaveInfo {
         }
 
         public class FMMU {
+
+            public FMMU() {
+            }
 
             Integer Index;
             Long LogStart;
@@ -52,7 +61,13 @@ public class SoemSlaveInfo {
 
         public class PDO {
 
+            public PDO() {
+            }
+
             public class SII {
+
+                public SII() {
+                }
 
                 Integer AbsOffset;
                 Integer AbsBit;
@@ -80,9 +95,18 @@ public class SoemSlaveInfo {
 
         public class SDO {
 
+            public SDO() {
+            }
+
             public class OD {
 
+                public OD() {
+                }
+
                 public class OE {
+
+                    public OE() {
+                    }
 
                     Integer Index;
                     Integer DataType;
@@ -129,6 +153,9 @@ public class SoemSlaveInfo {
         }
 
         public class Slave {
+
+            public Slave() {
+            }
 
             Integer Index;
             String Name;

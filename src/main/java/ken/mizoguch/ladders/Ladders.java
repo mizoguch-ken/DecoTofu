@@ -101,6 +101,8 @@ public class Ladders extends Service<Void> {
      *
      * @param ladderController
      */
+    // the constructor calls members which a subclass could override : the class is never subclassed
+    @SuppressWarnings("this-escape")
     public Ladders(DesignLaddersController ladderController) {
         ladderController_ = ladderController;
         tabLadder_ = ladderController_.getTabLadder();

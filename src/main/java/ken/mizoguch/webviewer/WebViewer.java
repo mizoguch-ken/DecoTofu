@@ -300,6 +300,8 @@ public class WebViewer implements WebViewerPlugin {
      *
      * @param webView
      */
+    // the constructor calls members which a subclass could override : the class is never subclassed
+    @SuppressWarnings("this-escape")
     public WebViewer(WebView webView) {
         webEngine_ = webView.getEngine();
         webEngine_.setJavaScriptEnabled(true);

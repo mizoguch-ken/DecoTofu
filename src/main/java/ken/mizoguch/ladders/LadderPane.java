@@ -57,6 +57,8 @@ public class LadderPane extends GridPane {
      * @param gridContentsWidth
      * @param gridContentsHight
      */
+    // the constructor calls members which a subclass could override : the class is never subclassed
+    @SuppressWarnings("this-escape")
     public LadderPane(Ladders ladders, int idx, String name, int gridColumn, int gridRow, double gridMinSize,
             double gridMaxSize, double gridContentsWidth, double gridContentsHight) {
         ladders_ = ladders;

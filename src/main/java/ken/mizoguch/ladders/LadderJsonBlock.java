@@ -14,22 +14,33 @@ import java.util.List;
  */
 public class LadderJsonBlock {
 
-    public static class JsonBlockFunction {
+    /**
+     * a function of the block of the json representation : the address of an io of the ladder, or
+     * the number written in the block with the radix which shows it
+     *
+     * @param address address of the io of the function of the block
+     * @param value value of the number of the function of the block
+     * @param radix radix of the number of the function of the block
+     */
+    public record JsonBlockFunction(String address, Double value, Integer radix) {
 
-        public final String address;
-        public final Double value;
-        public final Integer radix;
-
+        /**
+         * the function of the block of an address of the io of the ladder
+         *
+         * @param address address of the io of the function of the block
+         */
         public JsonBlockFunction(String address) {
-            this.address = address;
-            this.value = null;
-            this.radix = null;
+            this(address, null, null);
         }
 
+        /**
+         * the function of the block of a number written in the block
+         *
+         * @param value value of the number of the function of the block
+         * @param radix radix of the number of the function of the block
+         */
         public JsonBlockFunction(double value, int radix) {
-            this.address = null;
-            this.value = value;
-            this.radix = radix;
+            this(null, value, radix);
         }
     }
 

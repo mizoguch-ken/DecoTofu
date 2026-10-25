@@ -46,7 +46,7 @@ public interface SoemLibrary {
         public int call(SoemEtherCATMain.ecx_contextt context, int slave, Pointer eoembx);
     }
 
-    public class CallBackPO2SOconfig extends Struct {
+    public final class CallBackPO2SOconfig extends Struct {
 
         public Struct.Function<PO2SOconfig> PO2SOconfig = function(PO2SOconfig.class);
 
@@ -55,7 +55,7 @@ public interface SoemLibrary {
         }
     }
 
-    public class CallBackPO2SOconfigx extends Struct {
+    public final class CallBackPO2SOconfigx extends Struct {
 
         public Struct.Function<PO2SOconfigx> PO2SOconfig = function(PO2SOconfigx.class);
 
@@ -64,7 +64,7 @@ public interface SoemLibrary {
         }
     }
 
-    public class CallBackFOEhook extends Struct {
+    public final class CallBackFOEhook extends Struct {
 
         public Struct.Function<FOEhook> FOEhook = function(FOEhook.class);
 
@@ -73,7 +73,7 @@ public interface SoemLibrary {
         }
     }
 
-    public class CallBackEOEhook extends Struct {
+    public final class CallBackEOEhook extends Struct {
 
         public Struct.Function<EOEhook> FOEhook = function(EOEhook.class);
 

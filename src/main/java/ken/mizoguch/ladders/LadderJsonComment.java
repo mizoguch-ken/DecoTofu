@@ -6,67 +6,34 @@
 package ken.mizoguch.ladders;
 
 /**
+ * the comment of an address of the io of the ladders, with the value of the address : the json
+ * representation which the file of the ladders holds.
  *
+ * the value of the address is normalized, because a json number holds neither a nan nor an infinity
+ *
+ * @param idx index of the ladder which holds the address of the comment
+ * @param address address of the io of the comment
+ * @param comment comment of the address
+ * @param value value of the address, which is null when the json does not hold any value
  * @author mizoguch-ken
  */
-public class LadderJsonComment {
-
-    private final Integer idx;
-    private final String address;
-    private final String comment;
-    private final Double value;
+public record LadderJsonComment(Integer idx, String address, String comment, Double value) {
 
     /**
+     * the compact constructor of the record : the value of the address it keeps is a json number,
+     * which is kept as it is when the json does not hold any value
      *
-     * @param idx
-     * @param address
-     * @param comment
-     * @param value
+     * @param value value of the address of the comment
      */
-    public LadderJsonComment(Integer idx, String address, String comment, Double value) {
-        this.idx = idx;
-        this.address = address;
-        this.comment = comment;
-        if (value.isNaN()) {
-            this.value = 0.0;
-        } else if (value == Double.NEGATIVE_INFINITY) {
-            this.value = Double.MIN_VALUE;
-        } else if (value == Double.POSITIVE_INFINITY) {
-            this.value = Double.MAX_VALUE;
-        } else {
-            this.value = value;
+    public LadderJsonComment {
+        if (value != null) {
+            if (value.isNaN()) {
+                value = 0.0;
+            } else if (value == Double.NEGATIVE_INFINITY) {
+                value = Double.MIN_VALUE;
+            } else if (value == Double.POSITIVE_INFINITY) {
+                value = Double.MAX_VALUE;
+            }
         }
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Integer getIdx() {
-        return idx;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public String getAddress() {
-        return address;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public String getComment() {
-        return comment;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Double getValue() {
-        return value;
     }
 }

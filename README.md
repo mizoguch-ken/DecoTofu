@@ -24,8 +24,8 @@
 
 ### <u>要件</u>
 
- * Java 17 or later JDK which includes JavaFX (javafx.web, javafx.fxml, javafx.swing, javafx.controls)
- * JavaFX(javafx.web, javafx.fxml, javafx.swing, javafx.controls)を含むJava 17以上のJDK
+ * Java 21 or later JDK which includes JavaFX (javafx.web, javafx.fxml, javafx.swing, javafx.controls)
+ * JavaFX(javafx.web, javafx.fxml, javafx.swing, javafx.controls)を含むJava 21以上のJDK
  * Maven 3 or later
  * Maven 3 以上
  * CMake 3.28 or later, Visual Studio (Windows) and Npcap installed in WinPcap API-compatible Mode, to build the SOEM shared library of https://github.com/mizoguch-ken/DecoTofu-SOEM

@@ -5,7 +5,6 @@
  */
 package ken.mizoguch.ladders;
 
-import com.github.difflib.patch.DeltaType;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -313,6 +312,8 @@ public class LadderGridPane extends AnchorPane {
      * @param rightLadderGrid
      * @param downLadderGrid
      */
+    // the constructor calls members which a subclass could override : the class is never subclassed
+    @SuppressWarnings("this-escape")
     public LadderGridPane(int columnIndex, int rowIndex, int colspan, int rowspan, LadderGrid leftLadderGrid,
             LadderGrid upLadderGrid, LadderGrid rightLadderGrid, LadderGrid downLadderGrid) {
         ladderGrid_ = new LadderGrid(columnIndex, rowIndex, colspan, rowspan, leftLadderGrid, upLadderGrid,
@@ -3919,23 +3920,27 @@ public class LadderGridPane extends AnchorPane {
     }
 
     /**
+     * the kind of the difference of a block, which the difference view of two ladders shows
+     */
+    public enum DifferenceType {
+
+        CHANGE,
+        DELETE,
+        INSERT
+    }
+
+    /**
      *
      * @param type
      */
-    public void changeDifference(DeltaType type) {
+    public void changeDifference(DifferenceType type) {
         switch (type) {
-            case CHANGE:
-                setBackground(new Background(
-                        new BackgroundFill(differenceChangeBackGroundColor_, CornerRadii.EMPTY, Insets.EMPTY)));
-                break;
-            case DELETE:
-                setBackground(new Background(
-                        new BackgroundFill(differenceDeleteBackGroundColor_, CornerRadii.EMPTY, Insets.EMPTY)));
-                break;
-            case INSERT:
-                setBackground(new Background(
-                        new BackgroundFill(differenceInsertBackGroundColor_, CornerRadii.EMPTY, Insets.EMPTY)));
-                break;
+            case CHANGE -> setBackground(new Background(
+                    new BackgroundFill(differenceChangeBackGroundColor_, CornerRadii.EMPTY, Insets.EMPTY)));
+            case DELETE -> setBackground(new Background(
+                    new BackgroundFill(differenceDeleteBackGroundColor_, CornerRadii.EMPTY, Insets.EMPTY)));
+            case INSERT -> setBackground(new Background(
+                    new BackgroundFill(differenceInsertBackGroundColor_, CornerRadii.EMPTY, Insets.EMPTY)));
         }
     }
 }

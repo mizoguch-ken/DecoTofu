@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import javafx.concurrent.Worker;
@@ -49,11 +50,10 @@ public class StageSettingsPlugin implements WebViewerPlugin {
         try (InputStream licenseStream = this.getClass().getClassLoader().getResourceAsStream("LICENSES")) {
             if (licenseStream != null) {
                 try (BufferedReader bufferedReader = new BufferedReader(
-                        new InputStreamReader(licenseStream, "UTF-8"))) {
+                        new InputStreamReader(licenseStream, StandardCharsets.UTF_8))) {
                     String line;
                     while ((line = bufferedReader.readLine()) != null) {
-                        stringBuilder.append(line);
-                        stringBuilder.append("\n");
+                        stringBuilder.append(line).append('\n');
                     }
                 }
             } else {

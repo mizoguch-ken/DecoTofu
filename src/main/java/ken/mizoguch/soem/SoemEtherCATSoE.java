@@ -56,7 +56,7 @@ public interface SoemEtherCATSoE {
     /**
      * SoE list structure
      */
-    public class ec_SoElistt_Union extends Union {
+    public final class ec_SoElistt_Union extends Union {
 
         public final Unsigned8[] hword;
         public final Unsigned16[] word;
@@ -73,7 +73,7 @@ public interface SoemEtherCATSoE {
         }
     }
 
-    public class ec_SoElistt extends Struct {
+    public final class ec_SoElistt extends Struct {
 
         /**
          * current length in bytes of list
@@ -97,7 +97,7 @@ public interface SoemEtherCATSoE {
     /**
      * SoE IDN mapping structure
      */
-    public class ec_SoEmappingt extends Struct {
+    public final class ec_SoEmappingt extends Struct {
 
         /**
          * current length in bytes of list

@@ -47,14 +47,14 @@ public class LadderHistoryManager {
             if ((generation == 0) || (pasts.isEmpty())) {
                 clearPasts();
             } else {
-                generationManagementPasts(generation);
+                trimToGeneration(pasts, generation);
             }
         }
         if (futures != null) {
             if ((generation == 0) || (futures.isEmpty())) {
                 clearFutures();
             } else {
-                generationManagementFutures(generation);
+                trimToGeneration(futures, generation);
             }
         }
     }
@@ -101,7 +101,7 @@ public class LadderHistoryManager {
                         futures = new ArrayDeque<>();
                     }
                     futures.push(history);
-                    generationManagementFutures(generation);
+                    trimToGeneration(futures, generation);
 
                     if (pasts.isEmpty()) {
                         pasts = null;
@@ -154,21 +154,20 @@ public class LadderHistoryManager {
             pasts = new ArrayDeque<>();
         }
         pasts.push(history);
-        generationManagementPasts(generation);
+        trimToGeneration(pasts, generation);
     }
 
-    private void generationManagementPasts(int generation) {
-        if ((generation > -1) && (pasts.size() > generation)) {
-            for (int index = 0, size = (pasts.size() - generation); index < size; index++) {
-                pasts.removeLast();
-            }
-        }
-    }
-
-    private void generationManagementFutures(int generation) {
-        if ((generation > -1) && (futures.size() > generation)) {
-            for (int index = 0, size = (futures.size() - generation); index < size; index++) {
-                futures.removeLast();
+    /**
+     * the histories older than the generation are dropped : the oldest ones are the last of the
+     * deque, which is a sequenced collection
+     *
+     * @param histories the pasts or the futures of the editor
+     * @param generation number of the histories kept
+     */
+    private static void trimToGeneration(Deque<LadderHistory> histories, int generation) {
+        if ((generation > -1) && (histories.size() > generation)) {
+            for (int index = histories.size() - generation; index > 0; index--) {
+                histories.removeLast();
             }
         }
     }

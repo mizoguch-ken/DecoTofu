@@ -764,7 +764,7 @@ public interface SoemEtherCATType {
         }
     }
 
-    public class ec_errort_Union extends Union {
+    public final class ec_errort_Union extends Union {
 
         /**
          * General abortcode
@@ -785,7 +785,7 @@ public interface SoemEtherCATType {
         }
     }
 
-    public class ec_errort extends Struct {
+    public final class ec_errort extends Struct {
 
         /**
          * Time at which the error was generated.

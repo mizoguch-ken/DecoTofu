@@ -5,12 +5,11 @@
  */
 package ken.mizoguch.console;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -43,14 +42,12 @@ public class Console {
             Path parent = file.getParent();
             if ((parent != null) && Files.exists(parent)) {
                 try {
-                    PrintStream printStream = new PrintStream(Files.newOutputStream(file), true, "UTF-8");
+                    PrintStream printStream = new PrintStream(Files.newOutputStream(file), true, StandardCharsets.UTF_8);
                     if (printStream_ != null) {
                         printStream_.close();
                     }
                     printStream_ = printStream;
                     return true;
-                } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-                    Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
                     Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -109,11 +106,8 @@ public class Console {
             }
         } else {
             String timestamp = LocalDateTime.now().format(DATE_FORMAT);
-            if (err) {
-                printStream.println(timestamp + " :: " + name + " Error :: " + msg);
-            } else {
-                printStream.println(timestamp + " :: " + name + " :: " + msg);
-            }
+            printStream.println(err ? timestamp + " :: " + name + " Error :: " + msg
+                    : timestamp + " :: " + name + " :: " + msg);
         }
     }
 }

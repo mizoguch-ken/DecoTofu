@@ -105,9 +105,7 @@ class LadderRegister {
     Boolean isRegistered(Object object) {
         if (object != null) {
             if (object instanceof WebEngine) {
-                if (webEngine_ != null) {
-                    return webEngine_.equals(object);
-                }
+                return (webEngine_ != null) && webEngine_.equals(object);
             }
             return false;
         }
@@ -173,12 +171,17 @@ class LadderRegister {
      */
     void unregister(Object object) {
         if (object != null) {
-            if (object instanceof WebEngine) {
-                webEngine_ = null;
-                state_ = Worker.State.READY;
-            } else if (object instanceof Soem) {
-                clearSoem();
-                soem_ = null;
+            switch (object) {
+                case WebEngine webEngine -> {
+                    webEngine_ = null;
+                    state_ = Worker.State.READY;
+                }
+                case Soem soem -> {
+                    clearSoem();
+                    soem_ = null;
+                }
+                default -> {
+                }
             }
         }
     }
@@ -202,45 +205,41 @@ class LadderRegister {
      * @return true when the address is registered, null when no argument is given
      */
     private Boolean registerSoem(CopyOnWriteArrayList<LadderRegisterSoemIo> registers, Object... objects) {
-        if (objects != null) {
-            switch (objects.length) {
-                case 5:
-                    if ((objects[0] instanceof Soem) && (objects[1] instanceof String)
-                            && (objects[2] instanceof Integer) && (objects[3] instanceof Long)
-                            && (objects[4] instanceof Long)) {
-                        if (soem_ == null) {
-                            soem_ = (Soem) objects[0];
-                            clearSoem();
-                        }
-
-                        String address = ((String) objects[1]).trim();
-                        if (!address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX) && !address.contains(" ")) {
-                            if (ioStore_.createIo(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address)) {
-                                view_.addIoRow(address);
-                            }
-
-                            int slave = (int) objects[2];
-                            long bitsOffset = (long) objects[3];
-                            long bitsMask = (long) objects[4];
-                            for (int index = 0, size = registers.size(); index < size; index++) {
-                                if (registers.get(index).getAddress().equals(address)) {
-                                    if ((registers.get(index).getSlave() != slave)
-                                            || (registers.get(index).getBitsOffset() != bitsOffset)
-                                            || (registers.get(index).getBitsMask() != bitsMask)) {
-                                        registers.remove(index);
-                                        registers.add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
-                                    }
-                                    return true;
-                                }
-                            }
-                            registers.add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
-                            return true;
-                        }
-                    }
-                    break;
-            }
-            return false;
+        if (objects == null) {
+            return null;
         }
-        return null;
+
+        if ((objects.length == 5)
+                && (objects[0] instanceof Soem soem)
+                && (objects[1] instanceof String given)
+                && (objects[2] instanceof Integer slave)
+                && (objects[3] instanceof Long bitsOffset)
+                && (objects[4] instanceof Long bitsMask)) {
+            if (soem_ == null) {
+                soem_ = soem;
+                clearSoem();
+            }
+
+            String address = given.trim();
+            if (!address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX) && !address.contains(" ")) {
+                if (ioStore_.createIo(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address)) {
+                    view_.addIoRow(address);
+                }
+
+                for (LadderRegisterSoemIo register : registers) {
+                    if (register.address().equals(address)) {
+                        if ((register.slave() != slave) || (register.bitsOffset() != bitsOffset)
+                                || (register.bitsMask() != bitsMask)) {
+                            registers.remove(register);
+                            registers.add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
+                        }
+                        return true;
+                    }
+                }
+                registers.add(new LadderRegisterSoemIo(address, slave, bitsOffset, bitsMask));
+                return true;
+            }
+        }
+        return false;
     }
 }

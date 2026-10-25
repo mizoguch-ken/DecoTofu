@@ -24,7 +24,7 @@ public interface SoemEtherCATCoE {
     public static final int EC_MAXOELIST = 256;
 
     /* Storage for object description list */
-    public class ec_ODlistt extends Struct {
+    public final class ec_ODlistt extends Struct {
 
         /**
          * slave number
@@ -69,7 +69,7 @@ public interface SoemEtherCATCoE {
     }
 
     /* storage for object list entry information */
-    public class ec_OElistt extends Struct {
+    public final class ec_OElistt extends Struct {
 
         /**
          * number of entries in list

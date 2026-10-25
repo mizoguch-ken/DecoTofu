@@ -172,7 +172,7 @@ public interface SoemEtherCATMain {
     /**
      * for list of ethercat slaves detected
      */
-    public class ec_slavet extends Struct {
+    public final class ec_slavet extends Struct {
 
         /**
          * state of slave
@@ -622,7 +622,7 @@ public interface SoemEtherCATMain {
     /**
      * for list of ethercat slave groups
      */
-    public class ec_groupt extends Struct {
+    public final class ec_groupt extends Struct {
 
         /**
          * logical start address for this group
@@ -740,7 +740,7 @@ public interface SoemEtherCATMain {
     /**
      * mailbox queue (transmit queue) used by groups
      */
-    public class ec_mbxqueuet extends Struct {
+    public final class ec_mbxqueuet extends Struct {
 
         public final Signed32 listhead;
         public final Signed32 listtail;
@@ -824,7 +824,7 @@ public interface SoemEtherCATMain {
     /**
      * record to store rxPDO and txPDO table from eeprom
      */
-    public class ec_eepromPDOt extends Struct {
+    public final class ec_eepromPDOt extends Struct {
 
         public final Unsigned16 Startpos;
         public final Unsigned16 Length;
@@ -893,7 +893,7 @@ public interface SoemEtherCATMain {
     /**
      * stack structure to store segmented LRD/LWR/LRW constructs
      */
-    public class ec_idxstackT extends Struct {
+    public final class ec_idxstackT extends Struct {
 
         public final Unsigned8 pushed;
         public final Unsigned8 pulled;
@@ -922,7 +922,7 @@ public interface SoemEtherCATMain {
     /**
      * ringbuf for error storage
      */
-    public class ec_eringt extends Struct {
+    public final class ec_eringt extends Struct {
 
         public final Signed16 head;
         public final Signed16 tail;
@@ -940,7 +940,7 @@ public interface SoemEtherCATMain {
     /**
      * SyncManager Communication Type structure for CA
      */
-    public class ec_SMcommtypet extends Struct {
+    public final class ec_SMcommtypet extends Struct {
 
         public final Unsigned8 n;
         public final Unsigned8 nu1;
@@ -958,7 +958,7 @@ public interface SoemEtherCATMain {
     /**
      * SDO assign structure for CA
      */
-    public class ec_PDOassignt extends Struct {
+    public final class ec_PDOassignt extends Struct {
 
         public final Unsigned8 n;
         public final Unsigned8 nu1;
@@ -976,7 +976,7 @@ public interface SoemEtherCATMain {
     /**
      * SDO description structure for CA
      */
-    public class ec_PDOdesct extends Struct {
+    public final class ec_PDOdesct extends Struct {
 
         public final Unsigned8 n;
         public final Unsigned8 nu1;
@@ -994,7 +994,7 @@ public interface SoemEtherCATMain {
     /**
      * Context structure , referenced by all ecx functions
      */
-    public class ecx_contextt extends Struct {
+    public final class ecx_contextt extends Struct {
 
         /**
          * port reference, may include red_port

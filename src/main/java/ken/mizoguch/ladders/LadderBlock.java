@@ -5,7 +5,9 @@
  */
 package ken.mizoguch.ladders;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * the blocks of a ladder : the name of the enum is the name used by the json representation of a
@@ -73,6 +75,18 @@ public enum LadderBlock {
 
     private final String command_;
 
+    /**
+     * the block of every command : the first block of the enum keeps the command when several
+     * blocks hold it, as the search of the blocks used to answer
+     */
+    private static final Map<String, LadderBlock> COMMANDS_ = new HashMap<>();
+
+    static {
+        for (LadderBlock block : LadderBlock.values()) {
+            COMMANDS_.putIfAbsent(block.command_, block);
+        }
+    }
+
     private LadderBlock(final String command) {
         command_ = command;
     }
@@ -87,17 +101,12 @@ public enum LadderBlock {
      * @return true when the block is a contact
      */
     public boolean isLoad() {
-        switch (this) {
-            case LOAD:
-            case LOAD_NOT:
-            case LOAD_RISING:
-            case LOAD_RISING_NOT:
-            case LOAD_FALLING:
-            case LOAD_FALLING_NOT:
-                return true;
-            default:
-                return false;
-        }
+        return switch (this) {
+            case LOAD, LOAD_NOT, LOAD_RISING, LOAD_RISING_NOT, LOAD_FALLING, LOAD_FALLING_NOT ->
+                true;
+            default ->
+                false;
+        };
     }
 
     /**
@@ -106,20 +115,14 @@ public enum LadderBlock {
      * @return true when the block is a comparison
      */
     public boolean isComparison() {
-        switch (this) {
-            case COMPARISON_EQUAL:
-            case COMPARISON_NOT_EQUAL:
-            case COMPARISON_LESS:
-            case COMPARISON_LESS_EQUAL:
-            case COMPARISON_GREATER:
-            case COMPARISON_GREATER_EQUAL:
-            case COMPARISON_AND_BITS:
-            case COMPARISON_OR_BITS:
-            case COMPARISON_XOR_BITS:
-                return true;
-            default:
-                return false;
-        }
+        return switch (this) {
+            case COMPARISON_EQUAL, COMPARISON_NOT_EQUAL, COMPARISON_LESS, COMPARISON_LESS_EQUAL,
+                    COMPARISON_GREATER, COMPARISON_GREATER_EQUAL, COMPARISON_AND_BITS,
+                    COMPARISON_OR_BITS, COMPARISON_XOR_BITS ->
+                true;
+            default ->
+                false;
+        };
     }
 
     /**
@@ -138,12 +141,7 @@ public enum LadderBlock {
      * @return the block of the command, EMPTY when no block holds the command
      */
     public static LadderBlock get(String command) {
-        command = command.toUpperCase(Locale.getDefault());
-        for (LadderBlock value : LadderBlock.values()) {
-            if (value.command_.equals(command)) {
-                return value;
-            }
-        }
-        return EMPTY;
+        LadderBlock block = COMMANDS_.get(command.toUpperCase(Locale.ROOT));
+        return (block != null) ? block : EMPTY;
     }
 }

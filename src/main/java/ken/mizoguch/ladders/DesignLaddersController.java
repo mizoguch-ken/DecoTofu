@@ -60,6 +60,9 @@ import ken.mizoguch.console.Console;
  */
 public class DesignLaddersController implements Initializable {
 
+    public DesignLaddersController() {
+    }
+
     @FXML
     private VBox paneRoot;
     // menu
@@ -190,6 +193,9 @@ public class DesignLaddersController implements Initializable {
      * stage settings
      */
     public class StageSettings {
+
+        public StageSettings() {
+        }
 
         private boolean stageMaximized;
         private double stageWidth, stageHeight, rootWidth, rootHeight, ioLadderDividerPositions, ioIoDividerPositions;

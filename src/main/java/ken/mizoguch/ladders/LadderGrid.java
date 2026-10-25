@@ -126,6 +126,8 @@ public class LadderGrid {
      * @param rightLadderGrid
      * @param downLadderGrid
      */
+    // the constructor calls members which a subclass could override : the class is never subclassed
+    @SuppressWarnings("this-escape")
     public LadderGrid(int columnIndex, int rowIndex, int colspan, int rowspan, LadderGrid leftLadderGrid,
             LadderGrid upLadderGrid, LadderGrid rightLadderGrid, LadderGrid downLadderGrid) {
         columnIndex_ = columnIndex;

@@ -73,88 +73,38 @@ final class SoemNames {
      * @return the name of the type
      */
     static String dtype2string(int dtype, int bitlen) {
-        String str;
-
         try {
             SoemEtherCATType.ec_datatype edtype = (SoemEtherCATType.ec_datatype) EnumMapper
                     .getInstance(SoemEtherCATType.ec_datatype.class).valueOf(dtype);
-            switch (edtype) {
-                case ECT_BOOLEAN:
-                    str = "BOOLEAN";
-                    break;
-                case ECT_INTEGER8:
-                    str = "INTEGER8";
-                    break;
-                case ECT_INTEGER16:
-                    str = "INTEGER16";
-                    break;
-                case ECT_INTEGER32:
-                    str = "INTEGER32";
-                    break;
-                case ECT_INTEGER24:
-                    str = "INTEGER24";
-                    break;
-                case ECT_INTEGER64:
-                    str = "INTEGER64";
-                    break;
-                case ECT_UNSIGNED8:
-                    str = "UNSIGNED8";
-                    break;
-                case ECT_UNSIGNED16:
-                    str = "UNSIGNED16";
-                    break;
-                case ECT_UNSIGNED32:
-                    str = "UNSIGNED32";
-                    break;
-                case ECT_UNSIGNED24:
-                    str = "UNSIGNED24";
-                    break;
-                case ECT_UNSIGNED64:
-                    str = "UNSIGNED64";
-                    break;
-                case ECT_REAL32:
-                    str = "REAL32";
-                    break;
-                case ECT_REAL64:
-                    str = "REAL64";
-                    break;
-                case ECT_BIT1:
-                    str = "BIT1";
-                    break;
-                case ECT_BIT2:
-                    str = "BIT2";
-                    break;
-                case ECT_BIT3:
-                    str = "BIT3";
-                    break;
-                case ECT_BIT4:
-                    str = "BIT4";
-                    break;
-                case ECT_BIT5:
-                    str = "BIT5";
-                    break;
-                case ECT_BIT6:
-                    str = "BIT6";
-                    break;
-                case ECT_BIT7:
-                    str = "BIT7";
-                    break;
-                case ECT_BIT8:
-                    str = "BIT8";
-                    break;
-                case ECT_VISIBLE_STRING:
-                    str = String.format("VISIBLE_STR(%d)", bitlen);
-                    break;
-                case ECT_OCTET_STRING:
-                    str = String.format("OCTET_STR(%d)", bitlen);
-                    break;
-                default:
-                    str = String.format("dt:0x%04X (%d)", edtype, bitlen);
-            }
+            return switch (edtype) {
+                case ECT_BOOLEAN -> "BOOLEAN";
+                case ECT_INTEGER8 -> "INTEGER8";
+                case ECT_INTEGER16 -> "INTEGER16";
+                case ECT_INTEGER32 -> "INTEGER32";
+                case ECT_INTEGER24 -> "INTEGER24";
+                case ECT_INTEGER64 -> "INTEGER64";
+                case ECT_UNSIGNED8 -> "UNSIGNED8";
+                case ECT_UNSIGNED16 -> "UNSIGNED16";
+                case ECT_UNSIGNED32 -> "UNSIGNED32";
+                case ECT_UNSIGNED24 -> "UNSIGNED24";
+                case ECT_UNSIGNED64 -> "UNSIGNED64";
+                case ECT_REAL32 -> "REAL32";
+                case ECT_REAL64 -> "REAL64";
+                case ECT_BIT1 -> "BIT1";
+                case ECT_BIT2 -> "BIT2";
+                case ECT_BIT3 -> "BIT3";
+                case ECT_BIT4 -> "BIT4";
+                case ECT_BIT5 -> "BIT5";
+                case ECT_BIT6 -> "BIT6";
+                case ECT_BIT7 -> "BIT7";
+                case ECT_BIT8 -> "BIT8";
+                case ECT_VISIBLE_STRING -> String.format("VISIBLE_STR(%d)", bitlen);
+                case ECT_OCTET_STRING -> String.format("OCTET_STR(%d)", bitlen);
+                default -> String.format("dt:0x%04X (%d)", edtype, bitlen);
+            };
         } catch (IllegalArgumentException ex) {
-            str = String.format("dt:0x%04X (%d)", dtype, bitlen);
+            return String.format("dt:0x%04X (%d)", dtype, bitlen);
         }
-        return str;
     }
 
     /**
@@ -164,27 +114,17 @@ final class SoemNames {
      * @return the name of the type
      */
     static String otype2string(int otype) {
-        String str;
-
         try {
             ec_objecttype eotype = (ec_objecttype) EnumMapper.getInstance(ec_objecttype.class).valueOf(otype);
-            switch (eotype) {
-                case OTYPE_VAR:
-                    str = "VAR";
-                    break;
-                case OTYPE_ARRAY:
-                    str = "ARRAY";
-                    break;
-                case OTYPE_RECORD:
-                    str = "RECORD";
-                    break;
-                default:
-                    str = String.format("ot:0x%04X", eotype);
-            }
+            return switch (eotype) {
+                case OTYPE_VAR -> "VAR";
+                case OTYPE_ARRAY -> "ARRAY";
+                case OTYPE_RECORD -> "RECORD";
+                default -> String.format("ot:0x%04X", eotype);
+            };
         } catch (IllegalArgumentException ex) {
-            str = String.format("ot:0x%04X", otype);
+            return String.format("ot:0x%04X", otype);
         }
-        return str;
     }
 
     /**

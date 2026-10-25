@@ -2144,28 +2144,28 @@ public class LadderCommand {
                 grid.getBlockFunctions()[i - 1].clear();
             }
             for (i = 0; i < blockFunctions.size(); i++) {
-                if (blockFunctions.get(i).address != null) {
-                    if (!blockFunctions.get(i).address.equals(grid.getBlockFunctions()[i].getAddress())) {
+                if (blockFunctions.get(i).address() != null) {
+                    if (!blockFunctions.get(i).address().equals(grid.getBlockFunctions()[i].getAddress())) {
                         if (!changed && !isDisableHistory_ && !isBlockChanging_) {
                             startBlockChange(jsonLadderAt(ladder, grid), grid);
                         }
 
-                        grid.getBlockFunctions()[i].setAddress(blockFunctions.get(i).address);
+                        grid.getBlockFunctions()[i].setAddress(blockFunctions.get(i).address());
                         grid.getBlockFunctions()[i].setValue(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_VALUE);
                         grid.getBlockFunctions()[i].setRadix(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_RADIX);
                         grid.getBlockFunctions()[i].setNumber(false);
                         changed = true;
                     }
-                } else if ((blockFunctions.get(i).value != null) && (blockFunctions.get(i).radix != null)) {
-                    if ((blockFunctions.get(i).value != grid.getBlockFunctions()[i].getValue())
-                            || (blockFunctions.get(i).radix != grid.getBlockFunctions()[i].getRadix())) {
+                } else if ((blockFunctions.get(i).value() != null) && (blockFunctions.get(i).radix() != null)) {
+                    if ((blockFunctions.get(i).value() != grid.getBlockFunctions()[i].getValue())
+                            || (blockFunctions.get(i).radix() != grid.getBlockFunctions()[i].getRadix())) {
                         if (!isDisableHistory_ && !isBlockChanging_) {
                             startBlockChange(jsonLadderAt(ladder, grid), grid);
                         }
 
                         grid.getBlockFunctions()[i].setAddress(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_ADDRESS);
-                        grid.getBlockFunctions()[i].setValue(blockFunctions.get(i).value);
-                        grid.getBlockFunctions()[i].setRadix(blockFunctions.get(i).radix);
+                        grid.getBlockFunctions()[i].setValue(blockFunctions.get(i).value());
+                        grid.getBlockFunctions()[i].setRadix(blockFunctions.get(i).radix());
                         grid.getBlockFunctions()[i].setNumber(true);
                         changed = true;
                     }
@@ -2854,14 +2854,14 @@ public class LadderCommand {
             for (index = 0, size = ladderJson.getComments().size(); index < size; index++) {
                 jsonComment = ladderJson.getComments().get(index);
 
-                if ((jsonComment.getIdx() == null) || (jsonComment.getAddress() == null)
-                        || (jsonComment.getComment() == null) || (jsonComment.getValue() == null)) {
+                if ((jsonComment.idx() == null) || (jsonComment.address() == null)
+                        || (jsonComment.comment() == null) || (jsonComment.value() == null)) {
                     writeLog("Data format unexpected error" + " [idx][address][comment][value]", true);
                     return false;
                 }
-                changeComment(tabPane, treeTableView, ioMap, commentMap, jsonComment.getIdx(), jsonComment.getAddress(),
-                        jsonComment.getComment());
-                ladders_.setValue(jsonComment.getIdx(), jsonComment.getAddress(), jsonComment.getValue());
+                changeComment(tabPane, treeTableView, ioMap, commentMap, jsonComment.idx(), jsonComment.address(),
+                        jsonComment.comment());
+                ladders_.setValue(jsonComment.idx(), jsonComment.address(), jsonComment.value());
             }
         }
         return true;

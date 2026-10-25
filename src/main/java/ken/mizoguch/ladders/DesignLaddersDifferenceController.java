@@ -9,7 +9,6 @@ import com.google.gson.Gson;
 import com.github.difflib.DiffUtils;
 import com.github.difflib.patch.AbstractDelta;
 import com.github.difflib.patch.Chunk;
-import com.github.difflib.patch.DeltaType;
 import com.github.difflib.patch.Patch;
 import java.net.URL;
 import java.nio.file.Path;
@@ -43,6 +42,9 @@ import static ken.mizoguch.ladders.LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
  * @author mizoguch-ken
  */
 public class DesignLaddersDifferenceController implements Initializable {
+
+    public DesignLaddersDifferenceController() {
+    }
 
     @FXML
     private HBox paneRoot;
@@ -319,7 +321,7 @@ public class DesignLaddersDifferenceController implements Initializable {
                                     grid.setBlock(LadderBlock.CONTENTS);
                                     gridPane.changeBlock();
                                 } else {
-                                    gridPane.changeDifference(DeltaType.DELETE);
+                                    gridPane.changeDifference(LadderGridPane.DifferenceType.DELETE);
                                 }
                                 gridBuf = gridNew;
                                 if (grid.getUpLadderGrid() != null) {
@@ -353,7 +355,7 @@ public class DesignLaddersDifferenceController implements Initializable {
                                     grid.setBlock(LadderBlock.CONTENTS);
                                     gridPane.changeBlock();
                                 } else {
-                                    gridPane.changeDifference(DeltaType.DELETE);
+                                    gridPane.changeDifference(LadderGridPane.DifferenceType.DELETE);
                                 }
                                 gridBuf = gridNew;
                                 if (grid.getUpLadderGrid() != null) {
@@ -396,7 +398,7 @@ public class DesignLaddersDifferenceController implements Initializable {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
                                         paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(DeltaType.CHANGE);
+                                                .changeDifference(LadderGridPane.DifferenceType.CHANGE);
                                     }
                                 }
                                 chunk = delta.getTarget();
@@ -405,7 +407,7 @@ public class DesignLaddersDifferenceController implements Initializable {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
                                         paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(DeltaType.CHANGE);
+                                                .changeDifference(LadderGridPane.DifferenceType.CHANGE);
                                     }
                                 }
                                 break;
@@ -417,9 +419,9 @@ public class DesignLaddersDifferenceController implements Initializable {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
                                         paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(DeltaType.DELETE);
+                                                .changeDifference(LadderGridPane.DifferenceType.DELETE);
                                         paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(DeltaType.INSERT);
+                                                .changeDifference(LadderGridPane.DifferenceType.INSERT);
                                     }
                                 }
                                 break;
@@ -430,9 +432,9 @@ public class DesignLaddersDifferenceController implements Initializable {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
                                         paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(DeltaType.INSERT);
+                                                .changeDifference(LadderGridPane.DifferenceType.INSERT);
                                         paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(DeltaType.DELETE);
+                                                .changeDifference(LadderGridPane.DifferenceType.DELETE);
                                     }
                                 }
                                 break;

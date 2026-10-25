@@ -48,10 +48,10 @@ class LadderRegisterTest {
 
         assertEquals(1, register.getRegisterSoemIn().size());
         in = register.getRegisterSoemIn().get(0);
-        assertEquals("IN", in.getAddress());
-        assertEquals(1, in.getSlave());
-        assertEquals(8L, in.getBitsOffset());
-        assertEquals(3L, in.getBitsMask());
+        assertEquals("IN", in.address());
+        assertEquals(1, in.slave());
+        assertEquals(8L, in.bitsOffset());
+        assertEquals(3L, in.bitsMask());
         assertEquals(1, rows_.size());
         assertEquals("IN", rows_.get(0));
         assertNotNull(store.io(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, "IN"));
@@ -73,7 +73,7 @@ class LadderRegisterTest {
 
         assertFalse(register.registerIn(new Soem(), "IN 1", 1, 0L, 1L));
         assertTrue(register.registerIn(new Soem(), " IN ", 1, 0L, 1L));
-        assertEquals("IN", register.getRegisterSoemIn().get(0).getAddress());
+        assertEquals("IN", register.getRegisterSoemIn().get(0).address());
         assertEquals(1, register.getRegisterSoemIn().size());
     }
 
@@ -98,9 +98,9 @@ class LadderRegisterTest {
         assertTrue(register.registerIn(new Soem(), "IN", 2, 4L, 7L));
 
         assertEquals(1, register.getRegisterSoemIn().size());
-        assertEquals("IN", register.getRegisterSoemIn().get(0).getAddress());
-        assertEquals(2, register.getRegisterSoemIn().get(0).getSlave());
-        assertEquals(7L, register.getRegisterSoemIn().get(0).getBitsMask());
+        assertEquals("IN", register.getRegisterSoemIn().get(0).address());
+        assertEquals(2, register.getRegisterSoemIn().get(0).slave());
+        assertEquals(7L, register.getRegisterSoemIn().get(0).bitsMask());
         assertEquals(1, rows_.size());
     }
 
@@ -113,8 +113,8 @@ class LadderRegisterTest {
 
         assertEquals(1, register.getRegisterSoemIn().size());
         assertEquals(1, register.getRegisterSoemOut().size());
-        assertEquals("IN", register.getRegisterSoemIn().get(0).getAddress());
-        assertEquals("OUT", register.getRegisterSoemOut().get(0).getAddress());
+        assertEquals("IN", register.getRegisterSoemIn().get(0).address());
+        assertEquals("OUT", register.getRegisterSoemOut().get(0).address());
     }
 
     @Test

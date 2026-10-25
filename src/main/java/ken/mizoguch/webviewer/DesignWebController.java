@@ -8,8 +8,8 @@ package ken.mizoguch.webviewer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,6 +47,9 @@ import ken.mizoguch.soem.SoemPlugin;
  */
 public class DesignWebController implements Initializable {
 
+    public DesignWebController() {
+    }
+
     @FXML
     private WebView webView;
 
@@ -67,28 +70,32 @@ public class DesignWebController implements Initializable {
      */
     private static final double DEFAULT_STAGE_WIDTH = 640.0;
     private static final double DEFAULT_STAGE_HEIGHT = 480.0;
-    private final String template_ = "<!DOCTYPE html>" + "\n"
-            + "<html>" + "\n"
-            + "<head>" + "\n"
-            + "\t<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">" + "\n"
-            + "\t<meta charset=\"utf-8\">" + "\n"
-            + "\t<title>DecoTofu</title>" + "\n"
-            + "\t<meta name=\"description\" content=\"\">" + "\n"
-            + "\t<meta name=\"author\" content=\"\">" + "\n"
-            + "\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" + "\n"
-            + "\t<link rel=\"stylesheet\" href=\"\">" + "\n"
-            + "\t<!--[if lt IE 9]>" + "\n"
-            + "\t\t<script src=\"//cdn.jsdelivr.net/html5shiv/3.7.2/html5shiv.min.js\"></script>" + "\n"
-            + "\t\t<script src=\"//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js\"></script>" + "\n"
-            + "\t<![endif]-->" + "\n"
-            + "\t<link rel=\"shortcut icon\" href=\"\">" + "\n"
-            + "</head>" + "\n"
-            + "<body>" + "\n"
-            + "</body>" + "\n"
-            + "</html>";
+    private final String template_ = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            \t<meta http-equiv="X-UA-Compatible" content="IE=edge">
+            \t<meta charset="utf-8">
+            \t<title>DecoTofu</title>
+            \t<meta name="description" content="">
+            \t<meta name="author" content="">
+            \t<meta name="viewport" content="width=device-width, initial-scale=1">
+            \t<link rel="stylesheet" href="">
+            \t<!--[if lt IE 9]>
+            \t\t<script src="//cdn.jsdelivr.net/html5shiv/3.7.2/html5shiv.min.js"></script>
+            \t\t<script src="//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+            \t<![endif]-->
+            \t<link rel="shortcut icon" href="">
+            </head>
+            <body>
+            </body>
+            </html>""";
 
     // stage settings
     public class StageSettings {
+
+        public StageSettings() {
+        }
 
         private boolean bExit;
         private boolean stageMaximized;
@@ -314,8 +321,8 @@ public class DesignWebController implements Initializable {
         // index path
         indexPath = Paths.get(webPath_.toUri().resolve("index.html"));
         if (!Files.exists(indexPath)) {
-            try (OutputStreamWriter osw = new OutputStreamWriter(Files.newOutputStream(indexPath), "UTF-8")) {
-                osw.write(template_);
+            try {
+                Files.writeString(indexPath, template_, StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 Console.writeStackTrace(DesignWebController.class.getName(), ex);
             }

@@ -84,7 +84,7 @@ public class LadderJson {
     public void sortComments() {
         if (comments != null) {
             comments.sort((o1, o2) -> {
-                return o1.getAddress().compareTo(o2.getAddress());
+                return o1.address().compareTo(o2.address());
             });
         }
     }

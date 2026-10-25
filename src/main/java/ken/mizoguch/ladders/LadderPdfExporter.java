@@ -703,21 +703,21 @@ class LadderPdfExporter {
                                 // address
                                 contentStream.beginText();
                                 contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                if (jsonBlock.getBlockFunctions().get(0).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address);
+                                if (jsonBlock.getBlockFunctions().get(0).address() != null) {
+                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address());
                                 } else {
-                                    switch (jsonBlock.getBlockFunctions().get(0).radix) {
+                                    switch (jsonBlock.getBlockFunctions().get(0).radix()) {
                                         case 10:
                                             contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value()));
                                             break;
                                         case 16:
                                             contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
+                                                    jsonBlock.getBlockFunctions().get(0).value().longValue(), 16));
                                             break;
                                         case 2:
                                             contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
+                                                    jsonBlock.getBlockFunctions().get(0).value().longValue(), 2));
                                             break;
                                     }
                                 }
@@ -797,21 +797,21 @@ class LadderPdfExporter {
                                 // address
                                 contentStream.beginText();
                                 contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                if (jsonBlock.getBlockFunctions().get(0).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address);
+                                if (jsonBlock.getBlockFunctions().get(0).address() != null) {
+                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address());
                                 } else {
-                                    switch (jsonBlock.getBlockFunctions().get(0).radix) {
+                                    switch (jsonBlock.getBlockFunctions().get(0).radix()) {
                                         case 10:
                                             contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value()));
                                             break;
                                         case 16:
                                             contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
+                                                    jsonBlock.getBlockFunctions().get(0).value().longValue(), 16));
                                             break;
                                         case 2:
                                             contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
+                                                    jsonBlock.getBlockFunctions().get(0).value().longValue(), 2));
                                             break;
                                     }
                                 }
@@ -852,21 +852,21 @@ class LadderPdfExporter {
                                 // address
                                 contentStream.beginText();
                                 contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                if (jsonBlock.getBlockFunctions().get(0).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address);
+                                if (jsonBlock.getBlockFunctions().get(0).address() != null) {
+                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address());
                                 } else {
-                                    switch (jsonBlock.getBlockFunctions().get(0).radix) {
+                                    switch (jsonBlock.getBlockFunctions().get(0).radix()) {
                                         case 10:
                                             contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value()));
                                             break;
                                         case 16:
                                             contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
+                                                    jsonBlock.getBlockFunctions().get(0).value().longValue(), 16));
                                             break;
                                         case 2:
                                             contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
+                                                    jsonBlock.getBlockFunctions().get(0).value().longValue(), 2));
                                             break;
                                     }
                                 }
@@ -920,21 +920,21 @@ class LadderPdfExporter {
                                 // address
                                 contentStream.beginText();
                                 contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                if (jsonBlock.getBlockFunctions().get(0).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address);
+                                if (jsonBlock.getBlockFunctions().get(0).address() != null) {
+                                    contentStream.showText(jsonBlock.getBlockFunctions().get(0).address());
                                 } else {
-                                    switch (jsonBlock.getBlockFunctions().get(0).radix) {
+                                    switch (jsonBlock.getBlockFunctions().get(0).radix()) {
                                         case 10:
                                             contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value));
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(0).value()));
                                             break;
                                         case 16:
                                             contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 16));
+                                                    jsonBlock.getBlockFunctions().get(0).value().longValue(), 16));
                                             break;
                                         case 2:
                                             contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(0).value.longValue(), 2));
+                                                    jsonBlock.getBlockFunctions().get(0).value().longValue(), 2));
                                             break;
                                     }
                                 }
@@ -943,21 +943,21 @@ class LadderPdfExporter {
                                 contentStream.beginText();
                                 contentStream.newLineAtOffset(gridWidth + gridSize6,
                                         gridHeight - gridSize2 - gridSize6);
-                                if (jsonBlock.getBlockFunctions().get(1).address != null) {
-                                    contentStream.showText(jsonBlock.getBlockFunctions().get(1).address);
+                                if (jsonBlock.getBlockFunctions().get(1).address() != null) {
+                                    contentStream.showText(jsonBlock.getBlockFunctions().get(1).address());
                                 } else {
-                                    switch (jsonBlock.getBlockFunctions().get(1).radix) {
+                                    switch (jsonBlock.getBlockFunctions().get(1).radix()) {
                                         case 10:
                                             contentStream.showText(
-                                                    Double.toString(jsonBlock.getBlockFunctions().get(1).value));
+                                                    Double.toString(jsonBlock.getBlockFunctions().get(1).value()));
                                             break;
                                         case 16:
                                             contentStream.showText("0x" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(1).value.longValue(), 16));
+                                                    jsonBlock.getBlockFunctions().get(1).value().longValue(), 16));
                                             break;
                                         case 2:
                                             contentStream.showText("0b" + Long.toString(
-                                                    jsonBlock.getBlockFunctions().get(1).value.longValue(), 2));
+                                                    jsonBlock.getBlockFunctions().get(1).value().longValue(), 2));
                                             break;
                                     }
                                 }

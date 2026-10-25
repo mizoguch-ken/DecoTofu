@@ -6,59 +6,14 @@
 package ken.mizoguch.ladders;
 
 /**
+ * the registration of an address of the ladders on a variable of a slave of a soem bus, which the
+ * cycle of the ladders reads and writes
  *
+ * @param address global address of the ladders
+ * @param slave slave of the soem bus
+ * @param bitsOffset offset of the bits of the variable of the slave
+ * @param bitsMask mask of the bits of the variable of the slave
  * @author mizoguch-ken
  */
-public class LadderRegisterSoemIo {
-
-    private final String address_;
-    private final int slave_;
-    private final long bitsOffset_;
-    private final long bitsMask_;
-
-    /**
-     *
-     * @param address
-     * @param slave
-     * @param bitsOffset
-     * @param bitsMask
-     */
-    public LadderRegisterSoemIo(String address, int slave, long bitsOffset, long bitsMask) {
-        address_ = address;
-        slave_ = slave;
-        bitsOffset_ = bitsOffset;
-        bitsMask_ = bitsMask;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public String getAddress() {
-        return address_;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public int getSlave() {
-        return slave_;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public long getBitsOffset() {
-        return bitsOffset_;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public long getBitsMask() {
-        return bitsMask_;
-    }
+public record LadderRegisterSoemIo(String address, int slave, long bitsOffset, long bitsMask) {
 }

@@ -64,7 +64,7 @@ final class SoemBits {
      */
     static int byteCount(int startBit, int bitLength, long remainingBytes) {
         long count = ((long) startBit + bitLength + Byte.SIZE - 1) / Byte.SIZE;
-        return (int) Math.max(0, Math.min(count, Math.max(0, remainingBytes)));
+        return (int) Math.clamp(count, 0L, Math.max(0L, remainingBytes));
     }
 
     /**

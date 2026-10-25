@@ -31,7 +31,7 @@ public interface SoemOsal {
         }
     }
 
-    public class osal_timert extends Struct {
+    public final class osal_timert extends Struct {
 
         public final ec_timet stop_time;
 

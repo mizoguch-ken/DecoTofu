@@ -144,7 +144,7 @@ class LadderFileStore {
      */
     boolean writeJson(Path file, LadderJson ladderJson) {
         if ((file != null) && (ladderJson != null)) {
-            try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(Files.newOutputStream(file), "UTF-8");
+            try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(Files.newOutputStream(file), StandardCharsets.UTF_8);
                     BufferedReader bufferedReader = new BufferedReader(new StringReader(gson_.toJson(ladderJson)))) {
                 String line;
 

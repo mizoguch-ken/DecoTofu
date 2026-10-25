@@ -1,5 +1,6 @@
 package ken.mizoguch.ladders;
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -43,11 +44,11 @@ class LadderJsonTest {
         json.addComment(firstComment);
         json.sortComments();
 
-        assertEquals("a", json.getComments().get(0).getAddress());
+        assertEquals("a", json.getComments().get(0).address());
         assertSame(firstComment, json.getComments().get(0));
-        assertEquals(Integer.valueOf(1), json.getComments().get(0).getIdx());
-        assertEquals("first", json.getComments().get(0).getComment());
-        assertEquals(Double.valueOf(1.0), json.getComments().get(0).getValue());
+        assertEquals(Integer.valueOf(1), json.getComments().get(0).idx());
+        assertEquals("first", json.getComments().get(0).comment());
+        assertEquals(Double.valueOf(1.0), json.getComments().get(0).value());
         assertSame(second, json.getComments().get(1));
 
         // current behavior: addComment has no null check, null entries are stored
@@ -76,18 +77,28 @@ class LadderJsonTest {
 
     @Test
     void commentValueNormalization() {
-        assertEquals(Double.valueOf(0.0), new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.NaN).getValue());
+        assertEquals(Double.valueOf(0.0), new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.NaN).value());
         assertEquals(Double.valueOf(Double.MAX_VALUE),
-                new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.POSITIVE_INFINITY).getValue());
+                new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.POSITIVE_INFINITY).value());
         assertEquals(Double.valueOf(Double.MIN_VALUE),
-                new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.NEGATIVE_INFINITY).getValue());
-        assertEquals(Double.valueOf(5.0), new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.valueOf(5.0)).getValue());
+                new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.NEGATIVE_INFINITY).value());
+        assertEquals(Double.valueOf(5.0), new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.valueOf(5.0)).value());
     }
 
     @Test
-    void commentWithNullValueThrows() {
-        assertThrows(NullPointerException.class,
-                () -> new LadderJsonComment(Integer.valueOf(1), "a", "c", null));
+    void commentWithoutValueKeepsNullValue() {
+        assertNull(new LadderJsonComment(Integer.valueOf(1), "a", "c", null).value());
+
+        LadderJsonComment parsed = new Gson().fromJson("{\"idx\":1,\"address\":\"a\",\"comment\":\"c\"}",
+                LadderJsonComment.class);
+        assertEquals(Integer.valueOf(1), parsed.idx());
+        assertEquals("a", parsed.address());
+        assertEquals("c", parsed.comment());
+        assertNull(parsed.value());
+
+        LadderJsonComment valued = new Gson().fromJson("{\"idx\":1,\"address\":\"a\",\"comment\":\"c\",\"value\":5.0}",
+                LadderJsonComment.class);
+        assertEquals(Double.valueOf(5.0), valued.value());
     }
 
     @Test
@@ -137,12 +148,12 @@ class LadderJsonTest {
 
         List<LadderJsonBlock.JsonBlockFunction> converted = block.getBlockFunctions();
         assertEquals(2, converted.size());
-        assertNull(converted.get(0).address);
-        assertEquals(Double.valueOf(256.0), converted.get(0).value);
-        assertEquals(Integer.valueOf(16), converted.get(0).radix);
-        assertEquals("X1", converted.get(1).address);
-        assertNull(converted.get(1).value);
-        assertNull(converted.get(1).radix);
+        assertNull(converted.get(0).address());
+        assertEquals(Double.valueOf(256.0), converted.get(0).value());
+        assertEquals(Integer.valueOf(16), converted.get(0).radix());
+        assertEquals("X1", converted.get(1).address());
+        assertNull(converted.get(1).value());
+        assertNull(converted.get(1).radix());
     }
 
     @Test
@@ -162,7 +173,7 @@ class LadderJsonTest {
 
         List<LadderJsonBlock.JsonBlockFunction> converted = block.getBlockFunctions();
         assertEquals(1, converted.size());
-        assertEquals("Y2", converted.get(0).address);
+        assertEquals("Y2", converted.get(0).address());
 
         functions = new ArrayList<>();
         functions.add(numberDefaultRadix);
