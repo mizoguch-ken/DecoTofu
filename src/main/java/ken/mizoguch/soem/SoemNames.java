@@ -59,6 +59,9 @@ final class SoemNames {
         }
     }
 
+    private static final EnumMapper DATATYPE_MAPPER = EnumMapper.getInstance(SoemEtherCATType.ec_datatype.class);
+    private static final EnumMapper OBJECTTYPE_MAPPER = EnumMapper.getInstance(ec_objecttype.class);
+
     /**
      * a utility class is never instantiated
      */
@@ -74,8 +77,7 @@ final class SoemNames {
      */
     static String dtype2string(int dtype, int bitlen) {
         try {
-            SoemEtherCATType.ec_datatype edtype = (SoemEtherCATType.ec_datatype) EnumMapper
-                    .getInstance(SoemEtherCATType.ec_datatype.class).valueOf(dtype);
+            SoemEtherCATType.ec_datatype edtype = (SoemEtherCATType.ec_datatype) DATATYPE_MAPPER.valueOf(dtype);
             return switch (edtype) {
                 case ECT_BOOLEAN -> "BOOLEAN";
                 case ECT_INTEGER8 -> "INTEGER8";
@@ -100,7 +102,7 @@ final class SoemNames {
                 case ECT_BIT8 -> "BIT8";
                 case ECT_VISIBLE_STRING -> String.format("VISIBLE_STR(%d)", bitlen);
                 case ECT_OCTET_STRING -> String.format("OCTET_STR(%d)", bitlen);
-                default -> String.format("dt:0x%04X (%d)", edtype, bitlen);
+                default -> String.format("dt:0x%04X (%d)", dtype, bitlen);
             };
         } catch (IllegalArgumentException ex) {
             return String.format("dt:0x%04X (%d)", dtype, bitlen);
@@ -115,12 +117,12 @@ final class SoemNames {
      */
     static String otype2string(int otype) {
         try {
-            ec_objecttype eotype = (ec_objecttype) EnumMapper.getInstance(ec_objecttype.class).valueOf(otype);
+            ec_objecttype eotype = (ec_objecttype) OBJECTTYPE_MAPPER.valueOf(otype);
             return switch (eotype) {
                 case OTYPE_VAR -> "VAR";
                 case OTYPE_ARRAY -> "ARRAY";
                 case OTYPE_RECORD -> "RECORD";
-                default -> String.format("ot:0x%04X", eotype);
+                default -> String.format("ot:0x%04X", otype);
             };
         } catch (IllegalArgumentException ex) {
             return String.format("ot:0x%04X", otype);

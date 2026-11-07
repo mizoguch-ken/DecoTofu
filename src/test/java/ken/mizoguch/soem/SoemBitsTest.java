@@ -199,4 +199,21 @@ class SoemBitsTest {
         assertEquals(0b10000001, Byte.toUnsignedInt(map.getByte(2)));
         assertEquals(0x0aL, SoemBits.read(map, 0, 4, 0xffL, 2));
     }
+
+    @Test
+    @DisplayName("merging multiple writes in the same byte clears bits overwritten with zero")
+    void mergeOverwritesPreviousQueuedBits() {
+        int keep1 = SoemBits.keepMask(0x0f);
+        int bits1 = 0x0f;
+        int queuedKeep = keep1;
+        int queuedValue = bits1;
+
+        // second write to bits 0..3 sets them to 0x05 (clearing bits 1 and 3)
+        int keep2 = SoemBits.keepMask(0x0f);
+        int bits2 = 0x05;
+        queuedKeep &= keep2;
+        queuedValue = Byte.toUnsignedInt(SoemBits.merge((byte) queuedValue, keep2, bits2));
+
+        assertEquals(0xf5, Byte.toUnsignedInt(SoemBits.merge((byte) 0xff, queuedKeep, queuedValue)));
+    }
 }

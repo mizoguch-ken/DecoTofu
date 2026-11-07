@@ -402,23 +402,33 @@ public class SoemSlaveInfo {
                     case ECT_INTEGER24:
                         str = new StringBuilder(String.format("0x%08X / %d", pUsdo.getInt(0), pUsdo.getInt(0)));
                         break;
-                    case ECT_INTEGER64:
-                        str = new StringBuilder(String.format("0x%016X / %d", pUsdo.getLong(0), pUsdo.getLong(0)));
+                    case ECT_INTEGER64: {
+                        long val = pUsdo.getLongLong(0);
+                        str = new StringBuilder(String.format("0x%016X / %d", val, val));
                         break;
-                    case ECT_UNSIGNED8:
-                        str = new StringBuilder(String.format("0x%02X / %d", pUsdo.getShort(0), pUsdo.getShort(0)));
+                    }
+                    case ECT_UNSIGNED8: {
+                        int val = Byte.toUnsignedInt(pUsdo.getByte(0));
+                        str = new StringBuilder(String.format("0x%02X / %d", val, val));
                         break;
-                    case ECT_UNSIGNED16:
-                        str = new StringBuilder(String.format("0x%04X / %d", pUsdo.getInt(0), pUsdo.getInt(0)));
+                    }
+                    case ECT_UNSIGNED16: {
+                        int val = Short.toUnsignedInt(pUsdo.getShort(0));
+                        str = new StringBuilder(String.format("0x%04X / %d", val, val));
                         break;
+                    }
                     case ECT_UNSIGNED32:
-                    case ECT_UNSIGNED24:
-                        str = new StringBuilder(String.format("0x%08X / %d", pUsdo.getLong(0), pUsdo.getLong(0)));
+                    case ECT_UNSIGNED24: {
+                        long val = Integer.toUnsignedLong(pUsdo.getInt(0));
+                        str = new StringBuilder(String.format("0x%08X / %d", val, val));
                         break;
-                    case ECT_UNSIGNED64:
+                    }
+                    case ECT_UNSIGNED64: {
+                        long val = pUsdo.getLongLong(0);
                         str = new StringBuilder(
-                                String.format("0x%016X / %d", pUsdo.getLongLong(0), pUsdo.getLongLong(0)));
+                                String.format("0x%016X / %s", val, Long.toUnsignedString(val)));
                         break;
+                    }
                     case ECT_REAL32:
                         str = new StringBuilder(String.format("%f", pUsdo.getFloat(0)));
                         break;
@@ -433,17 +443,19 @@ public class SoemSlaveInfo {
                     case ECT_BIT6:
                     case ECT_BIT7:
                     case ECT_BIT8:
-                        str = new StringBuilder(String.format("0x%X", pUsdo.getShort(0)));
+                        str = new StringBuilder(String.format("0x%X", Byte.toUnsignedInt(pUsdo.getByte(0))));
                         break;
                     case ECT_VISIBLE_STRING:
                         str = new StringBuilder(usdo.get());
                         break;
-                    case ECT_OCTET_STRING:
+                    case ECT_OCTET_STRING: {
                         str = new StringBuilder();
-                        for (int i = 0; i < l.get(); i++) {
-                            str.append(String.format("0x%02X ", pUsdo.getByte(i)));
+                        int len = Math.clamp(l.get(), 0, Struct.size(usdo));
+                        for (int i = 0; i < len; i++) {
+                            str.append(String.format("0x%02X ", Byte.toUnsignedInt(pUsdo.getByte(i))));
                         }
                         break;
+                    }
                     default:
                         str = new StringBuilder("Unknown type");
                 }
@@ -523,8 +535,8 @@ public class SoemSlaveInfo {
                         /* extract bitlength of SDO */
                         bitlen = (rdat2.get() & 0xff);
                         bsize += bitlen;
-                        obj_idx = (rdat2.get() >> 16);
-                        obj_subidx = ((rdat2.get() >> 8) & 0x000000ff);
+                        obj_idx = (rdat2.get() >>> 16);
+                        obj_subidx = ((rdat2.get() >>> 8) & 0x000000ff);
                         abs_offset = mapoffset + (bitoffset / 8);
                         abs_bit = bitoffset % 8;
                         ODlist.Slave.set(index);
@@ -808,11 +820,14 @@ public class SoemSlaveInfo {
         int i, j;
 
         Pointer pODlist = Memory.allocate(runtime_, Struct.size(ODlist));
+        Pointer pOElist = Memory.allocate(runtime_, Struct.size(OElist));
         ODlist.useMemory(pODlist);
+        OElist.useMemory(pOElist);
         ODlist.Entries.set(0);
         if (soem_.ecx_readODlist(context, cnt, ODlist) > 0) {
-            sdo.ODlistEntries = ODlist.Entries.get();
-            for (i = 0; i < ODlist.Entries.get(); i++) {
+            int odEntries = Math.clamp(ODlist.Entries.get(), 0, SoemEtherCATCoE.EC_MAXODLIST);
+            sdo.ODlistEntries = odEntries;
+            for (i = 0; i < odEntries; i++) {
                 od = sdo.newOD();
                 soem_.ecx_readODdescription(context, i, ODlist);
                 if (context.ecaterror.get() > 0) {
@@ -823,8 +838,6 @@ public class SoemSlaveInfo {
                 od.ObjectCode = ODlist.ObjectCode[i].get();
                 od.DataTypeName = SoemNames.otype2string(od.ObjectCode);
                 od.Name = ODlist.Name[i].toString();
-                Pointer pOElist = Memory.allocate(runtime_, Struct.size(OElist));
-                OElist.useMemory(pOElist);
                 soem_.ecx_readOE(context, i, ODlist, OElist);
                 if (context.ecaterror.get() > 0) {
                     od.EcatError = soem_.ecx_elist2string(context);
@@ -836,7 +849,8 @@ public class SoemSlaveInfo {
                 } else {
                     od.MaxSub = ODlist.MaxSub[i].get();
                 }
-                for (j = 0; j < od.MaxSub + 1; j++) {
+                int oeCount = Math.clamp(od.MaxSub + 1, 0, SoemEtherCATCoE.EC_MAXOELIST);
+                for (j = 0; j < oeCount; j++) {
                     if ((OElist.DataType[j].get() > 0) && (OElist.BitLength[j].get() > 0)) {
                         oe = od.newOE();
                         oe.Index = j;

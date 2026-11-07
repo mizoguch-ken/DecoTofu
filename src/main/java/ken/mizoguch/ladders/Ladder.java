@@ -672,79 +672,23 @@ public class Ladder {
                         runConnectNumbers_[blockIndex(grid)] = 1;
                     }
                     case TIMER -> {
-                        if (grid.getBlockFunctions()[0].isNumber()) {
-                            io.setValueTimer(1,
-                                    grid.getBlockFunctions()[0].getValue(), cycleTime);
-                        } else {
-                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            io.setValueTimer(1,
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue(),
-                                    cycleTime);
-                        }
+                        io.setValueTimer(1, functionValue(ioMap, grid, 0), cycleTime);
                         runConnectNumbers_[blockIndex(grid)] = 1;
                     }
                     case TIMER_NOT -> {
-                        if (grid.getBlockFunctions()[0].isNumber()) {
-                            io.setValueTimerNot(1,
-                                    grid.getBlockFunctions()[0].getValue(), cycleTime);
-                        } else {
-                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            io.setValueTimerNot(1,
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue(),
-                                    cycleTime);
-                        }
+                        io.setValueTimerNot(1, functionValue(ioMap, grid, 0), cycleTime);
                         runConnectNumbers_[blockIndex(grid)] = 1;
                     }
                     case COUNTER -> {
-                        if (grid.getBlockFunctions()[0].isNumber()) {
-                            io.setValueCounter(1,
-                                    grid.getBlockFunctions()[0].getValue());
-                        } else {
-                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            io.setValueCounter(1,
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue());
-                        }
+                        io.setValueCounter(1, functionValue(ioMap, grid, 0));
                         runConnectNumbers_[blockIndex(grid)] = 1;
                     }
                     case COUNTER_NOT -> {
-                        if (grid.getBlockFunctions()[0].isNumber()) {
-                            io.setValueCounterNot(1,
-                                    grid.getBlockFunctions()[0].getValue());
-                        } else {
-                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            io.setValueCounterNot(1,
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue());
-                        }
+                        io.setValueCounterNot(1, functionValue(ioMap, grid, 0));
                         runConnectNumbers_[blockIndex(grid)] = 1;
                     }
                     case MOVE -> {
-                        if (grid.getBlockFunctions()[0].isNumber()) {
-                            io.setValue(grid.getBlockFunctions()[0].getValue());
-                        } else {
-                            funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-                            if (grid.getBlockFunctions()[0].getAddress()
-                                    .startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                funcIdx = idx_;
-                            }
-                            io.setValue(
-                                    ioMap.get(funcIdx).get(grid.getBlockFunctions()[0].getAddress()).getValue());
-                        }
+                        io.setValue(functionValue(ioMap, grid, 0));
                         runConnectNumbers_[blockIndex(grid)] = 1;
                     }
                     case SCRIPT -> {
@@ -829,14 +773,24 @@ public class Ladder {
             return writeRunIoError(address);
         }
 
+        size = switch (grid.getBlock()) {
+            case COMPARISON_EQUAL, COMPARISON_NOT_EQUAL, COMPARISON_LESS, COMPARISON_LESS_EQUAL,
+                    COMPARISON_GREATER, COMPARISON_GREATER_EQUAL, COMPARISON_AND_BITS,
+                    COMPARISON_OR_BITS, COMPARISON_XOR_BITS, NOT_BITS, TIMER, TIMER_NOT,
+                    COUNTER, COUNTER_NOT, MOVE -> 1;
+            case AND_BITS, OR_BITS, XOR_BITS, ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION,
+                    AVERAGE, SHIFT_LEFT_BITS, SHIFT_RIGHT_BITS, SIGMOID -> 2;
+            default -> 0;
+        };
         functions = grid.getBlockFunctions();
-        for (index = 0, size = functions.length; index < size; index++) {
+        size = Math.min(size, functions.length);
+        for (index = 0; index < size; index++) {
             if (functions[index].isNumber()) {
                 continue;
             }
             address = functions[index].getAddress();
-            if ((address == null) || address.isEmpty() || isRunAddressNumber(address)) {
-                continue;
+            if ((address == null) || address.isEmpty()) {
+                return writeRunIoError("");
             }
             funcIdx = addressIndex(address);
             if ((funcIdx < 0) || (funcIdx >= ioMap.size()) || (ioMap.get(funcIdx).get(address) == null)) {
@@ -877,10 +831,14 @@ public class Ladder {
             int connectNumber = grid.getInConnectNumber();
 
             if (connectNumber > 1) {
+                List<LadderGrid> connectGrids = outConnectGrids_.get(connectNumber);
+                if (connectGrids == null) {
+                    return false;
+                }
                 LadderGrid ladderGrid;
                 int index, size;
-                for (index = 0, size = outConnectGrids_.get(connectNumber).size(); index < size; index++) {
-                    ladderGrid = outConnectGrids_.get(connectNumber).get(index);
+                for (index = 0, size = connectGrids.size(); index < size; index++) {
+                    ladderGrid = connectGrids.get(index);
                     if (runConnectNumbers_[blockIndex(ladderGrid)] == 0) {
                         if (runRoute(ioMap, ladderGrid)) {
                             runConnectNumbers_[blockIndex(ladderGrid)] = 1;
@@ -900,7 +858,7 @@ public class Ladder {
 
     private boolean runRoute(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, LadderGrid grid) {
         if (grid != null) {
-            int idx, funcIdx;
+            int idx;
             boolean result;
             LadderIo io;
 
@@ -934,88 +892,31 @@ public class Ladder {
                     result = !io.isLdFalling();
                 }
                 case COMPARISON_EQUAL -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = io.getValue() == grid.getBlockFunctions()[0].getValue();
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = io.getValue() == ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue();
-                    }
+                    result = io.getValue() == functionValue(ioMap, grid, 0);
                 }
                 case COMPARISON_NOT_EQUAL -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = io.getValue() != grid.getBlockFunctions()[0].getValue();
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = io.getValue() != ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue();
-                    }
+                    result = io.getValue() != functionValue(ioMap, grid, 0);
                 }
                 case COMPARISON_LESS -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = io.getValue() < grid.getBlockFunctions()[0].getValue();
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = io.getValue() < ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue();
-                    }
+                    result = io.getValue() < functionValue(ioMap, grid, 0);
                 }
                 case COMPARISON_LESS_EQUAL -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = io.getValue() <= grid.getBlockFunctions()[0].getValue();
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = io.getValue() <= ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue();
-                    }
+                    result = io.getValue() <= functionValue(ioMap, grid, 0);
                 }
                 case COMPARISON_GREATER -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = io.getValue() > grid.getBlockFunctions()[0].getValue();
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = io.getValue() > ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue();
-                    }
+                    result = io.getValue() > functionValue(ioMap, grid, 0);
                 }
                 case COMPARISON_GREATER_EQUAL -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = io.getValue() >= grid.getBlockFunctions()[0].getValue();
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = io.getValue() >= ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue();
-                    }
+                    result = io.getValue() >= functionValue(ioMap, grid, 0);
                 }
                 case COMPARISON_AND_BITS -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = (((long) io.getValue())
-                                & ((long) grid.getBlockFunctions()[0].getValue())) != 0;
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = (((long) io.getValue()) & ((long) ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue())) != 0;
-                    }
+                    result = (((long) io.getValue()) & ((long) functionValue(ioMap, grid, 0))) != 0;
                 }
                 case COMPARISON_OR_BITS -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = (((long) io.getValue())
-                                | ((long) grid.getBlockFunctions()[0].getValue())) != 0;
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = (((long) io.getValue()) | ((long) ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue())) != 0;
-                    }
+                    result = (((long) io.getValue()) | ((long) functionValue(ioMap, grid, 0))) != 0;
                 }
                 case COMPARISON_XOR_BITS -> {
-                    if (grid.getBlockFunctions()[0].isNumber()) {
-                        result = (((long) io.getValue())
-                                ^ ((long) grid.getBlockFunctions()[0].getValue())) != 0;
-                    } else {
-                        funcIdx = addressIndex(grid.getBlockFunctions()[0].getAddress());
-                        result = (((long) io.getValue()) ^ ((long) ioMap.get(funcIdx)
-                                .get(grid.getBlockFunctions()[0].getAddress()).getValue())) != 0;
-                    }
+                    result = (((long) io.getValue()) ^ ((long) functionValue(ioMap, grid, 0))) != 0;
                 }
                 default -> {
                     result = false;
@@ -1026,11 +927,15 @@ public class Ladder {
                 int connectNumber = grid.getInConnectNumber();
 
                 if (connectNumber > 1) {
+                    List<LadderGrid> connectGrids = outConnectGrids_.get(connectNumber);
+                    if (connectGrids == null) {
+                        return false;
+                    }
                     LadderGrid ladderGrid;
                     int index, size;
 
-                    for (index = 0, size = outConnectGrids_.get(connectNumber).size(); index < size; index++) {
-                        ladderGrid = outConnectGrids_.get(connectNumber).get(index);
+                    for (index = 0, size = connectGrids.size(); index < size; index++) {
+                        ladderGrid = connectGrids.get(index);
                         if (runConnectNumbers_[blockIndex(ladderGrid)] == 0) {
                             if (runRoute(ioMap, ladderGrid)) {
                                 runConnectNumbers_[blockIndex(ladderGrid)] = 1;
@@ -1059,7 +964,17 @@ public class Ladder {
         LadderGrid grid;
         int index, size;
 
-        for (index = 0, size = ladderGrids_.size(); index < size; index++) {
+        size = ladderGrids_.size();
+        if ((column >= 0) && (column < column_) && (row >= 0)) {
+            index = column + (row * column_);
+            if ((index >= 0) && (index < size)) {
+                grid = ladderGrids_.get(index);
+                if ((grid.getColumnIndex() == column) && (grid.getRowIndex() == row)) {
+                    return grid;
+                }
+            }
+        }
+        for (index = 0; index < size; index++) {
             grid = ladderGrids_.get(index);
             if ((grid.getColumnIndex() == column) && (grid.getRowIndex() == row)) {
                 return grid;

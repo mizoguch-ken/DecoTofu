@@ -65,4 +65,16 @@ class LadderPdfExporterTest {
         // the parent directory does not exist : the error of the writing is not thrown
         assertNull(exporter.export(file));
     }
+
+    @Test
+    void scriptBlockWithRemovedScriptIsExported(@TempDir Path directory) throws IOException {
+        Path file = directory.resolve("scriptless.pdf");
+        LadderJson json = ladderJson("ladder");
+        json.getLadders().get(0).addBlock(new LadderJsonBlock(1, 1, LadderBlock.SCRIPT.toString(),
+                false, false, "IO_SCRIPT", null, null, null));
+        LadderPdfExporter exporter = new LadderPdfExporter(json, "ladder.json", new CopyOnWriteArrayList<>());
+
+        assertSame(file, exporter.export(file));
+        assertTrue(Files.exists(file));
+    }
 }

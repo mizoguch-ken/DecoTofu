@@ -77,6 +77,7 @@ class ConsoleTest {
             Console.write("ConsoleTest", "logged", true);
             Console.write("ConsoleTest", "logged", false);
             Console.writeStackTrace(ConsoleTest.class.getName(), new RuntimeException("logged"));
+            Console.writeStackTrace(ConsoleTest.class.getName(), null);
         });
     }
 }

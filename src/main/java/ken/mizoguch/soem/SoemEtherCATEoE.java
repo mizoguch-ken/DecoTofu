@@ -62,7 +62,7 @@ public interface SoemEtherCATEoE {
     /**
      * EOE ip4 address in network order
      */
-    public class eoe_ip4_addr_t extends Struct {
+    public final class eoe_ip4_addr_t extends Struct {
 
         public final Unsigned32 addr;
 
@@ -76,14 +76,14 @@ public interface SoemEtherCATEoE {
     /**
      * EOE ethernet address
      */
-    public class eoe_ethaddr_t extends Struct {
+    public final class eoe_ethaddr_t extends Struct {
 
         public final Unsigned8 addr[];
 
         public eoe_ethaddr_t(jnr.ffi.Runtime runtime) {
             super(runtime);
 
-            addr = new Unsigned8[EOE_ETHADDR_LENGTH];
+            addr = super.array(new Unsigned8[EOE_ETHADDR_LENGTH]);
         }
     }
 }

@@ -69,6 +69,9 @@ public class Console {
      * @param throwable
      */
     public static void writeStackTrace(final String name, final Throwable throwable) {
+        if (throwable == null) {
+            return;
+        }
         PrintStream printStream = printStream_;
 
         if (printStream == null) {

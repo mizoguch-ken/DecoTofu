@@ -70,7 +70,7 @@ public class JavaLibrary {
         }
     }
 
-    private static String className = "";
+    private static volatile String className = "";
     private static final String DEFAULT_LIBRARY_PATH = System.getProperty("java.library.path", "");
     private static final List<Path> PATHS = new ArrayList<>();
     private static final List<String> LIBS = new ArrayList<>();
@@ -88,7 +88,7 @@ public class JavaLibrary {
      * @param name
      */
     public static void setClassName(String name) {
-        className = name;
+        className = (name != null) ? name : "";
     }
 
     /**
@@ -98,6 +98,9 @@ public class JavaLibrary {
      */
     public static List<Path> findFile(Path root, String pattern) {
         List<Path> matches = new ArrayList<>();
+        if ((root == null) || (pattern == null)) {
+            return matches;
+        }
         try {
             Finder finder = new Finder(pattern);
             Files.walkFileTree(root, finder);
@@ -113,7 +116,7 @@ public class JavaLibrary {
      * @param path
      * @return
      */
-    public static boolean isLibraryPath(Path path) {
+    public static synchronized boolean isLibraryPath(Path path) {
         return PATHS.stream().anyMatch((t) -> (t.equals(path)));
     }
 
@@ -168,10 +171,14 @@ public class JavaLibrary {
                 continue;
             }
 
-            // add PATHS
-            PATHS.add(local);
-            // set java.library.path
-            refreshLibraryPath();
+            synchronized (JavaLibrary.class) {
+                if (!isLibraryPath(local)) {
+                    // add PATHS
+                    PATHS.add(local);
+                }
+                // set java.library.path
+                refreshLibraryPath();
+            }
             return true;
         }
         return false;
@@ -299,14 +306,16 @@ public class JavaLibrary {
             return false;
         }
 
-        // library paths check
-        if (isLibraryPath(localPath)) {
-            return loadLibrary(libraryName, systemLoad);
+        synchronized (JavaLibrary.class) {
+            // library paths check
+            if (isLibraryPath(localPath)) {
+                return loadLibrary(libraryName, systemLoad);
+            }
+            // add PATHS
+            PATHS.add(localPath);
+            // set java.library.path
+            return setLibraryPath(libraryName, systemLoad);
         }
-        // add PATHS
-        PATHS.add(localPath);
-        // set java.library.path
-        return setLibraryPath(libraryName, systemLoad);
     }
 
     /**
@@ -316,9 +325,9 @@ public class JavaLibrary {
      * @param systemLoad
      * @return
      */
-    public static boolean addLibraryPath(Path path, String libraryName, boolean systemLoad) {
+    public static synchronized boolean addLibraryPath(Path path, String libraryName, boolean systemLoad) {
         // library paths check
-        if (Files.exists(path)) {
+        if ((path != null) && Files.exists(path)) {
             if (Files.isRegularFile(path)) {
                 path = path.getParent();
             }
@@ -339,7 +348,7 @@ public class JavaLibrary {
      * @param systemLoad
      * @return
      */
-    public static boolean setLibraryPath(String libraryName, boolean systemLoad) {
+    public static synchronized boolean setLibraryPath(String libraryName, boolean systemLoad) {
         if (!PATHS.isEmpty()) {
             refreshLibraryPath();
             return loadLibrary(libraryName, systemLoad);
@@ -352,7 +361,7 @@ public class JavaLibrary {
      * @param libraryName
      * @return
      */
-    public static boolean isLibrary(String libraryName) {
+    public static synchronized boolean isLibrary(String libraryName) {
         return LIBS.stream().anyMatch((lib) -> (lib.equals(libraryName)));
     }
 
@@ -371,7 +380,7 @@ public class JavaLibrary {
      * @param systemLoad
      * @return
      */
-    public static boolean loadLibrary(String libraryName, boolean systemLoad) {
+    public static synchronized boolean loadLibrary(String libraryName, boolean systemLoad) {
         if ((libraryName == null) || libraryName.isEmpty()) {
             return false;
         }
@@ -446,7 +455,7 @@ public class JavaLibrary {
      *
      * @return
      */
-    public static String refreshLibraryPath() {
+    public static synchronized String refreshLibraryPath() {
         StringBuilder pathString = new StringBuilder(DEFAULT_LIBRARY_PATH);
         PATHS.stream().forEach((p) -> {
             try {

@@ -135,12 +135,19 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @return
      */
     public Boolean po2so(int slave, long eep_man, long eep_id, String func) {
+        if ((func != null) && !isScriptFunction(func)) {
+            write(FUNCTION_NAME, "invalid script function [" + func + "]", true);
+            return false;
+        }
         Callable<Integer> fnc = () -> {
             if (func != null) {
                 if (state_ == Worker.State.SUCCEEDED) {
                     try {
-                        return (Integer) webEngine_.executeScript(func + "(" + slave + ");");
-                    } catch (JSException ex) {
+                        Object result = webEngine_.executeScript(func + "(" + slave + ");");
+                        if (result instanceof Number number) {
+                            return number.intValue();
+                        }
+                    } catch (JSException | NullPointerException ex) {
                         Console.writeStackTrace(SoemPlugin.class.getName(), ex);
                     }
                 }

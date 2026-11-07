@@ -3765,20 +3765,9 @@ public class LadderGridPane extends AnchorPane {
             case NOT_BITS:
             case MOVE:
                 if (ladderGrid_.getBlockFunctions()[0].isNumber()) {
-                    switch (ladderGrid_.getBlockFunctions()[0].getRadix()) {
-                        case 10:
-                            ((Labeled) grpBlock_.getChildren().get(4))
-                                    .setText(Double.toString(ladderGrid_.getBlockFunctions()[0].getValue()));
-                            break;
-                        case 16:
-                            ((Labeled) grpBlock_.getChildren().get(4)).setText(
-                                    "0x" + Long.toString((long) ladderGrid_.getBlockFunctions()[0].getValue(), 16));
-                            break;
-                        case 2:
-                            ((Labeled) grpBlock_.getChildren().get(4)).setText(
-                                    "0b" + Long.toString((long) ladderGrid_.getBlockFunctions()[0].getValue(), 2));
-                            break;
-                    }
+                    ((Labeled) grpBlock_.getChildren().get(4)).setText(LadderNumber.format(
+                            ladderGrid_.getBlockFunctions()[0].getValue(),
+                            ladderGrid_.getBlockFunctions()[0].getRadix()));
                 } else {
                     ((Labeled) grpBlock_.getChildren().get(4)).setText(ladderGrid_.getBlockFunctions()[0].getAddress());
                 }
@@ -3795,39 +3784,17 @@ public class LadderGridPane extends AnchorPane {
             case SHIFT_RIGHT_BITS:
             case SIGMOID:
                 if (ladderGrid_.getBlockFunctions()[0].isNumber()) {
-                    switch (ladderGrid_.getBlockFunctions()[0].getRadix()) {
-                        case 10:
-                            ((Labeled) grpBlock_.getChildren().get(4))
-                                    .setText(Double.toString(ladderGrid_.getBlockFunctions()[0].getValue()));
-                            break;
-                        case 16:
-                            ((Labeled) grpBlock_.getChildren().get(4)).setText(
-                                    "0x" + Long.toString((long) ladderGrid_.getBlockFunctions()[0].getValue(), 16));
-                            break;
-                        case 2:
-                            ((Labeled) grpBlock_.getChildren().get(4)).setText(
-                                    "0b" + Long.toString((long) ladderGrid_.getBlockFunctions()[0].getValue(), 2));
-                            break;
-                    }
+                    ((Labeled) grpBlock_.getChildren().get(4)).setText(LadderNumber.format(
+                            ladderGrid_.getBlockFunctions()[0].getValue(),
+                            ladderGrid_.getBlockFunctions()[0].getRadix()));
                 } else {
                     ((Labeled) grpBlock_.getChildren().get(4)).setText(ladderGrid_.getBlockFunctions()[0].getAddress());
                 }
 
                 if (ladderGrid_.getBlockFunctions()[1].isNumber()) {
-                    switch (ladderGrid_.getBlockFunctions()[1].getRadix()) {
-                        case 10:
-                            ((Labeled) grpBlock_.getChildren().get(5))
-                                    .setText(Double.toString(ladderGrid_.getBlockFunctions()[1].getValue()));
-                            break;
-                        case 16:
-                            ((Labeled) grpBlock_.getChildren().get(5)).setText(
-                                    "0x" + Long.toString((long) ladderGrid_.getBlockFunctions()[1].getValue(), 16));
-                            break;
-                        case 2:
-                            ((Labeled) grpBlock_.getChildren().get(5)).setText(
-                                    "0b" + Long.toString((long) ladderGrid_.getBlockFunctions()[1].getValue(), 2));
-                            break;
-                    }
+                    ((Labeled) grpBlock_.getChildren().get(5)).setText(LadderNumber.format(
+                            ladderGrid_.getBlockFunctions()[1].getValue(),
+                            ladderGrid_.getBlockFunctions()[1].getRadix()));
                 } else {
                     ((Labeled) grpBlock_.getChildren().get(5)).setText(ladderGrid_.getBlockFunctions()[1].getAddress());
                 }
@@ -3836,23 +3803,9 @@ public class LadderGridPane extends AnchorPane {
             case COUNTER:
                 if (ladderGrid_.getBlockFunctions()[0].isNumber()) {
                     if (!ladderGrid_.isBlockLd()) {
-                        switch (ladderGrid_.getBlockFunctions()[0].getRadix()) {
-                            case 10:
-                                ((Labeled) grpBlock_.getChildren().get(4))
-                                        .setText(Double.toString(ladderGrid_.getBlockFunctions()[0].getValue()
-                                                - ladderGrid_.getCumulativeValue()));
-                                break;
-                            case 16:
-                                ((Labeled) grpBlock_.getChildren().get(4)).setText(
-                                        "0x" + Long.toString((long) (ladderGrid_.getBlockFunctions()[0].getValue()
-                                                - ladderGrid_.getCumulativeValue()), 16));
-                                break;
-                            case 2:
-                                ((Labeled) grpBlock_.getChildren().get(4)).setText(
-                                        "0b" + Long.toString((long) (ladderGrid_.getBlockFunctions()[0].getValue()
-                                                - ladderGrid_.getCumulativeValue()), 2));
-                                break;
-                        }
+                        ((Labeled) grpBlock_.getChildren().get(4)).setText(LadderNumber.format(
+                                ladderGrid_.getBlockFunctions()[0].getValue() - ladderGrid_.getCumulativeValue(),
+                                ladderGrid_.getBlockFunctions()[0].getRadix()));
                     } else {
                         ((Labeled) grpBlock_.getChildren().get(4)).setText("0");
                     }
@@ -3864,38 +3817,13 @@ public class LadderGridPane extends AnchorPane {
             case COUNTER_NOT:
                 if (ladderGrid_.getBlockFunctions()[0].isNumber()) {
                     if (ladderGrid_.isBlockLd()) {
-                        switch (ladderGrid_.getBlockFunctions()[0].getRadix()) {
-                            case 10:
-                                ((Labeled) grpBlock_.getChildren().get(4))
-                                        .setText(Double.toString(ladderGrid_.getBlockFunctions()[0].getValue()
-                                                - ladderGrid_.getCumulativeValue()));
-                                break;
-                            case 16:
-                                ((Labeled) grpBlock_.getChildren().get(4)).setText(
-                                        "0x" + Long.toString((long) (ladderGrid_.getBlockFunctions()[0].getValue()
-                                                - ladderGrid_.getCumulativeValue()), 16));
-                                break;
-                            case 2:
-                                ((Labeled) grpBlock_.getChildren().get(4)).setText(
-                                        "0b" + Long.toString((long) (ladderGrid_.getBlockFunctions()[0].getValue()
-                                                - ladderGrid_.getCumulativeValue()), 2));
-                                break;
-                        }
+                        ((Labeled) grpBlock_.getChildren().get(4)).setText(LadderNumber.format(
+                                ladderGrid_.getBlockFunctions()[0].getValue() - ladderGrid_.getCumulativeValue(),
+                                ladderGrid_.getBlockFunctions()[0].getRadix()));
                     } else {
-                        switch (ladderGrid_.getBlockFunctions()[0].getRadix()) {
-                            case 10:
-                                ((Labeled) grpBlock_.getChildren().get(4))
-                                        .setText(Double.toString(ladderGrid_.getBlockFunctions()[0].getValue()));
-                                break;
-                            case 16:
-                                ((Labeled) grpBlock_.getChildren().get(4)).setText("0x"
-                                        + Long.toString((long) (ladderGrid_.getBlockFunctions()[0].getValue()), 16));
-                                break;
-                            case 2:
-                                ((Labeled) grpBlock_.getChildren().get(4)).setText("0b"
-                                        + Long.toString((long) (ladderGrid_.getBlockFunctions()[0].getValue()), 2));
-                                break;
-                        }
+                        ((Labeled) grpBlock_.getChildren().get(4)).setText(LadderNumber.format(
+                                ladderGrid_.getBlockFunctions()[0].getValue(),
+                                ladderGrid_.getBlockFunctions()[0].getRadix()));
                     }
                 } else {
                     ((Labeled) grpBlock_.getChildren().get(4)).setText(ladderGrid_.getBlockFunctions()[0].getAddress());

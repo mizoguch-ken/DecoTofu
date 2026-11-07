@@ -109,16 +109,20 @@ public class LadderNumber {
         if (!matcher.find()) {
             return null;
         }
-        if (matcher.group(1) != null) {
-            return new Value(Double.parseDouble(string), RADIX_DECIMAL);
-        }
-        boolean negative = (string.charAt(0) == '-');
+        try {
+            if (matcher.group(1) != null) {
+                return new Value(Double.parseDouble(string), RADIX_DECIMAL);
+            }
+            boolean negative = (string.charAt(0) == '-');
 
-        if (matcher.group(2) != null) {
-            return new Value(sign(negative, Long.parseLong(matcher.group(2), RADIX_HEXADECIMAL)),
-                    RADIX_HEXADECIMAL);
+            if (matcher.group(2) != null) {
+                return new Value(sign(negative, Long.parseLong(matcher.group(2), RADIX_HEXADECIMAL)),
+                        RADIX_HEXADECIMAL);
+            }
+            return new Value(sign(negative, Long.parseLong(matcher.group(3), RADIX_BINARY)), RADIX_BINARY);
+        } catch (NumberFormatException ex) {
+            return null;
         }
-        return new Value(sign(negative, Long.parseLong(matcher.group(3), RADIX_BINARY)), RADIX_BINARY);
     }
 
     /**
@@ -146,9 +150,9 @@ public class LadderNumber {
 
         switch (radix) {
             case RADIX_HEXADECIMAL:
-                return prefix + "0x" + Long.toString(negative ? -integer : integer, RADIX_HEXADECIMAL);
+                return prefix + "0x" + Long.toUnsignedString(negative ? -integer : integer, RADIX_HEXADECIMAL);
             case RADIX_BINARY:
-                return prefix + "0b" + Long.toString(negative ? -integer : integer, RADIX_BINARY);
+                return prefix + "0b" + Long.toUnsignedString(negative ? -integer : integer, RADIX_BINARY);
             default:
                 return Double.toString(value);
         }

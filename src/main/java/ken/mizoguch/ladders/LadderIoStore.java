@@ -144,7 +144,7 @@ class LadderIoStore {
      * @return the value, null when the address is local or not registered
      */
     Double value(String address) {
-        if (!address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+        if ((address != null) && !address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
             return value(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address);
         }
         return null;
@@ -157,8 +157,11 @@ class LadderIoStore {
      * @return the value, null when the address is not registered
      */
     Double value(int idx, String address) {
-        if (ioMap_.get(idx).containsKey(address)) {
-            return ioMap_.get(idx).get(address).getValue();
+        if ((address != null) && (idx >= 0) && (idx < ioMap_.size())) {
+            LadderIo io = ioMap_.get(idx).get(address);
+            if (io != null) {
+                return io.getValue();
+            }
         }
         return null;
     }
@@ -357,8 +360,8 @@ class LadderIoStore {
      * @param isCycled true when the io of the script is consumed by the next cycle
      */
     private void setScriptIo(int idx, String address, double value, boolean isCycled) {
-        scriptIoMap_.get(idx).putIfAbsent(address, new LadderIo(address));
-        scriptIoMap_.get(idx).get(address).setValue(value);
-        scriptIoMap_.get(idx).get(address).setCycled(isCycled);
+        LadderIo scriptIo = scriptIoMap_.get(idx).computeIfAbsent(address, LadderIo::new);
+        scriptIo.setValue(value);
+        scriptIo.setCycled(isCycled);
     }
 }

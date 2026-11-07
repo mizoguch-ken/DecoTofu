@@ -268,4 +268,34 @@ class LadderTest {
         assertEquals(16.0, map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("SFL").getValue());
         assertEquals(-1.0, map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("NOT").getValue());
     }
+
+    @Test
+    void blockWithEmptyFunctionAddressIsIgnoredWithoutException() {
+        Ladder ladder = new Ladder(1, "ladder", 4, 3);
+        LadderGrid move = outGrid(1, 1, LadderBlock.MOVE, "DST");
+        CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> map = ioMap("DST");
+
+        // functions[0] is not a number and has the initial empty address
+        ladder.addLadderGrid(move);
+        ladder.setOutGrids(grids(move));
+        assertDoesNotThrow(() -> ladder.run(map, CYCLE_TIME));
+        assertEquals(0.0, map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("DST").getValue());
+    }
+
+    @Test
+    void findGridReturnsMatchingGridInConstantTime() {
+        Ladder ladder = new Ladder(1, "ladder", 4, 3);
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 4; col++) {
+                ladder.addLadderGrid(new LadderGrid(col, row));
+            }
+        }
+
+        LadderGrid found = ladder.findGrid(2, 1);
+        assertNotNull(found);
+        assertEquals(2, found.getColumnIndex());
+        assertEquals(1, found.getRowIndex());
+        assertNull(ladder.findGrid(4, 1));
+        assertNull(ladder.findGrid(-1, 0));
+    }
 }

@@ -350,6 +350,7 @@ public class LadderIo {
             return false;
         }
         isDefaultLd_ = false;
+        boolean scheduleExecution;
         synchronized (lockScript_) {
             if (!isScriptLengthAcceptable(script_.length(), script.length())) {
                 // an abnormal length of script is refused : the javascript of a script
@@ -358,28 +359,31 @@ public class LadderIo {
                 script_.setLength(0);
                 return false;
             }
+            scheduleExecution = (script_.length() == 0);
             script_.append(script).append(";");
         }
-        Platform.runLater(() -> {
-            String executeScript;
+        if (scheduleExecution) {
+            Platform.runLater(() -> {
+                String executeScript;
 
-            synchronized (lockScript_) {
-                executeScript = script_.toString();
-                script_.delete(0, script_.length());
-            }
-            if (executeScript.length() > 0) {
-                if (webEngine_ != null) {
-                    if (state_ == Worker.State.SUCCEEDED) {
-                        try {
-                            scriptObject_ = webEngine_.executeScript(executeScript);
-                        } catch (JSException | ClassCastException ex) {
-                            Console.writeStackTrace(LadderIo.class.getName(), ex);
+                synchronized (lockScript_) {
+                    executeScript = script_.toString();
+                    script_.setLength(0);
+                }
+                if (executeScript.length() > 0) {
+                    if (webEngine_ != null) {
+                        if (state_ == Worker.State.SUCCEEDED) {
+                            try {
+                                scriptObject_ = webEngine_.executeScript(executeScript);
+                            } catch (JSException | ClassCastException ex) {
+                                Console.writeStackTrace(LadderIo.class.getName(), ex);
+                            }
+                            setScriptValue(scriptObject_);
                         }
-                        setScriptValue(scriptObject_);
                     }
                 }
-            }
-        });
+            });
+        }
         return true;
     }
 
@@ -392,10 +396,8 @@ public class LadderIo {
      */
     private synchronized void setScriptValue(Object scriptResult) {
         if (!undefined_.equals(scriptResult)) {
-            if (scriptResult instanceof Integer) {
-                value_ = (Integer) scriptResult;
-            } else if (scriptResult instanceof Double) {
-                value_ = (Double) scriptResult;
+            if (scriptResult instanceof Number number) {
+                value_ = number.doubleValue();
             }
         }
         isLd_ = (value_ != 0.0);

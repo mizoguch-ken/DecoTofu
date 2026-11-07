@@ -528,22 +528,24 @@ public class DesignLaddersController implements Initializable {
                 File fcfile = fileChooser.showOpenDialog(stage_);
                 if (fcfile != null) {
                     Path file = fcfile.toPath();
-
-                    Stage stage = new Stage(StageStyle.DECORATED);
-                    FXMLLoader loader = new FXMLLoader(
-                            this.getClass().getClassLoader().getResource("fxml/DesignLaddersDifference.fxml"));
-                    Parent root = (Parent) loader.load();
-                    DesignLaddersDifferenceController ladderDifferenceController = (DesignLaddersDifferenceController) loader
-                            .getController();
-                    stage.setScene(new Scene(root));
-                    if (!icons_.isEmpty()) {
-                        stage.getIcons().addAll(icons_);
+                    LadderJson originalJson = ladders_.ladderJsonOpen(file);
+                    if (originalJson != null) {
+                        Stage stage = new Stage(StageStyle.DECORATED);
+                        FXMLLoader loader = new FXMLLoader(
+                                this.getClass().getClassLoader().getResource("fxml/DesignLaddersDifference.fxml"));
+                        Parent root = (Parent) loader.load();
+                        DesignLaddersDifferenceController ladderDifferenceController = (DesignLaddersDifferenceController) loader
+                                .getController();
+                        stage.setScene(new Scene(root));
+                        if (!icons_.isEmpty()) {
+                            stage.getIcons().addAll(icons_);
+                        }
+                        ladderDifferenceController.startUp(stage, ladders_);
+                        ladderDifferenceController.diffarence(originalJson, file,
+                                ladders_.ladderJsonSave(tabLadder), ladders_.getFilePath());
+                        stage.setTitle("Difference");
+                        stage.showAndWait();
                     }
-                    ladderDifferenceController.startUp(stage, ladders_);
-                    ladderDifferenceController.diffarence(ladders_.ladderJsonOpen(file), file,
-                            ladders_.ladderJsonSave(tabLadder), ladders_.getFilePath());
-                    stage.setTitle("Difference");
-                    stage.showAndWait();
                 }
             } catch (IOException ex) {
                 Console.writeStackTrace(DesignLaddersController.class.getName(), ex);
@@ -781,9 +783,14 @@ public class DesignLaddersController implements Initializable {
             if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
                 switch (event.getCode()) {
                     case F:
-                        treTableIo = treeTableIo.getSelectionModel().getSelectedItem().getValue();
-                        treTableIoParent = treeTableIo.getSelectionModel().getSelectedItem().getParent().getValue();
-                        if (treTableIoParent != treeTableIo.getRoot().getValue()) {
+                        TreeItem<LadderTreeTableIo> selectedItem = treeTableIo.getSelectionModel().getSelectedItem();
+                        if ((selectedItem == null) || (selectedItem.getParent() == null)) {
+                            break;
+                        }
+                        treTableIo = selectedItem.getValue();
+                        treTableIoParent = selectedItem.getParent().getValue();
+                        if ((treTableIo != null) && (treTableIoParent != null)
+                                && (treTableIoParent != treeTableIo.getRoot().getValue())) {
                             tableIo.getItems().clear();
 
                             address = treTableIo.getAddress();
@@ -930,15 +937,17 @@ public class DesignLaddersController implements Initializable {
                 case UP:
                 case DOWN:
                     tblIo = tableIo.getSelectionModel().getSelectedItem();
-                    for (int index = 0, size = tabLadder.getTabs().size(); index < size; index++) {
-                        scrollPane = (ScrollPane) tabLadder.getTabs().get(index).getContent();
-                        pane = (LadderPane) scrollPane.getContent();
-                        if (pane.getLadder().getName().equals(tblIo.getName())) {
-                            gridPane = pane.findGridPane(tblIo.getColumn(), tblIo.getRow());
-                            if (gridPane != null) {
-                                tabLadder.getSelectionModel().select(index);
-                                ladders_.getLadderCommand().blockChangeSelect(scrollPane, pane,
-                                        gridPane.getLadderGrid(), false);
+                    if (tblIo != null) {
+                        for (int index = 0, size = tabLadder.getTabs().size(); index < size; index++) {
+                            scrollPane = (ScrollPane) tabLadder.getTabs().get(index).getContent();
+                            pane = (LadderPane) scrollPane.getContent();
+                            if (pane.getLadder().getName().equals(tblIo.getName())) {
+                                gridPane = pane.findGridPane(tblIo.getColumn(), tblIo.getRow());
+                                if (gridPane != null) {
+                                    tabLadder.getSelectionModel().select(index);
+                                    ladders_.getLadderCommand().blockChangeSelect(scrollPane, pane,
+                                            gridPane.getLadderGrid(), false);
+                                }
                             }
                         }
                     }
@@ -1162,55 +1171,58 @@ public class DesignLaddersController implements Initializable {
         if (isShown_ && viewRefresh_) {
             viewRefresh_ = false;
             Platform.runLater(() -> {
-                // cycletime
-                lblCycleTime.setText(Long.toString(cumulativeCycleTime
-                        / Math.max(1, cumulativeCycleTimeCount)) + "ns");
+                try {
+                    // cycletime
+                    lblCycleTime.setText(Long.toString(cumulativeCycleTime
+                            / Math.max(1, cumulativeCycleTimeCount)) + "ns");
 
-                // io map
-                ioMap_ = ladders_.getIoMap();
+                    // io map
+                    ioMap_ = ladders_.getIoMap();
 
-                // ladder refresh : the variables of the refresh are local, because the
-                // refresh of the next cycle can be queued before this one is done
-                Tab selectedTab = tabLadder.getSelectionModel().getSelectedItem();
+                    // ladder refresh : the variables of the refresh are local, because the
+                    // refresh of the next cycle can be queued before this one is done
+                    Tab selectedTab = tabLadder.getSelectionModel().getSelectedItem();
 
-                if (selectedTab != null) {
-                    ScrollPane selectedScrollPane = (ScrollPane) selectedTab.getContent();
+                    if (selectedTab != null) {
+                        ScrollPane selectedScrollPane = (ScrollPane) selectedTab.getContent();
 
-                    ((LadderPane) selectedScrollPane.getContent()).refreshView(ioMap_, selectedScrollPane);
-                }
-
-                // tree table refresh : the row of the tree answers the ladder of the io map
-                ObservableList<TreeItem<LadderTreeTableIo>> ladderRows = treeTableIo.getRoot().getChildren();
-
-                for (int ladderIndex = 0; ladderIndex < ladderRows.size(); ladderIndex++) {
-                    TreeItem<LadderTreeTableIo> ladderRow = ladderRows.get(ladderIndex);
-
-                    if (!ladderRow.isExpanded() || (ladderIndex >= ioMap_.size())) {
-                        continue;
+                        ((LadderPane) selectedScrollPane.getContent()).refreshView(ioMap_, selectedScrollPane);
                     }
-                    ConcurrentHashMap<String, LadderIo> ladderIoMap = ioMap_.get(ladderIndex);
 
-                    for (TreeItem<LadderTreeTableIo> ioRow : ladderRow.getChildren()) {
-                        LadderTreeTableIo tableIo = ioRow.getValue();
-                        LadderIo ladderIo;
+                    // tree table refresh : the row of the tree answers the ladder of the io map
+                    ObservableList<TreeItem<LadderTreeTableIo>> ladderRows = treeTableIo.getRoot().getChildren();
 
-                        if (tableIo == null) {
+                    for (int ladderIndex = 0; ladderIndex < ladderRows.size(); ladderIndex++) {
+                        TreeItem<LadderTreeTableIo> ladderRow = ladderRows.get(ladderIndex);
+
+                        if (!ladderRow.isExpanded() || (ladderIndex >= ioMap_.size())) {
                             continue;
                         }
-                        ladderIo = ladderIoMap.get(tableIo.getAddress());
-                        if (ladderIo == null) {
-                            // the io of the row is not registered any more : the cycle does
-                            // not answer it, so the value of the row is left as it is
-                            continue;
-                        }
-                        double value = ladderIo.getValue();
+                        ConcurrentHashMap<String, LadderIo> ladderIoMap = ioMap_.get(ladderIndex);
 
-                        if (value != tableIo.getValue()) {
-                            tableIo.setValue(value);
+                        for (TreeItem<LadderTreeTableIo> ioRow : ladderRow.getChildren()) {
+                            LadderTreeTableIo tableIo = ioRow.getValue();
+                            LadderIo ladderIo;
+
+                            if (tableIo == null) {
+                                continue;
+                            }
+                            ladderIo = ladderIoMap.get(tableIo.getAddress());
+                            if (ladderIo == null) {
+                                // the io of the row is not registered any more : the cycle does
+                                // not answer it, so the value of the row is left as it is
+                                continue;
+                            }
+                            double value = ladderIo.getValue();
+
+                            if (value != tableIo.getValue()) {
+                                tableIo.setValue(value);
+                            }
                         }
                     }
+                } finally {
+                    viewRefresh_ = true;
                 }
-                viewRefresh_ = true;
             });
         }
     }

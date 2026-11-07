@@ -141,7 +141,8 @@ public class DesignLaddersDifferenceController implements Initializable {
         // tabpane
         tabLadderOriginal.getSelectionModel().selectedIndexProperty()
                 .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-                    if (newValue != null) {
+                    if ((newValue != null) && (newValue.intValue() >= 0)
+                            && (newValue.intValue() < tabLadderOriginal.getTabs().size())) {
                         String name = tabLadderOriginal.getTabs().get(newValue.intValue()).getText();
                         if (deltabs_.containsKey(name)) {
                             if (deltabs_.get(name).tabRevised != null) {
@@ -152,7 +153,8 @@ public class DesignLaddersDifferenceController implements Initializable {
                 });
         tabLadderRevised.getSelectionModel().selectedIndexProperty()
                 .addListener((ObservableValue<? extends Number> observable, Number oldValue, Number newValue) -> {
-                    if (newValue != null) {
+                    if ((newValue != null) && (newValue.intValue() >= 0)
+                            && (newValue.intValue() < tabLadderRevised.getTabs().size())) {
                         String name = tabLadderRevised.getTabs().get(newValue.intValue()).getText();
                         if (deltabs_.containsKey(name)) {
                             if (deltabs_.get(name).tabOriginal != null) {
@@ -444,10 +446,12 @@ public class DesignLaddersDifferenceController implements Initializable {
             }
 
             // initial select
-            String name = tabLadderRevised.getTabs().get(0).getText();
-            if (deltabs_.containsKey(name)) {
-                if (deltabs_.get(name).tabOriginal != null) {
-                    tabLadderOriginal.getSelectionModel().select(deltabs_.get(name).indexOriginal);
+            if (!tabLadderRevised.getTabs().isEmpty()) {
+                String name = tabLadderRevised.getTabs().get(0).getText();
+                if (deltabs_.containsKey(name)) {
+                    if (deltabs_.get(name).tabOriginal != null) {
+                        tabLadderOriginal.getSelectionModel().select(deltabs_.get(name).indexOriginal);
+                    }
                 }
             }
         }

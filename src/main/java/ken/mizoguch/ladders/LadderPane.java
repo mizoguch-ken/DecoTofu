@@ -392,208 +392,28 @@ public class LadderPane extends GridPane {
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case COMPARISON_EQUAL:
-                                        defaultValue.append(LadderBlock.COMPARISON_EQUAL.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case COMPARISON_NOT_EQUAL:
-                                        defaultValue.append(LadderBlock.COMPARISON_NOT_EQUAL.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case COMPARISON_LESS:
-                                        defaultValue.append(LadderBlock.COMPARISON_LESS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case COMPARISON_LESS_EQUAL:
-                                        defaultValue.append(LadderBlock.COMPARISON_LESS_EQUAL.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case COMPARISON_GREATER:
-                                        defaultValue.append(LadderBlock.COMPARISON_GREATER.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case COMPARISON_GREATER_EQUAL:
-                                        defaultValue.append(LadderBlock.COMPARISON_GREATER_EQUAL.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case COMPARISON_AND_BITS:
-                                        defaultValue.append(LadderBlock.COMPARISON_AND_BITS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case COMPARISON_OR_BITS:
-                                        defaultValue.append(LadderBlock.COMPARISON_OR_BITS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case COMPARISON_XOR_BITS:
-                                        defaultValue.append(LadderBlock.COMPARISON_XOR_BITS.toCommand());
+                                    case NOT_BITS:
+                                    case TIMER:
+                                    case TIMER_NOT:
+                                    case COUNTER:
+                                    case COUNTER_NOT:
+                                    case MOVE:
+                                        defaultValue.append(previousGrid.getBlock().toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
                                         if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
+                                            defaultValue.append(LadderNumber.format(
+                                                    previousGrid.getBlockFunctions()[0].getValue(),
+                                                    previousGrid.getBlockFunctions()[0].getRadix()));
                                         } else {
                                             defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
                                         }
@@ -609,475 +429,32 @@ public class LadderPane extends GridPane {
                                         defaultValue.append(previousGrid.getAddress());
                                         break;
                                     case AND_BITS:
-                                        defaultValue.append(LadderBlock.AND_BITS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case OR_BITS:
-                                        defaultValue.append(LadderBlock.OR_BITS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case XOR_BITS:
-                                        defaultValue.append(LadderBlock.XOR_BITS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
-                                    case NOT_BITS:
-                                        defaultValue.append(LadderBlock.NOT_BITS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
                                     case ADDITION:
-                                        defaultValue.append(LadderBlock.ADDITION.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case SUBTRACTION:
-                                        defaultValue.append(LadderBlock.SUBTRACTION.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case MULTIPLICATION:
-                                        defaultValue.append(LadderBlock.MULTIPLICATION.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case DIVISION:
-                                        defaultValue.append(LadderBlock.DIVISION.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case AVERAGE:
-                                        defaultValue.append(LadderBlock.AVERAGE.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case SHIFT_LEFT_BITS:
-                                        defaultValue.append(LadderBlock.SHIFT_LEFT_BITS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case SHIFT_RIGHT_BITS:
-                                        defaultValue.append(LadderBlock.SHIFT_RIGHT_BITS.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
                                     case SIGMOID:
-                                        defaultValue.append(LadderBlock.SIGMOID.toCommand());
+                                        defaultValue.append(previousGrid.getBlock().toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
                                         defaultValue.append(" ");
                                         if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
+                                            defaultValue.append(LadderNumber.format(
+                                                    previousGrid.getBlockFunctions()[0].getValue(),
+                                                    previousGrid.getBlockFunctions()[0].getRadix()));
                                         } else {
                                             defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
                                         }
                                         defaultValue.append(" ");
                                         if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[1].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[1].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[1].getValue(), 2));
-                                                    break;
-                                            }
+                                            defaultValue.append(LadderNumber.format(
+                                                    previousGrid.getBlockFunctions()[1].getValue(),
+                                                    previousGrid.getBlockFunctions()[1].getRadix()));
                                         } else {
                                             defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
                                         }
@@ -1086,121 +463,6 @@ public class LadderPane extends GridPane {
                                         defaultValue.append(LadderBlock.RANDOM.toCommand());
                                         defaultValue.append(" ");
                                         defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case TIMER:
-                                        defaultValue.append(LadderBlock.TIMER.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
-                                    case TIMER_NOT:
-                                        defaultValue.append(LadderBlock.TIMER_NOT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
-                                    case COUNTER:
-                                        defaultValue.append(LadderBlock.COUNTER.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
-                                    case COUNTER_NOT:
-                                        defaultValue.append(LadderBlock.COUNTER_NOT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
-                                    case MOVE:
-                                        defaultValue.append(LadderBlock.MOVE.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            switch (previousGrid.getBlockFunctions()[0].getRadix()) {
-                                                case 10:
-                                                    defaultValue.append(previousGrid.getBlockFunctions()[0].getValue());
-                                                    break;
-                                                case 16:
-                                                    defaultValue.append("0x").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 16));
-                                                    break;
-                                                case 2:
-                                                    defaultValue.append("0b").append(Long.toString(
-                                                            (long) previousGrid.getBlockFunctions()[0].getValue(), 2));
-                                                    break;
-                                            }
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
                                         break;
                                     case SCRIPT:
                                         defaultValue.append(LadderBlock.SCRIPT.toCommand());
@@ -2568,7 +1830,18 @@ public class LadderPane extends GridPane {
         LadderGridPane findGridPane;
         int index, size;
 
-        for (index = 0, size = getChildren().size(); index < size; index++) {
+        size = getChildren().size();
+        if ((column >= 0) && (column < ladder_.getColumn()) && (row >= 0)) {
+            index = column + (row * ladder_.getColumn());
+            if ((index >= 0) && (index < size)) {
+                findGridPane = (LadderGridPane) getChildren().get(index);
+                findGrid = findGridPane.getLadderGrid();
+                if ((findGrid.getColumnIndex() == column) && (findGrid.getRowIndex() == row)) {
+                    return findGridPane;
+                }
+            }
+        }
+        for (index = 0; index < size; index++) {
             findGridPane = (LadderGridPane) getChildren().get(index);
             findGrid = findGridPane.getLadderGrid();
             if ((findGrid.getColumnIndex() == column) && (findGrid.getRowIndex() == row)) {

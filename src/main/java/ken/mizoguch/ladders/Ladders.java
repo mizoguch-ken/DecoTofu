@@ -678,6 +678,9 @@ public class Ladders extends Service<Void> {
     }
 
     void setTitle() {
+        if (stage_ == null) {
+            return;
+        }
         String fileName = getFileName();
 
         if (fileName == null) {
@@ -801,7 +804,7 @@ public class Ladders extends Service<Void> {
     }
 
     public void setValue(String address, double value) {
-        if (!address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+        if ((address != null) && !address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
             setValue(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address, value);
         }
     }

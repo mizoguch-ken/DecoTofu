@@ -35,9 +35,9 @@ public class SoemEcatThread extends Service<Void> {
     /** the callback of the java side asked for one slave with po2so(). */
     private static final class EcatPO2SO {
 
-        private long eep_man;
-        private long eep_id;
-        private Callable<Integer> func;
+        private final long eep_man;
+        private final long eep_id;
+        private final Callable<Integer> func;
 
         public EcatPO2SO(long eep_man, long eep_id, Callable<Integer> func) {
             this.eep_man = eep_man;
@@ -145,15 +145,7 @@ public class SoemEcatThread extends Service<Void> {
      * @param func
      */
     public void po2so(int slave, long eep_man, long eep_id, Callable<Integer> func) {
-        EcatPO2SO po2so = po2so_.get(slave);
-
-        if (po2so != null) {
-            po2so.eep_man = eep_man;
-            po2so.eep_id = eep_id;
-            po2so.func = func;
-        } else {
-            po2so_.put(slave, new EcatPO2SO(eep_man, eep_id, func));
-        }
+        po2so_.put(slave, new EcatPO2SO(eep_man, eep_id, func));
     }
 
     /**
@@ -288,7 +280,7 @@ public class SoemEcatThread extends Service<Void> {
     private int answerPo2so(int slave) {
         EcatPO2SO po2so = po2so_.get(slave);
 
-        if (po2so == null) {
+        if ((po2so == null) || (po2so.func == null)) {
             // the callback was removed while the slaves are configured
             return 0;
         }
@@ -297,7 +289,8 @@ public class SoemEcatThread extends Service<Void> {
         if (Platform.isFxApplicationThread()) {
             try {
                 future.run();
-                return future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+                Integer result = future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+                return (result != null) ? result : 0;
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
@@ -310,7 +303,8 @@ public class SoemEcatThread extends Service<Void> {
                 // the java side may never answer : the
                 // configuration of the slaves must not wait
                 // for ever inside the native call
-                return future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+                Integer result = future.get(PO2SO_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+                return (result != null) ? result : 0;
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
                 Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
@@ -468,7 +462,7 @@ public class SoemEcatThread extends Service<Void> {
                         if (data != null) {
                             // merge with the value already queued for that byte
                             data.keepMask &= keep;
-                            data.value |= bitsByte;
+                            data.value = Byte.toUnsignedInt(SoemBits.merge((byte) data.value, keep, bitsByte));
                         } else {
                             int current = Byte.toUnsignedInt(group.getByte(address + cnt));
 

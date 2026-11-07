@@ -78,6 +78,8 @@ class LadderNumberTest {
         assertNull(LadderNumber.parse(""));
         assertNull(LadderNumber.parse("OUT"));
         assertNull(LadderNumber.parse("12.3.4"));
+        assertNull(LadderNumber.parse("0x10000000000000000"));
+        assertNull(LadderNumber.parse("0b10000000000000000000000000000000000000000000000000000000000000000"));
     }
 
     @Test
