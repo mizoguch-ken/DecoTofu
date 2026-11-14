@@ -5,6 +5,8 @@
  */
 package ken.mizoguch.soem;
 
+import jnr.ffi.NativeType;
+import jnr.ffi.Platform;
 import jnr.ffi.Struct;
 
 /**
@@ -62,6 +64,30 @@ public interface SoemEtherCATMain {
      */
     public static final int EC_MAX_MAPT = 1;
 
+    public static final int EC_MBXQUEUESTATE_NONE = 0;
+    public static final int EC_MBXQUEUESTATE_REQ = 1;
+    public static final int EC_MBXQUEUESTATE_FAIL = 2;
+    public static final int EC_MBXQUEUESTATE_DONE = 3;
+
+    public static final int ECT_MBXH_NONE = 0;
+    public static final int ECT_MBXH_CYCLIC = 1;
+    public static final int ECT_MBXH_LOST = 2;
+
+    public static final int ECT_ESMTRANS_IP = 0x0001;
+    public static final int ECT_ESMTRANS_PS = 0x0002;
+    public static final int ECT_ESMTRANS_PI = 0x0004;
+    public static final int ECT_ESMTRANS_SP = 0x0008;
+    public static final int ECT_ESMTRANS_SO = 0x0010;
+    public static final int ECT_ESMTRANS_SI = 0x0020;
+    public static final int ECT_ESMTRANS_OS = 0x0040;
+    public static final int ECT_ESMTRANS_OP = 0x0080;
+    public static final int ECT_ESMTRANS_OI = 0x0100;
+    public static final int ECT_ESMTRANS_IB = 0x0200;
+    public static final int ECT_ESMTRANS_BI = 0x0400;
+    public static final int ECT_ESMTRANS_II = 0x0800;
+    public static final int ECT_ESMTRANS_PP = 0x1000;
+    public static final int ECT_ESMTRANS_SS = 0x2000;
+
     public class ec_adaptert extends Struct {
 
         public final String name;
@@ -85,6 +111,123 @@ public interface SoemEtherCATMain {
                 adapter.useMemory(_next.get());
                 return adapter;
             }
+        }
+    }
+
+    /**
+     * pointer structure to Tx and Rx stacks
+     */
+    public final class ec_stackT extends Struct {
+
+        public final Pointer sock;
+        public final Pointer txbuf;
+        public final Pointer txbuflength;
+        public final Pointer tempbuf;
+        public final Pointer rxbuf;
+        public final Pointer rxbufstat;
+        public final Pointer rxsa;
+        public final Unsigned64 rxcnt;
+
+        public ec_stackT(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            sock = new Pointer();
+            txbuf = new Pointer();
+            txbuflength = new Pointer();
+            tempbuf = new Pointer();
+            rxbuf = new Pointer();
+            rxbufstat = new Pointer();
+            rxsa = new Pointer();
+            rxcnt = new Unsigned64();
+        }
+    }
+
+    /**
+     * platform mutex inside ecx_portt (CRITICAL_SECTION on Windows,
+     * pthread_mutex_t on POSIX)
+     */
+    public final class ec_port_mutext extends Struct {
+
+        @SuppressWarnings("unused")
+        private final Pointer[] ptrs_;
+        @SuppressWarnings("unused")
+        private final Signed32[] ints_;
+
+        public ec_port_mutext(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            Platform platform = Platform.getNativePlatform();
+            if (platform.getOS() == Platform.OS.WINDOWS) {
+                // RTL_CRITICAL_SECTION: DebugInfo, LockCount, RecursionCount,
+                // OwningThread, LockSemaphore, SpinCount (40 bytes on x64, 24 on x86)
+                ptrs_ = super.array(new Pointer[4]);
+                ints_ = super.array(new Signed32[2]);
+            } else if (platform.getCPU() == Platform.CPU.AARCH64) {
+                // glibc aarch64 pthread_mutex_t: 48 bytes, 8-byte aligned
+                ptrs_ = super.array(new Pointer[6]);
+                ints_ = null;
+            } else if (runtime.addressSize() == 8) {
+                // glibc x86_64 pthread_mutex_t: 40 bytes, 8-byte aligned
+                ptrs_ = super.array(new Pointer[5]);
+                ints_ = null;
+            } else {
+                // 32-bit pthread_mutex_t: 24 bytes, 4-byte aligned
+                ptrs_ = super.array(new Pointer[6]);
+                ints_ = null;
+            }
+        }
+    }
+
+    /**
+     * pointer structure to buffers, vars and mutexes for port instantiation
+     */
+    public final class ecx_portt extends Struct {
+
+        public final ec_stackT stack;
+        public final Pointer sockhandle_win;
+        public final Signed32 sockhandle_posix;
+        public final Unsigned8[] rxbuf;
+        public final Signed32[] rxbufstat;
+        public final Signed32[] rxsa;
+        public final Unsigned8[] tempinbuf;
+        public final Signed32 tempinbufs;
+        public final Unsigned8[] txbuf;
+        public final Signed32[] txbuflength;
+        public final Unsigned8[] txbuf2;
+        public final Signed32 txbuflength2;
+        public final Unsigned8 lastidx;
+        public final Signed32 redstate;
+        public final Pointer redport;
+        public final ec_port_mutext getindex_mutex;
+        public final ec_port_mutext tx_mutex;
+        public final ec_port_mutext rx_mutex;
+
+        public ecx_portt(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            stack = inner(new ec_stackT(runtime));
+            if (Platform.getNativePlatform().getOS() == Platform.OS.WINDOWS) {
+                sockhandle_win = new Pointer();
+                sockhandle_posix = null;
+            } else {
+                sockhandle_win = null;
+                sockhandle_posix = new Signed32();
+            }
+            rxbuf = super.array(new Unsigned8[SoemEtherCATType.EC_MAXBUF * SoemEtherCATType.EC_BUFSIZE]);
+            rxbufstat = super.array(new Signed32[SoemEtherCATType.EC_MAXBUF]);
+            rxsa = super.array(new Signed32[SoemEtherCATType.EC_MAXBUF]);
+            tempinbuf = super.array(new Unsigned8[SoemEtherCATType.EC_BUFSIZE]);
+            tempinbufs = new Signed32();
+            txbuf = super.array(new Unsigned8[SoemEtherCATType.EC_MAXBUF * SoemEtherCATType.EC_BUFSIZE]);
+            txbuflength = super.array(new Signed32[SoemEtherCATType.EC_MAXBUF]);
+            txbuf2 = super.array(new Unsigned8[SoemEtherCATType.EC_BUFSIZE]);
+            txbuflength2 = new Signed32();
+            lastidx = new Unsigned8();
+            redstate = new Signed32();
+            redport = new Pointer();
+            getindex_mutex = inner(new ec_port_mutext(runtime));
+            tx_mutex = inner(new ec_port_mutext(runtime));
+            rx_mutex = inner(new ec_port_mutext(runtime));
         }
     }
 
@@ -738,6 +881,30 @@ public interface SoemEtherCATMain {
     }
 
     /**
+     * mailbox pool used by context
+     */
+    public final class ec_mbxpoolt extends Struct {
+
+        public final Signed32 listhead;
+        public final Signed32 listtail;
+        public final Signed32 listcount;
+        public final Signed32[] mbxemptylist;
+        public final Pointer mbxmutex;
+        public final Unsigned8[] mbx;
+
+        public ec_mbxpoolt(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            listhead = new Signed32();
+            listtail = new Signed32();
+            listcount = new Signed32();
+            mbxemptylist = super.array(new Signed32[EC_MBXPOOLSIZE]);
+            mbxmutex = new Pointer();
+            mbx = super.array(new Unsigned8[EC_MBXPOOLSIZE * (EC_MAXMBX + 1)]);
+        }
+    }
+
+    /**
      * mailbox queue (transmit queue) used by groups
      */
     public final class ec_mbxqueuet extends Struct {
@@ -764,6 +931,74 @@ public interface SoemEtherCATMain {
             mbxticket = super.array(new Signed32[EC_MBXPOOLSIZE]);
             mbxslave = super.array(new Unsigned16[EC_MBXPOOLSIZE]);
             mbxmutex = new Pointer();
+        }
+    }
+
+    /**
+     * ENI CoE command structure
+     */
+    public final class ec_enicoecmdt extends Struct {
+
+        public final Unsigned16 Transition;
+        public final Unsigned8 CA;
+        public final Unsigned8 Ccs;
+        public final Unsigned16 Index;
+        public final Unsigned8 SubIdx;
+        public final Signed32 Timeout;
+        public final Signed32 DataSize;
+        public final Pointer Data;
+
+        public ec_enicoecmdt(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            Transition = new Unsigned16();
+            CA = new Unsigned8();
+            Ccs = new Unsigned8();
+            Index = new Unsigned16();
+            SubIdx = new Unsigned8();
+            Timeout = new Signed32();
+            DataSize = new Signed32();
+            Data = new Pointer();
+        }
+    }
+
+    /**
+     * ENI slave structure
+     */
+    public final class ec_enislavet extends Struct {
+
+        public final Unsigned16 Slave;
+        public final Unsigned32 VendorId;
+        public final Unsigned32 ProductCode;
+        public final Unsigned32 RevisionNo;
+        public final Pointer CoECmds;
+        public final Signed32 CoECmdCount;
+
+        public ec_enislavet(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            Slave = new Unsigned16();
+            VendorId = new Unsigned32();
+            ProductCode = new Unsigned32();
+            RevisionNo = new Unsigned32();
+            CoECmds = new Pointer();
+            CoECmdCount = new Signed32();
+        }
+    }
+
+    /**
+     * ENI structure
+     */
+    public final class ec_enit extends Struct {
+
+        public final Pointer slave;
+        public final Signed32 slavecount;
+
+        public ec_enit(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            slave = new Pointer();
+            slavecount = new Signed32();
         }
     }
 
@@ -926,6 +1161,8 @@ public interface SoemEtherCATMain {
 
         public final Signed16 head;
         public final Signed16 tail;
+        @SuppressWarnings("unused")
+        private final Padding align_;
         public final SoemEtherCATType.ec_errort[] Error;
 
         public ec_eringt(jnr.ffi.Runtime runtime) {
@@ -933,6 +1170,7 @@ public interface SoemEtherCATMain {
 
             head = new Signed16();
             tail = new Signed16();
+            align_ = new Padding(NativeType.SLONGLONG, 0);
             Error = super.array(new SoemEtherCATType.ec_errort[EC_MAXELIST + 1]);
         }
     }
@@ -996,96 +1234,80 @@ public interface SoemEtherCATMain {
      */
     public final class ecx_contextt extends Struct {
 
+        @SuppressWarnings("unused")
+        private final Pointer _base;
         /**
-         * port reference, may include red_port
+         * port, may include red_port
          */
-        public final Pointer _port;
+        public final ecx_portt port;
         /**
-         * slavelist reference
+         * list of detected slaves
          */
-        private final Pointer _slavelist;
         public final ec_slavet[] slavelist;
         /**
          * number of slaves found in configuration
          */
-        private final Pointer _slavecount;
         public final SoemLibrary.Int32 slavecount;
         /**
-         * maximum number of slaves allowed in slavelist
+         * list of groups
          */
-        public final Signed32 maxslave;
-        /**
-         * grouplist reference
-         */
-        private final Pointer _grouplist;
         public final ec_groupt[] grouplist;
         /**
-         * maximum number of groups allowed in grouplist
+         * ecaterror state
          */
-        public final Signed32 maxgroup;
+        public final SoemLibrary.Bool ecaterror;
         /**
-         * internal, reference to eeprom cache buffer
+         * last DC time from slaves
          */
-        private final Pointer _esibuf;
+        public final SoemLibrary.Int64 DCtime;
+        /**
+         * internal, eeprom cache buffer
+         */
         public final SoemLibrary.Uint8[] esibuf;
         /**
-         * internal, reference to eeprom cache map
+         * internal, eeprom cache map
          */
-        private final Pointer _esimap;
         public final SoemLibrary.Uint32[] esimap;
         /**
          * internal, current slave for eeprom cache
          */
-        public final Unsigned16 esislave;
+        public final SoemLibrary.Uint16 esislave;
         /**
-         * internal, reference to error list
+         * internal, error list
          */
-        private final Pointer _elist;
         public final ec_eringt elist;
         /**
-         * internal, reference to processdata stack buffer info
+         * internal, processdata stack buffer info
          */
-        private final Pointer _idxstack;
         public final ec_idxstackT idxstack;
-        /**
-         * reference to ecaterror state
-         */
-        private final Pointer _ecaterror;
-        public final SoemLibrary.Bool ecaterror;
-        /**
-         * reference to last DC time from slaves
-         */
-        private final Pointer _DCtime;
-        public final SoemLibrary.Int64 DCtime;
         /**
          * internal, SM buffer
          */
-        private final Pointer _SMcommtype;
         public final ec_SMcommtypet[] SMcommtype;
         /**
          * internal, PDO assign list
          */
-        private final Pointer _PDOassign;
         public final ec_PDOassignt[] PDOassign;
         /**
          * internal, PDO description list
          */
-        private final Pointer _PDOdesc;
         public final ec_PDOdesct[] PDOdesc;
         /**
          * internal, SM list from eeprom
          */
-        private final Pointer _eepSM;
         public final ec_eepromSMt eepSM;
         /**
          * internal, FMMU list from eeprom
          */
-        private final Pointer _eepFMMU;
         public final ec_eepromFMMUt eepFMMU;
         /**
          * internal, mailbox pool
          */
-        public final Pointer mbxpool;
+        public final ec_mbxpoolt mbxpool;
+        /**
+         * pointer to ENI structure
+         */
+        public final SoemLibrary.Ptr ENI;
         /**
          * registered FoE hook
          */
@@ -1097,138 +1319,126 @@ public interface SoemEtherCATMain {
         /**
          * flag to control legacy automatic state change or manual state change
          */
-        public final Signed32 manualstatechange;
+        public final SoemLibrary.Int32 manualstatechange;
         /**
-         * userdata, promotes application configuration esp. in EC_VER2 with
-         * multiple ec_context instances. Note: userdata memory is managed by
+         * userdata, promotes application configuration esp. with multiple
+         * ec_context instances. Note: userdata memory is managed by
          * application, not SOEM
          */
-        public final Pointer userdata;
+        public final SoemLibrary.Ptr userdata;
+        /**
+         * if true, overlapping IOmap will be created and overlap behavior will
+         * be used during process data transfer
+         */
+        public final SoemLibrary.Bool overlappedMode;
+        /**
+         * if true, slaves with inputs or outputs of less than 8 bits will not
+         * be byte aligned in the IOmap, instead packed together with minimal
+         * gaps
+         */
+        public final SoemLibrary.Bool packedMode;
 
         public ecx_contextt(jnr.ffi.Runtime runtime) {
             super(runtime);
 
             int i;
-            _port = new Pointer();
-            _slavelist = new Pointer();
+            _base = new Pointer();
+            port = new ecx_portt(runtime);
             slavelist = new ec_slavet[EC_MAXSLAVE];
             for (i = 0; i < slavelist.length; i++) {
                 slavelist[i] = new ec_slavet(runtime);
             }
-            _slavecount = new Pointer();
-            slavecount = new SoemLibrary.Int32(getRuntime());
-            maxslave = new Signed32();
-            _grouplist = new Pointer();
+            slavecount = new SoemLibrary.Int32(runtime);
             grouplist = new ec_groupt[EC_MAXGROUP];
             for (i = 0; i < grouplist.length; i++) {
                 grouplist[i] = new ec_groupt(runtime);
             }
-            maxgroup = new Signed32();
-            _esibuf = new Pointer();
+            ecaterror = new SoemLibrary.Bool(runtime);
+            DCtime = new SoemLibrary.Int64(runtime);
             esibuf = new SoemLibrary.Uint8[SoemEtherCATType.EC_MAXEEPBUF];
             for (i = 0; i < esibuf.length; i++) {
                 esibuf[i] = new SoemLibrary.Uint8(runtime);
             }
-            _esimap = new Pointer();
             esimap = new SoemLibrary.Uint32[SoemEtherCATType.EC_MAXEEPBITMAP];
             for (i = 0; i < esimap.length; i++) {
                 esimap[i] = new SoemLibrary.Uint32(runtime);
             }
-            esislave = new Unsigned16();
-            _elist = new Pointer();
-            elist = new ec_eringt(getRuntime());
-            _idxstack = new Pointer();
-            idxstack = new ec_idxstackT(getRuntime());
-            _ecaterror = new Pointer();
-            ecaterror = new SoemLibrary.Bool(getRuntime());
-            _DCtime = new Pointer();
-            DCtime = new SoemLibrary.Int64(getRuntime());
-            _SMcommtype = new Pointer();
+            esislave = new SoemLibrary.Uint16(runtime);
+            elist = new ec_eringt(runtime);
+            idxstack = new ec_idxstackT(runtime);
             SMcommtype = new ec_SMcommtypet[EC_MAX_MAPT];
             for (i = 0; i < SMcommtype.length; i++) {
                 SMcommtype[i] = new ec_SMcommtypet(runtime);
             }
-            _PDOassign = new Pointer();
             PDOassign = new ec_PDOassignt[EC_MAX_MAPT];
             for (i = 0; i < PDOassign.length; i++) {
                 PDOassign[i] = new ec_PDOassignt(runtime);
             }
-            _PDOdesc = new Pointer();
             PDOdesc = new ec_PDOdesct[EC_MAX_MAPT];
             for (i = 0; i < PDOdesc.length; i++) {
                 PDOdesc[i] = new ec_PDOdesct(runtime);
             }
-            _eepSM = new Pointer();
-            eepSM = new ec_eepromSMt(getRuntime());
-            _eepFMMU = new Pointer();
-            eepFMMU = new ec_eepromFMMUt(getRuntime());
-            mbxpool = new Pointer();
-            FOEhook = inner(new SoemLibrary.CallBackFOEhook(runtime));
-            EOEhook = inner(new SoemLibrary.CallBackEOEhook(runtime));
-            manualstatechange = new Signed32();
-            userdata = new Pointer();
+            eepSM = new ec_eepromSMt(runtime);
+            eepFMMU = new ec_eepromFMMUt(runtime);
+            mbxpool = new ec_mbxpoolt(runtime);
+            ENI = new SoemLibrary.Ptr(runtime);
+            FOEhook = new SoemLibrary.CallBackFOEhook(runtime);
+            EOEhook = new SoemLibrary.CallBackEOEhook(runtime);
+            manualstatechange = new SoemLibrary.Int32(runtime);
+            userdata = new SoemLibrary.Ptr(runtime);
+            overlappedMode = new SoemLibrary.Bool(runtime);
+            packedMode = new SoemLibrary.Bool(runtime);
+        }
+
+        private static long alignOffset(long offset, int alignment) {
+            return ((offset + alignment - 1) / alignment) * alignment;
+        }
+
+        private static long sliceStruct(jnr.ffi.Pointer base, long offset, Struct s) {
+            int alignment = Struct.alignment(s);
+            long size = alignOffset(Struct.size(s), alignment);
+            offset = alignOffset(offset, alignment);
+            s.useMemory(base.slice(offset, size));
+            return offset + size;
+        }
+
+        private static long sliceStructArray(jnr.ffi.Pointer base, long offset, Struct[] array) {
+            for (Struct s : array) {
+                offset = sliceStruct(base, offset, s);
+            }
+            return offset;
         }
 
         public ecx_contextt register() {
-            int alignment, i;
-            long offset, size;
-
-            offset = 0;
-            for (i = 0; i < slavelist.length; i++) {
-                alignment = Struct.alignment(slavelist[i]);
-                size = (long) (Math.ceil((double) Struct.size(slavelist[i]) / alignment) * alignment);
-                slavelist[i].useMemory(_slavelist.get().slice(offset, size));
-                offset += size;
+            jnr.ffi.Pointer base = Struct.getMemory(this);
+            if (base == null) {
+                return this;
             }
-            slavecount.useMemory(_slavecount.get());
-            offset = 0;
-            for (i = 0; i < grouplist.length; i++) {
-                alignment = Struct.alignment(grouplist[i]);
-                size = (long) (Math.ceil((double) Struct.size(grouplist[i]) / alignment) * alignment);
-                grouplist[i].useMemory(_grouplist.get().slice(offset, size));
-                offset += size;
-            }
-            offset = 0;
-            for (i = 0; i < esibuf.length; i++) {
-                alignment = Struct.alignment(esibuf[i]);
-                size = (long) (Math.ceil((double) Struct.size(esibuf[i]) / alignment) * alignment);
-                esibuf[i].useMemory(_esibuf.get().slice(offset, size));
-                offset += size;
-            }
-            offset = 0;
-            for (i = 0; i < esimap.length; i++) {
-                alignment = Struct.alignment(esimap[i]);
-                size = (long) (Math.ceil((double) Struct.size(esimap[i]) / alignment) * alignment);
-                esimap[i].useMemory(_esimap.get().slice(offset, size));
-                offset += size;
-            }
-            elist.useMemory(_elist.get());
-            idxstack.useMemory(_idxstack.get());
-            ecaterror.useMemory(_ecaterror.get());
-            DCtime.useMemory(_DCtime.get());
-            offset = 0;
-            for (i = 0; i < SMcommtype.length; i++) {
-                alignment = Struct.alignment(SMcommtype[i]);
-                size = (long) (Math.ceil((double) Struct.size(SMcommtype[i]) / alignment) * alignment);
-                SMcommtype[i].useMemory(_SMcommtype.get().slice(offset, size));
-                offset += size;
-            }
-            offset = 0;
-            for (i = 0; i < PDOassign.length; i++) {
-                alignment = Struct.alignment(PDOassign[i]);
-                size = (long) (Math.ceil((double) Struct.size(PDOassign[i]) / alignment) * alignment);
-                PDOassign[i].useMemory(_PDOassign.get().slice(offset, size));
-                offset += size;
-            }
-            offset = 0;
-            for (i = 0; i < PDOdesc.length; i++) {
-                alignment = Struct.alignment(PDOdesc[i]);
-                size = (long) (Math.ceil((double) Struct.size(PDOdesc[i]) / alignment) * alignment);
-                PDOdesc[i].useMemory(_PDOdesc.get().slice(offset, size));
-                offset += size;
-            }
-            eepSM.useMemory(_eepSM.get());
-            eepFMMU.useMemory(_eepFMMU.get());
+            long offset = 0;
+            offset = sliceStruct(base, offset, port);
+            offset = sliceStructArray(base, offset, slavelist);
+            offset = sliceStruct(base, offset, slavecount);
+            offset = sliceStructArray(base, offset, grouplist);
+            offset = sliceStruct(base, offset, ecaterror);
+            offset = sliceStruct(base, offset, DCtime);
+            offset = sliceStructArray(base, offset, esibuf);
+            offset = sliceStructArray(base, offset, esimap);
+            offset = sliceStruct(base, offset, esislave);
+            offset = sliceStruct(base, offset, elist);
+            offset = sliceStruct(base, offset, idxstack);
+            offset = sliceStructArray(base, offset, SMcommtype);
+            offset = sliceStructArray(base, offset, PDOassign);
+            offset = sliceStructArray(base, offset, PDOdesc);
+            offset = sliceStruct(base, offset, eepSM);
+            offset = sliceStruct(base, offset, eepFMMU);
+            offset = sliceStruct(base, offset, mbxpool);
+            offset = sliceStruct(base, offset, ENI);
+            offset = sliceStruct(base, offset, FOEhook);
+            offset = sliceStruct(base, offset, EOEhook);
+            offset = sliceStruct(base, offset, manualstatechange);
+            offset = sliceStruct(base, offset, userdata);
+            offset = sliceStruct(base, offset, overlappedMode);
+            sliceStruct(base, offset, packedMode);
             return this;
         }
     }

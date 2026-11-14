@@ -5,6 +5,7 @@
  */
 package ken.mizoguch.soem;
 
+import jnr.ffi.NativeType;
 import jnr.ffi.Struct;
 import jnr.ffi.Union;
 import jnr.ffi.util.EnumMapper;
@@ -548,12 +549,16 @@ public interface SoemEtherCATType {
     public static final int ECT_SII_MANUF = 0x0008;
     public static final int ECT_SII_ID = 0x000a;
     public static final int ECT_SII_REV = 0x000c;
+    public static final int ECT_SII_SER = 0x000e;
     public static final int ECT_SII_BOOTRXMBX = 0x0014;
     public static final int ECT_SII_BOOTTXMBX = 0x0016;
     public static final int ECT_SII_MBXSIZE = 0x0019;
     public static final int ECT_SII_TXMBXADR = 0x001a;
     public static final int ECT_SII_RXMBXADR = 0x0018;
     public static final int ECT_SII_MBXPROTO = 0x001c;
+
+    public static final int ECT_MBX_CYCLE_TIME = 0x1000;
+    public static final int EC_MBX_MIN_COE = 0x08;
 
     /**
      * Mailbox types definitions
@@ -664,6 +669,8 @@ public interface SoemEtherCATType {
     public static final int ECT_REG_PECNT = 0x030D;
     public static final int ECT_REG_PECODE = 0x030E;
     public static final int ECT_REG_LLCNT = 0x0310;
+    public static final int ECT_REG_WD_TIME_PDI = 0x0410;
+    public static final int ECT_REG_WD_TIME_PDO = 0x0420;
     public static final int ECT_REG_WDCNT = 0x0442;
     public static final int ECT_REG_EEPCFG = 0x0500;
     public static final int ECT_REG_EEPCTL = 0x0502;
@@ -731,7 +738,8 @@ public interface SoemEtherCATType {
         EC_ERR_TYPE_FOE_PACKETNUMBER(7),
         EC_ERR_TYPE_SOE_ERROR(8),
         EC_ERR_TYPE_MBX_ERROR(9),
-        EC_ERR_TYPE_FOE_FILE_NOTFOUND(10);
+        EC_ERR_TYPE_FOE_FILE_NOTFOUND(10),
+        EC_ERR_TYPE_EOE_INVALID_RX_DATA(11);
 
         private final int value_;
 
@@ -794,7 +802,7 @@ public interface SoemEtherCATType {
         /**
          * Signal bit, error set but not read
          */
-        public Boolean Signal;
+        public Unsigned8 Signal;
         /**
          * Slave number that generated the error
          */
@@ -812,17 +820,23 @@ public interface SoemEtherCATType {
          */
         public Signed32 Etype;
         public ec_errort_Union union;
+        @SuppressWarnings("unused")
+        private final Padding pad_;
+        @SuppressWarnings("unused")
+        private final Padding align_;
 
         public ec_errort(jnr.ffi.Runtime runtime) {
             super(runtime);
 
             Time = inner(new SoemOsal.ec_timet(runtime));
-            Signal = new Boolean();
+            Signal = new Unsigned8();
             Slave = new Unsigned16();
             Index = new Unsigned16();
             SubIdx = new Unsigned8();
             Etype = new Signed32();
             union = inner(new ec_errort_Union(runtime));
+            pad_ = new Padding(NativeType.UCHAR, 4);
+            align_ = new Padding(NativeType.SLONGLONG, 0);
         }
     }
 

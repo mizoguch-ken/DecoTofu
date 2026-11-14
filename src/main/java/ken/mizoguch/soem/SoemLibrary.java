@@ -25,25 +25,25 @@ public interface SoemLibrary {
     public interface PO2SOconfig {
 
         @Delegate
-        int call(int slave);
+        int call(Pointer context, @u_int16_t int slave);
     }
 
     public interface PO2SOconfigx {
 
         @Delegate
-        int call(SoemEtherCATMain.ecx_contextt context, int slave);
+        int call(Pointer context, @u_int16_t int slave);
     }
 
     public interface FOEhook {
 
         @Delegate
-        public int call(int slave, int packetnumber, int datasize);
+        public int call(@u_int16_t int slave, int packetnumber, int datasize);
     }
 
     public interface EOEhook {
 
         @Delegate
-        public int call(SoemEtherCATMain.ecx_contextt context, int slave, Pointer eoembx);
+        public int call(Pointer context, @u_int16_t int slave, Pointer eoembx);
     }
 
     public final class CallBackPO2SOconfig extends Struct {
@@ -75,7 +75,7 @@ public interface SoemLibrary {
 
     public final class CallBackEOEhook extends Struct {
 
-        public Struct.Function<EOEhook> FOEhook = function(EOEhook.class);
+        public Struct.Function<EOEhook> EOEhook = function(EOEhook.class);
 
         public CallBackEOEhook(jnr.ffi.Runtime runtime) {
             super(runtime);
@@ -289,6 +289,25 @@ public interface SoemLibrary {
         }
     }
 
+    public class Ptr extends Struct {
+
+        private final Struct.Pointer value_;
+
+        public Ptr(jnr.ffi.Runtime runtime) {
+            super(runtime);
+
+            value_ = new Struct.Pointer();
+        }
+
+        public jnr.ffi.Pointer get() {
+            return value_.get();
+        }
+
+        public void set(jnr.ffi.Pointer value) {
+            value_.set(value);
+        }
+    }
+
     public class UTF8String extends Struct {
 
         private final Struct.UTF8String value_;
@@ -397,6 +416,16 @@ public interface SoemLibrary {
 
     public void ec_clearmbx(@u_int8_t int[] Mbx);
 
+    public int ecx_initmbxpool(SoemEtherCATMain.ecx_contextt context);
+
+    public Pointer ecx_getmbx(SoemEtherCATMain.ecx_contextt context);
+
+    public int ecx_dropmbx(SoemEtherCATMain.ecx_contextt context, Pointer mbx);
+
+    public int ecx_initmbxqueue(SoemEtherCATMain.ecx_contextt context, @u_int8_t int group);
+
+    public int ecx_slavembxcyclic(SoemEtherCATMain.ecx_contextt context, @u_int16_t int slave);
+
     public void ecx_pusherror(SoemEtherCATMain.ecx_contextt context, SoemEtherCATType.ec_errort Ec);
 
     public @u_int8_t int ecx_poperror(SoemEtherCATMain.ecx_contextt context, SoemEtherCATType.ec_errort Ec);
@@ -440,6 +469,9 @@ public interface SoemLibrary {
     public @u_int16_t int ecx_statecheck(SoemEtherCATMain.ecx_contextt context, @u_int16_t int slave,
             @u_int16_t int reqstate, int timeout);
 
+    public int ecx_mbxENIinitcmds(SoemEtherCATMain.ecx_contextt context, @u_int16_t int slave,
+            @u_int16_t int transition);
+
     public int ecx_mbxhandler(SoemEtherCATMain.ecx_contextt context, @u_int8_t int group, int limit);
 
     public int ecx_mbxempty(SoemEtherCATMain.ecx_contextt context, @u_int16_t int slave, int timeout);
@@ -478,17 +510,13 @@ public interface SoemLibrary {
 
     public @u_int32_t long ecx_readeeprom2(SoemEtherCATMain.ecx_contextt context, @u_int16_t int slave, int timeout);
 
-    public int ecx_send_overlap_processdata_group(SoemEtherCATMain.ecx_contextt context, @u_int8_t int group);
+    public int ecx_send_processdata_group(SoemEtherCATMain.ecx_contextt context, @u_int8_t int group);
 
     public int ecx_receive_processdata_group(SoemEtherCATMain.ecx_contextt context, @u_int8_t int group, int timeout);
 
     public int ecx_send_processdata(SoemEtherCATMain.ecx_contextt context);
 
-    public int ecx_send_overlap_processdata(SoemEtherCATMain.ecx_contextt context);
-
     public int ecx_receive_processdata(SoemEtherCATMain.ecx_contextt context, int timeout);
-
-    public int ecx_send_processdata_group(SoemEtherCATMain.ecx_contextt context, @u_int8_t int group);
 
     // SoemEtherCATDC
     public @u_int8_t int ecx_configdc(SoemEtherCATMain.ecx_contextt context);
@@ -569,13 +597,9 @@ public interface SoemLibrary {
             Pointer Isize);
 
     // SoemEtherCATConfig
-    public int ecx_config_init(SoemEtherCATMain.ecx_contextt context, @u_int8_t int usetable);
+    public int ecx_config_init(SoemEtherCATMain.ecx_contextt context);
 
     public int ecx_config_map_group(SoemEtherCATMain.ecx_contextt context, Pointer pIOmap, @u_int8_t int group);
-
-    public int ecx_config_overlap_map_group(SoemEtherCATMain.ecx_contextt context, Pointer pIOmap, @u_int8_t int group);
-
-    public int ecx_config_map_group_aligned(SoemEtherCATMain.ecx_contextt context, Pointer pIOmap, @u_int8_t int group);
 
     public int ecx_recover_slave(SoemEtherCATMain.ecx_contextt context, @u_int16_t int slave, int timeout);
 

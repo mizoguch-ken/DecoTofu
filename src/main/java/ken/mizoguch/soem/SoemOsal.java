@@ -5,6 +5,7 @@
  */
 package ken.mizoguch.soem;
 
+import jnr.ffi.NativeType;
 import jnr.ffi.Struct;
 
 /**
@@ -18,16 +19,19 @@ public interface SoemOsal {
 
     public class ec_timet extends Struct {
 
-        public final Unsigned32 sec;
+        public final Signed64 tv_sec;
         /* < Seconds elapsed since the Epoch (Jan 1, 1970) */
-        public final Unsigned32 usec;
+        public final SignedLong tv_nsec;
+        /* < Nanoseconds elapsed since last second boundary */
+        @SuppressWarnings("unused")
+        private final Padding pad_;
 
-        /* < Microseconds elapsed since last second boundary */
         public ec_timet(jnr.ffi.Runtime runtime) {
             super(runtime);
 
-            sec = new Unsigned32();
-            usec = new Unsigned32();
+            tv_sec = new Signed64();
+            tv_nsec = new SignedLong();
+            pad_ = (runtime.longSize() == 4) ? new Padding(NativeType.UCHAR, 4) : null;
         }
     }
 

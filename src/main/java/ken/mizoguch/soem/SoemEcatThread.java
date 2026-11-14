@@ -165,7 +165,7 @@ public class SoemEcatThread extends Service<Void> {
                     return false;
                 }
 
-                if (soem_.ecx_config_init(context_, SoemOsal.FALSE) > 0) {
+                if (soem_.ecx_config_init(context_) > 0) {
                     context_.slavelist[0].state.set(SoemEtherCATType.ec_state.EC_STATE_PRE_OP.intValue());
                     soem_.ecx_writestate(context_, 0);
                     soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_PRE_OP.intValue(),
@@ -179,7 +179,7 @@ public class SoemEcatThread extends Service<Void> {
                                 SoemEtherCATMain.ec_slavet sl = context_.slavelist[index];
 
                                 if ((sl.eep_man.get() == po2so.eep_man) && (sl.eep_id.get() == po2so.eep_id)) {
-                                    sl.PO2SOconfig.PO2SOconfig.set((int slave) -> answerPo2so(slave));
+                                    sl.PO2SOconfig.PO2SOconfig.set((Pointer context, int slave) -> answerPo2so(slave));
                                 } else {
                                     writeLog("PO2SO: EEP_MAN[" + sl.eep_man.get() + ":" + po2so.eep_man + "] & EEP_ID["
                                             + sl.eep_id.get() + ":" + po2so.eep_id

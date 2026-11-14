@@ -51,6 +51,7 @@ public interface SoemEtherCAT {
 
         public ecx_parcelt register() {
             context.useMemory(_context.get());
+            context.register();
             wkc.useMemory(_wkc.get());
             cycletime.useMemory(_cycletime.get());
             dorun.useMemory(_dorun.get());
