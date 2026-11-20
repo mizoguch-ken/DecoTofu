@@ -298,4 +298,82 @@ class LadderTest {
         assertNull(ladder.findGrid(4, 1));
         assertNull(ladder.findGrid(-1, 0));
     }
+
+    private static Ladder newGridLadder(int idx, int column, int row) {
+        Ladder ladder = new Ladder(idx, "ladder" + idx, column, row);
+        for (int r = 0; r < row; r++) {
+            for (int c = 0; c < column; c++) {
+                ladder.addLadderGrid(new LadderGrid(c, r));
+            }
+        }
+        ladder.connectGrids();
+        return ladder;
+    }
+
+    @Test
+    void connectLadderRegistersNotBitsOperandAndRuns() {
+        Ladder ladder = newGridLadder(1, 3, 2);
+        CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> map = ioMap();
+
+        LadderGrid load = ladder.findGrid(1, 1);
+        load.setBlock(LadderBlock.LOAD);
+        load.setAddress("EN");
+
+        LadderGrid not = ladder.findGrid(2, 1);
+        not.setBlock(LadderBlock.NOT_BITS);
+        not.setAddress("OUT");
+        not.getBlockFunctions()[0].setAddress("SRC");
+
+        assertTrue(ladder.connectLadder(map, null));
+        assertTrue(map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).containsKey("EN"));
+        assertTrue(map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).containsKey("OUT"));
+        assertTrue(map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).containsKey("SRC"));
+
+        map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("EN").setValue(1.0);
+        map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("SRC").setValue(0.0);
+        ladder.run(map, CYCLE_TIME);
+
+        assertEquals(-1.0, map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("OUT").getValue());
+    }
+
+    @Test
+    void connectLadderRegistersMixedLocalAndGlobalFunctionsWithoutCarryOver() {
+        Ladder ladder = newGridLadder(1, 3, 2);
+        CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> map = ioMap();
+        String localArg = LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX + "localA";
+
+        LadderGrid load = ladder.findGrid(1, 1);
+        load.setBlock(LadderBlock.LOAD);
+        load.setAddress("EN");
+
+        LadderGrid add = ladder.findGrid(2, 1);
+        add.setBlock(LadderBlock.ADDITION);
+        add.setAddress("SUM");
+        add.getBlockFunctions()[0].setAddress(localArg);
+        add.getBlockFunctions()[1].setAddress("globalB");
+
+        assertTrue(ladder.connectLadder(map, null));
+        assertTrue(map.get(1).containsKey(localArg));
+        assertFalse(map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).containsKey(localArg));
+        assertTrue(map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).containsKey("globalB"));
+        assertFalse(map.get(1).containsKey("globalB"));
+
+        map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("EN").setValue(1.0);
+        map.get(1).get(localArg).setValue(4.0);
+        map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("globalB").setValue(6.0);
+        ladder.run(map, CYCLE_TIME);
+
+        assertEquals(10.0, map.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).get("SUM").getValue());
+    }
+
+    @Test
+    void blockWithEmptyAddressIsIgnoredWithoutException() {
+        Ladder ladder = new Ladder(1, "ladder", 4, 3);
+        LadderGrid emptyAddr = outGrid(1, 1, LadderBlock.OUT, "");
+        CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> map = ioMap();
+
+        ladder.addLadderGrid(emptyAddr);
+        ladder.setOutGrids(grids(emptyAddr));
+        assertDoesNotThrow(() -> ladder.run(map, CYCLE_TIME));
+    }
 }

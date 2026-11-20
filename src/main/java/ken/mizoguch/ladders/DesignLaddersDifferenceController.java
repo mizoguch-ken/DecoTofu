@@ -35,7 +35,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
-import static ken.mizoguch.ladders.LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
 
 /**
  *
@@ -201,7 +200,11 @@ public class DesignLaddersDifferenceController implements Initializable {
             int index, size, index2, size2;
 
             // original ladder
-            labelIoLadderOriginal.setText("Reference" + "(" + pathOriginal.toString() + ")");
+            if (pathOriginal == null) {
+                labelIoLadderOriginal.setText("Reference");
+            } else {
+                labelIoLadderOriginal.setText("Reference" + "(" + pathOriginal.toString() + ")");
+            }
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMapOriginal = new CopyOnWriteArrayList<>();
             CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMapOriginal = new CopyOnWriteArrayList<>();
             List<String> jsonOriginal = new ArrayList<>();
@@ -304,32 +307,34 @@ public class DesignLaddersDifferenceController implements Initializable {
                         for (rowIndex = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
                                 .getRow(), rowSize = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised)
                                         .getRow(); rowIndex < rowSize; rowIndex++) {
-                            grid = paneOriginal.findGridPane(0,
-                                    ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal).getRow() - 1)
-                                    .getLadderGrid();
+                            LadderGridPane prevRowPane = paneOriginal.findGridPane(0, rowIndex - 1);
+                            if (prevRowPane == null) {
+                                break;
+                            }
+                            grid = prevRowPane.getLadderGrid();
                             gridBuf = null;
                             for (columnIndex = 0, columnSize = ladderJsonOriginal.getLadders()
                                     .get(entry.getValue().indexOriginal)
-                                    .getColumn(); columnIndex < columnSize; columnIndex++) {
+                                    .getColumn(); (columnIndex < columnSize) && (grid != null); columnIndex++) {
                                 gridPane = paneOriginal.addGrid(columnIndex, rowIndex);
                                 gridNew = gridPane.getLadderGrid();
                                 gridNew.setLeftLadderGrid(gridBuf);
-                                gridNew.setUpLadderGrid(grid.getUpLadderGrid());
+                                gridNew.setUpLadderGrid(grid);
                                 if (gridBuf != null) {
                                     gridBuf.setRightLadderGrid(gridNew);
                                 }
-                                gridNew.setDownLadderGrid(grid);
+                                gridNew.setDownLadderGrid(grid.getDownLadderGrid());
                                 if (columnIndex == 0) {
-                                    grid.setBlock(LadderBlock.CONTENTS);
+                                    gridNew.setBlock(LadderBlock.CONTENTS);
                                     gridPane.changeBlock();
                                 } else {
                                     gridPane.changeDifference(LadderGridPane.DifferenceType.DELETE);
                                 }
                                 gridBuf = gridNew;
-                                if (grid.getUpLadderGrid() != null) {
-                                    grid.getUpLadderGrid().setDownLadderGrid(gridNew);
+                                if (grid.getDownLadderGrid() != null) {
+                                    grid.getDownLadderGrid().setUpLadderGrid(gridNew);
                                 }
-                                grid.setUpLadderGrid(gridNew);
+                                grid.setDownLadderGrid(gridNew);
                                 grid = grid.getRightLadderGrid();
                             }
                         }
@@ -338,32 +343,34 @@ public class DesignLaddersDifferenceController implements Initializable {
                         for (rowIndex = ladderJsonRevised.getLadders().get(entry.getValue().indexRevised)
                                 .getRow(), rowSize = ladderJsonOriginal.getLadders().get(entry.getValue().indexOriginal)
                                         .getRow(); rowIndex < rowSize; rowIndex++) {
-                            grid = paneRevised.findGridPane(0,
-                                    ladderJsonRevised.getLadders().get(entry.getValue().indexRevised).getRow() - 1)
-                                    .getLadderGrid();
+                            LadderGridPane prevRowPane = paneRevised.findGridPane(0, rowIndex - 1);
+                            if (prevRowPane == null) {
+                                break;
+                            }
+                            grid = prevRowPane.getLadderGrid();
                             gridBuf = null;
                             for (columnIndex = 0, columnSize = ladderJsonRevised.getLadders()
                                     .get(entry.getValue().indexRevised)
-                                    .getColumn(); columnIndex < columnSize; columnIndex++) {
+                                    .getColumn(); (columnIndex < columnSize) && (grid != null); columnIndex++) {
                                 gridPane = paneRevised.addGrid(columnIndex, rowIndex);
                                 gridNew = gridPane.getLadderGrid();
                                 gridNew.setLeftLadderGrid(gridBuf);
-                                gridNew.setUpLadderGrid(grid.getUpLadderGrid());
+                                gridNew.setUpLadderGrid(grid);
                                 if (gridBuf != null) {
                                     gridBuf.setRightLadderGrid(gridNew);
                                 }
-                                gridNew.setDownLadderGrid(grid);
+                                gridNew.setDownLadderGrid(grid.getDownLadderGrid());
                                 if (columnIndex == 0) {
-                                    grid.setBlock(LadderBlock.CONTENTS);
+                                    gridNew.setBlock(LadderBlock.CONTENTS);
                                     gridPane.changeBlock();
                                 } else {
                                     gridPane.changeDifference(LadderGridPane.DifferenceType.DELETE);
                                 }
                                 gridBuf = gridNew;
-                                if (grid.getUpLadderGrid() != null) {
-                                    grid.getUpLadderGrid().setDownLadderGrid(gridNew);
+                                if (grid.getDownLadderGrid() != null) {
+                                    grid.getDownLadderGrid().setUpLadderGrid(gridNew);
                                 }
-                                grid.setUpLadderGrid(gridNew);
+                                grid.setDownLadderGrid(gridNew);
                                 grid = grid.getRightLadderGrid();
                             }
                         }
@@ -399,8 +406,11 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
-                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(LadderGridPane.DifferenceType.CHANGE);
+                                        LadderGridPane target = paneOriginal.findGridPane(block.getColumnIndex(),
+                                                block.getRowIndex());
+                                        if (target != null) {
+                                            target.changeDifference(LadderGridPane.DifferenceType.CHANGE);
+                                        }
                                     }
                                 }
                                 chunk = delta.getTarget();
@@ -408,8 +418,11 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
-                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(LadderGridPane.DifferenceType.CHANGE);
+                                        LadderGridPane target = paneRevised.findGridPane(block.getColumnIndex(),
+                                                block.getRowIndex());
+                                        if (target != null) {
+                                            target.changeDifference(LadderGridPane.DifferenceType.CHANGE);
+                                        }
                                     }
                                 }
                                 break;
@@ -420,10 +433,16 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
-                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(LadderGridPane.DifferenceType.DELETE);
-                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(LadderGridPane.DifferenceType.INSERT);
+                                        LadderGridPane origPane = paneOriginal.findGridPane(block.getColumnIndex(),
+                                                block.getRowIndex());
+                                        if (origPane != null) {
+                                            origPane.changeDifference(LadderGridPane.DifferenceType.DELETE);
+                                        }
+                                        LadderGridPane revPane = paneRevised.findGridPane(block.getColumnIndex(),
+                                                block.getRowIndex());
+                                        if (revPane != null) {
+                                            revPane.changeDifference(LadderGridPane.DifferenceType.INSERT);
+                                        }
                                     }
                                 }
                                 break;
@@ -433,10 +452,16 @@ public class DesignLaddersDifferenceController implements Initializable {
                                 if (blocks != null) {
                                     for (index2 = 0, size2 = chunk.getLines().size(); index2 < size2; index2++) {
                                         block = blocks.get(chunk.getPosition() + index2);
-                                        paneRevised.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(LadderGridPane.DifferenceType.INSERT);
-                                        paneOriginal.findGridPane(block.getColumnIndex(), block.getRowIndex())
-                                                .changeDifference(LadderGridPane.DifferenceType.DELETE);
+                                        LadderGridPane revPane = paneRevised.findGridPane(block.getColumnIndex(),
+                                                block.getRowIndex());
+                                        if (revPane != null) {
+                                            revPane.changeDifference(LadderGridPane.DifferenceType.INSERT);
+                                        }
+                                        LadderGridPane origPane = paneOriginal.findGridPane(block.getColumnIndex(),
+                                                block.getRowIndex());
+                                        if (origPane != null) {
+                                            origPane.changeDifference(LadderGridPane.DifferenceType.DELETE);
+                                        }
                                     }
                                 }
                                 break;

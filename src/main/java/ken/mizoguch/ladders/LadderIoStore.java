@@ -99,11 +99,10 @@ class LadderIoStore {
      * @return true when the address has just been registered
      */
     boolean createIo(int idx, String address) {
-        if (!ioMap_.get(idx).containsKey(address)) {
-            ioMap_.get(idx).put(address, new LadderIo(address));
-            return true;
+        if ((address == null) || (idx < 0) || (idx >= ioMap_.size())) {
+            return false;
         }
-        return false;
+        return ioMap_.get(idx).putIfAbsent(address, new LadderIo(address)) == null;
     }
 
     /**
@@ -113,6 +112,9 @@ class LadderIoStore {
      * @return the io of the address, null when the address is not registered
      */
     LadderIo io(int idx, String address) {
+        if ((address == null) || (idx < 0) || (idx >= ioMap_.size())) {
+            return null;
+        }
         return ioMap_.get(idx).get(address);
     }
 
@@ -195,9 +197,15 @@ class LadderIoStore {
      * @param value
      */
     void setDirect(int idx, String address, double value) {
+        if ((address == null) || (idx < 0) || (idx >= ioMap_.size())) {
+            return;
+        }
         synchronized (lock_) {
-            ioMap_.get(idx).get(address).setValue(value);
-            setScriptIo(idx, address, value, true);
+            LadderIo io = ioMap_.get(idx).get(address);
+            if (io != null) {
+                io.setValue(value);
+                setScriptIo(idx, address, value, true);
+            }
         }
     }
 
@@ -210,6 +218,9 @@ class LadderIoStore {
      * @param value
      */
     void setScript(int idx, String address, double value) {
+        if ((address == null) || (idx < 0) || (idx >= scriptIoMap_.size())) {
+            return;
+        }
         synchronized (lock_) {
             setScriptIo(idx, address, value, false);
         }

@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javax.swing.event.EventListenerList;
+import jnr.ffi.Pointer;
 import ken.mizoguch.console.Console;
 
 /**
@@ -201,7 +202,7 @@ public class SoemEcatCheck extends Service<Void> {
             }
         } else if (sl.state.get() == STATE_SAFE_OP) {
             notifyListeners(listener -> listener.warningSafeOpSoemEcatCheck(slave));
-            sl.state.set(STATE_OPERATIONAL);
+            handleSlaveSafeOpRecovery(sl);
             synchronized (ecatLock_) {
                 soem_.ecx_writestate(context_, slave);
             }
@@ -220,9 +221,36 @@ public class SoemEcatCheck extends Service<Void> {
                 soem_.ecx_statecheck(context_, slave, STATE_OPERATIONAL, SoemEtherCATType.EC_TIMEOUTRET);
             }
             if (sl.state.get() == STATE_NONE) {
-                sl.islost.set(SoemOsal.TRUE);
+                handleSlaveLost(sl);
                 notifyListeners(listener -> listener.errorLostSoemEcatCheck(slave));
             }
+        }
+    }
+
+    /**
+     * Recover cyclic mailbox handler state alongside OPERATIONAL transition
+     * (matches SOEM 2.0 ec_sample).
+     */
+    static void handleSlaveSafeOpRecovery(SoemEtherCATMain.ec_slavet sl) {
+        sl.state.set(STATE_OPERATIONAL);
+        if (sl.mbxhandlerstate.get() == SoemEtherCATMain.ECT_MBXH_LOST) {
+            sl.mbxhandlerstate.set(SoemEtherCATMain.ECT_MBXH_CYCLIC);
+        }
+    }
+
+    /**
+     * Mark a non-responsive slave lost, park its cyclic mailbox state, and
+     * zero byte-aligned process input data so PLC logic does not read stale inputs.
+     */
+    static void handleSlaveLost(SoemEtherCATMain.ec_slavet sl) {
+        sl.islost.set(SoemOsal.TRUE);
+        if (sl.mbxhandlerstate.get() == SoemEtherCATMain.ECT_MBXH_CYCLIC) {
+            sl.mbxhandlerstate.set(SoemEtherCATMain.ECT_MBXH_LOST);
+        }
+        long ibytes = sl.Ibytes.get();
+        Pointer inputs = sl.inputs.get();
+        if ((ibytes > 0) && (sl.Istartbit.get() == 0) && (inputs != null)) {
+            inputs.setMemory(0, ibytes, (byte) 0);
         }
     }
 

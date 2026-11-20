@@ -7,6 +7,7 @@
 package ken.mizoguch.ladders;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,6 +57,22 @@ class LadderPdfExporter {
         return commentMap_.get(index).get(address);
     }
 
+    private static String sanitizePdfText(String text) {
+        if (text == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if ((ch == '\r') || (ch == '\n') || (ch == '\t')) {
+                sb.append(' ');
+            } else if (!Character.isISOControl(ch)) {
+                sb.append(ch);
+            }
+        }
+        return sb.toString();
+    }
+
     private static String formatBlockFunction(LadderJsonBlock jsonBlock, int index) {
         List<LadderJsonBlock.JsonBlockFunction> functions = jsonBlock.getBlockFunctions();
         if ((functions == null) || (index < 0) || (index >= functions.size())) {
@@ -66,10 +83,10 @@ class LadderPdfExporter {
             return "";
         }
         if (fn.address() != null) {
-            return fn.address();
+            return sanitizePdfText(fn.address());
         }
         if ((fn.value() != null) && (fn.radix() != null)) {
-            return LadderNumber.format(fn.value(), fn.radix());
+            return sanitizePdfText(LadderNumber.format(fn.value(), fn.radix()));
         }
         return "";
     }
@@ -91,17 +108,24 @@ class LadderPdfExporter {
     }
 
     private void pdfPageEndGrid(PDPageContentStream contentStream) throws IOException {
-        contentStream.close();
+        if (contentStream != null) {
+            contentStream.close();
+        }
     }
 
     Path export(Path file) {
-        if (file != null) {
-            try (PDDocument doc = new PDDocument();
-                    TrueTypeCollection ttc = new TrueTypeCollection(
-                        this.getClass().getClassLoader().getResourceAsStream("font/MyricaM.TTC"))) {
+        if ((file != null) && (ladderJson_ != null)) {
+            InputStream fontStream = this.getClass().getClassLoader().getResourceAsStream("font/MyricaM.TTC");
+            if (fontStream == null) {
+                Console.write(LadderPdfExporter.class.getName(), "font/MyricaM.TTC not found", true);
+                return null;
+            }
+            try (InputStream closeFontStream = fontStream;
+                    PDDocument doc = new PDDocument();
+                    TrueTypeCollection ttc = new TrueTypeCollection(closeFontStream)) {
                 PDRectangle rectangle = PDRectangle.A4;
                 PDPage page;
-                PDPageContentStream contentStream;
+                PDPageContentStream contentStream = null;
                 PDFont font = PDType0Font.load(doc, ttc.getFontByName("MyricaMM"), true);
                 float margin = 20f * 25.4f / 72f;
                 float fontSize = 7.54f;
@@ -127,118 +151,140 @@ class LadderPdfExporter {
 
                 String name, address, comment, line, content, c;
                 int index, size, index2, size2, column, row, i;
+                String fileNameHeader = (ladderFileName_ != null) ? sanitizePdfText(ladderFileName_) : null;
 
                 size = (jsonLadders == null) ? 0 : jsonLadders.size();
                 List<LadderJsonBlock> jsonBlocks;
                 LadderJsonBlock jsonBlock;
-                for (index = 0; index < size; index++) {
-                    column = 0;
-                    row = 0;
-                    name = jsonLadders.get(index).getName();
-                    page = pdfNewPage(doc, rectangle);
-                    gridWidth = pageShowMinWidth + contentsSize;
-                    gridHeight = rectangle.getHeight() - pageShowMinHeight - contentsSize;
-                    contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth, pageShowMinWidth,
-                            pageShowMinHeight);
-                    if (ladderFileName_ == null) {
-                        // page header name & title
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(
-                                ((pageShowMaxWidth - (font.getStringWidth(name) / 1000f * fontSize)) / 2f)
-                                        + pageShowMinWidth + fontWidth,
-                                pageShowMaxHeight - fontHeight);
-                        contentStream.showText(name);
-                        contentStream.endText();
-                        gridHeight += fontHeight;
-                    } else {
-                        // page header name
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(((pageShowMaxWidth
-                                - (font.getStringWidth(name + " [" + ladderFileName_ + "]") / 1000f * fontSize)) / 2f)
-                                + pageShowMinWidth + fontWidth, pageShowMaxHeight - fontHeight);
-                        contentStream.showText(name + " [" + ladderFileName_ + "]");
-                        contentStream.endText();
-                        gridHeight += fontHeight;
-                    }
-
-                    for (i = 1; i < LadderDefaults.LADDER_DEFAULT_GRID_COLUMN; i++) {
-                        contentStream.beginText();
-                        content = String.valueOf(i);
-                        contentStream.newLineAtOffset(gridWidth + (gridSize * (i - 1)) + gridSize2
-                                + ((font.getStringWidth(content) / 1000f * fontSize) / 2f), gridHeight);
-                        contentStream.showText(content);
-                        contentStream.endText();
-                    }
-
-                    jsonBlocks = jsonLadders.get(index).getBlocks();
-                    size2 = (jsonBlocks == null) ? 0 : jsonBlocks.size();
-                    for (index2 = 0; index2 < size2; index2++) {
-                        jsonBlock = jsonBlocks.get(index2);
-                        if (row < jsonBlock.getRowIndex()) {
-                            gridWidth = pageShowMinWidth + contentsSize;
-                            column = 0;
-                            for (; row < jsonBlock.getRowIndex(); row++) {
-                                if (row > 0) {
-                                    gridHeight -= gridSize;
-                                }
-                                if (gridHeight < (pageShowMinHeight + gridSize)) {
-                                    pdfPageEndGrid(contentStream);
-                                    page = pdfNewPage(doc, rectangle);
-                                    contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth,
-                                            pageShowMinWidth, pageShowMinHeight);
-                                    gridHeight = rectangle.getHeight() - pageShowMinHeight - contentsSize;
-
-                                    for (i = 1; i < LadderDefaults.LADDER_DEFAULT_GRID_COLUMN; i++) {
-                                        contentStream.beginText();
-                                        content = String.valueOf(i);
-                                        contentStream.newLineAtOffset(
-                                                gridWidth + (gridSize * (i - 1)) + gridSize2
-                                                        + ((font.getStringWidth(content) / 1000f * fontSize) / 2f),
-                                                gridHeight);
-                                        contentStream.showText(content);
-                                        contentStream.endText();
-                                    }
-                                }
-
-                                contentStream.beginText();
-                                content = String.valueOf(row + 1);
-                                contentStream.newLineAtOffset(gridWidth
-                                        + ((-contentsSize + (font.getStringWidth(content) / 1000f * fontSize)) / 2f),
-                                        gridHeight - gridSize2);
-                                contentStream.showText(content);
-                                contentStream.endText();
-                            }
+                try {
+                    for (index = 0; index < size; index++) {
+                        LadderJsonLadder jsonLadder = jsonLadders.get(index);
+                        if (jsonLadder == null) {
+                            continue;
                         }
-                        if (column < jsonBlock.getColumnIndex()) {
-                            if (column == 0) {
-                                column = 1;
-                            }
-                            gridWidth += (jsonBlock.getColumnIndex() - column) * gridSize;
-                            column = jsonBlock.getColumnIndex();
-                        }
-
-                        address = jsonBlock.getAddress();
-                        if (address == null) {
-                            comment = jsonBlock.getComment();
-                            address = "";
+                        column = 0;
+                        row = 0;
+                        name = sanitizePdfText(jsonLadder.getName());
+                        page = pdfNewPage(doc, rectangle);
+                        gridWidth = pageShowMinWidth + contentsSize;
+                        gridHeight = rectangle.getHeight() - pageShowMinHeight - contentsSize;
+                        contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth, pageShowMinWidth,
+                                pageShowMinHeight);
+                        if (fileNameHeader == null) {
+                            // page header name & title
+                            contentStream.beginText();
+                            contentStream.newLineAtOffset(
+                                    ((pageShowMaxWidth - (font.getStringWidth(name) / 1000f * fontSize)) / 2f)
+                                            + pageShowMinWidth + fontWidth,
+                                    pageShowMaxHeight - fontHeight);
+                            contentStream.showText(name);
+                            contentStream.endText();
+                            gridHeight += fontHeight;
                         } else {
-                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                comment = getComment(index + 1, address);
-                            } else {
-                                comment = getComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address);
-                            }
+                            // page header name
+                            String header = name + " [" + fileNameHeader + "]";
+                            contentStream.beginText();
+                            contentStream.newLineAtOffset(((pageShowMaxWidth
+                                    - (font.getStringWidth(header) / 1000f * fontSize)) / 2f)
+                                    + pageShowMinWidth + fontWidth, pageShowMaxHeight - fontHeight);
+                            contentStream.showText(header);
+                            contentStream.endText();
+                            gridHeight += fontHeight;
                         }
-                        if (Boolean.TRUE.equals(jsonBlock.isVertical())) {
-                            contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                            contentStream.lineTo(gridWidth, gridHeight);
-                        }
-                        if (Boolean.TRUE.equals(jsonBlock.isVerticalOr())) {
-                            contentStream.moveTo(gridWidth, gridHeight - gridSize2);
-                            contentStream.lineTo(gridWidth, gridHeight - gridSize);
-                        }
-                        contentStream.stroke();
 
-                        switch (LadderBlock.valueOf(jsonBlock.getBlock())) {
+                        for (i = 1; i < LadderDefaults.LADDER_DEFAULT_GRID_COLUMN; i++) {
+                            contentStream.beginText();
+                            content = String.valueOf(i);
+                            contentStream.newLineAtOffset(gridWidth + (gridSize * (i - 1)) + gridSize2
+                                    + ((font.getStringWidth(content) / 1000f * fontSize) / 2f), gridHeight);
+                            contentStream.showText(content);
+                            contentStream.endText();
+                        }
+
+                        jsonBlocks = jsonLadder.getBlocks();
+                        size2 = (jsonBlocks == null) ? 0 : jsonBlocks.size();
+                        for (index2 = 0; index2 < size2; index2++) {
+                            jsonBlock = jsonBlocks.get(index2);
+                            if ((jsonBlock == null) || (jsonBlock.getBlock() == null)
+                                    || (jsonBlock.getColumnIndex() == null) || (jsonBlock.getRowIndex() == null)) {
+                                continue;
+                            }
+                            LadderBlock blockType;
+                            try {
+                                blockType = LadderBlock.valueOf(jsonBlock.getBlock());
+                            } catch (IllegalArgumentException ex) {
+                                continue;
+                            }
+                            if (row < jsonBlock.getRowIndex()) {
+                                gridWidth = pageShowMinWidth + contentsSize;
+                                column = 0;
+                                for (; row < jsonBlock.getRowIndex(); row++) {
+                                    if (row > 0) {
+                                        gridHeight -= gridSize;
+                                    }
+                                    if (gridHeight < (pageShowMinHeight + gridSize)) {
+                                        pdfPageEndGrid(contentStream);
+                                        contentStream = null;
+                                        page = pdfNewPage(doc, rectangle);
+                                        contentStream = pdfPageBeginGrid(doc, page, font, fontSize, lineWidth,
+                                                pageShowMinWidth, pageShowMinHeight);
+                                        gridHeight = rectangle.getHeight() - pageShowMinHeight - contentsSize;
+
+                                        for (i = 1; i < LadderDefaults.LADDER_DEFAULT_GRID_COLUMN; i++) {
+                                            contentStream.beginText();
+                                            content = String.valueOf(i);
+                                            contentStream.newLineAtOffset(
+                                                    gridWidth + (gridSize * (i - 1)) + gridSize2
+                                                            + ((font.getStringWidth(content) / 1000f * fontSize) / 2f),
+                                                    gridHeight);
+                                            contentStream.showText(content);
+                                            contentStream.endText();
+                                        }
+                                    }
+
+                                    contentStream.beginText();
+                                    content = String.valueOf(row + 1);
+                                    contentStream.newLineAtOffset(gridWidth
+                                            + ((-contentsSize + (font.getStringWidth(content) / 1000f * fontSize)) / 2f),
+                                            gridHeight - gridSize2);
+                                    contentStream.showText(content);
+                                    contentStream.endText();
+                                }
+                            }
+                            if (column < jsonBlock.getColumnIndex()) {
+                                if (column == 0) {
+                                    column = 1;
+                                }
+                                gridWidth += (jsonBlock.getColumnIndex() - column) * gridSize;
+                                column = jsonBlock.getColumnIndex();
+                            }
+
+                            address = jsonBlock.getAddress();
+                            if (address == null) {
+                                comment = jsonBlock.getComment();
+                                address = "";
+                            } else {
+                                if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    comment = getComment(index + 1, address);
+                                } else {
+                                    comment = getComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address);
+                                }
+                                address = sanitizePdfText(address);
+                            }
+                            if (comment != null) {
+                                comment = sanitizePdfText(comment);
+                            }
+                            if (Boolean.TRUE.equals(jsonBlock.isVertical())) {
+                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
+                                contentStream.lineTo(gridWidth, gridHeight);
+                            }
+                            if (Boolean.TRUE.equals(jsonBlock.isVerticalOr())) {
+                                contentStream.moveTo(gridWidth, gridHeight - gridSize2);
+                                contentStream.lineTo(gridWidth, gridHeight - gridSize);
+                            }
+                            contentStream.stroke();
+
+                            switch (blockType) {
                             case BLOCK_COMMENT:
                                 if (comment != null) {
                                     textWidth = gridWidth;
@@ -934,7 +980,7 @@ class LadderPdfExporter {
                                 if (jsonBlock.getBlockScript() != null) {
                                     contentStream.beginText();
                                     contentStream.newLineAtOffset(gridWidth + gridSize6, gridHeight - gridSize2);
-                                    contentStream.showText(jsonBlock.getBlockScript());
+                                    contentStream.showText(sanitizePdfText(jsonBlock.getBlockScript()));
                                     contentStream.endText();
                                 }
                                 // -
@@ -961,6 +1007,7 @@ class LadderPdfExporter {
                         }
                     }
                     pdfPageEndGrid(contentStream);
+                    contentStream = null;
                 }
 
                 // page footer count
@@ -975,10 +1022,14 @@ class LadderPdfExporter {
                     contentStream.showText(line);
                     contentStream.endText();
                     pdfPageEndGrid(contentStream);
+                    contentStream = null;
                 }
 
                 doc.save(file.toFile());
                 return file;
+                } finally {
+                    pdfPageEndGrid(contentStream);
+                }
             } catch (IOException ex) {
                 Console.writeStackTrace(LadderPdfExporter.class.getName(), ex);
             }

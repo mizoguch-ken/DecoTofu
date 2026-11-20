@@ -11,8 +11,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
@@ -48,7 +50,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
@@ -416,6 +417,7 @@ public class DesignLaddersController implements Initializable {
     private Stage stage_;
     private List<Image> icons_;
     private StageSettings stageSettings_;
+    private List<MenuItem> recentFileMenus_;
 
     private Ladders ladders_;
     private int historyGeneration_;
@@ -515,17 +517,7 @@ public class DesignLaddersController implements Initializable {
         menuFileDifference.setOnAction((ActionEvent event) -> {
             // ladder
             try {
-                FileChooser fileChooser = new FileChooser();
-
-                if (ladders_.getFilePath() != null) {
-                    if (ladders_.getFilePath().getParent() != null) {
-                        if (Files.exists(ladders_.getFilePath().getParent())) {
-                            fileChooser.setInitialDirectory(ladders_.getFilePath().getParent().toFile());
-                        }
-                    }
-                }
-                fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON", "*.json"));
-                File fcfile = fileChooser.showOpenDialog(stage_);
+                File fcfile = ladders_.getFileStore().getFileChooser("JSON", "*.json", null).showOpenDialog(stage_);
                 if (fcfile != null) {
                     Path file = fcfile.toPath();
                     LadderJson originalJson = ladders_.ladderJsonOpen(file);
@@ -537,7 +529,7 @@ public class DesignLaddersController implements Initializable {
                         DesignLaddersDifferenceController ladderDifferenceController = (DesignLaddersDifferenceController) loader
                                 .getController();
                         stage.setScene(new Scene(root));
-                        if (!icons_.isEmpty()) {
+                        if ((icons_ != null) && !icons_.isEmpty()) {
                             stage.getIcons().addAll(icons_);
                         }
                         ladderDifferenceController.startUp(stage, ladders_);
@@ -551,56 +543,20 @@ public class DesignLaddersController implements Initializable {
                 Console.writeStackTrace(DesignLaddersController.class.getName(), ex);
             }
         });
-        menuFileRecentFile1.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile1.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile2.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile2.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile3.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile3.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile4.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile4.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile5.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile5.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile6.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile6.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile7.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile7.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile8.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile8.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile9.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile9.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
-        menuFileRecentFile10.setOnAction((ActionEvent event) -> {
-            if (ladders_.fileOpen(Paths.get(menuFileRecentFile10.getText()))) {
-                addRecentFile(ladders_.getFilePath().toString());
-            }
-        });
+        for (MenuItem recentFileMenu : recentFileMenus_) {
+            recentFileMenu.setOnAction((ActionEvent event) -> {
+                String pathText = recentFileMenu.getText();
+                if ((pathText != null) && !pathText.isEmpty()) {
+                    try {
+                        if (ladders_.fileOpen(Paths.get(pathText))) {
+                            addRecentFile(ladders_.getFilePath().toString());
+                        }
+                    } catch (InvalidPathException ex) {
+                        Console.writeStackTrace(DesignLaddersController.class.getName(), ex);
+                    }
+                }
+            });
+        }
 
         // menu edit
         menuEditUndo.setOnAction((ActionEvent event) -> {
@@ -798,12 +754,13 @@ public class DesignLaddersController implements Initializable {
                                 for (index = 0, size = tabLadder.getTabs().size(); index < size; index++) {
                                     pane = (LadderPane) ((ScrollPane) tabLadder.getTabs().get(index).getContent())
                                             .getContent();
-                                    if (pane.getLadder().getName().equals(treTableIoParent.getAddress())) {
+                                    if (pane.getLadder().getName().replace(" ", "_")
+                                            .equals(treTableIoParent.getAddress())) {
                                         for (index2 = 0, size2 = pane.getChildren().size(); index2 < size2; index2++) {
                                             grid = ((LadderGridPane) pane.getChildren().get(index2)).getLadderGrid();
                                             if (address.equals(grid.getAddress())) {
                                                 tableIo.getItems()
-                                                        .add(new LadderTableIo(treTableIoParent.getAddress(), address,
+                                                        .add(new LadderTableIo(pane.getLadder().getName(), address,
                                                                 grid.getBlock().toString(), grid.getColumnIndex(),
                                                                 grid.getRowIndex()));
                                             }
@@ -922,7 +879,27 @@ public class DesignLaddersController implements Initializable {
         treeTableIoValue.setOnEditCommit((event) -> {
             if ((event.getOldValue() != null) && (event.getNewValue() != null)) {
                 if (!event.getOldValue().equals(event.getNewValue())) {
-                    ladders_.setValue(event.getRowValue().getValue().getAddress(), event.getNewValue());
+                    TreeItem<LadderTreeTableIo> parent = event.getRowValue().getParent();
+
+                    if ((parent != null) && (parent != event.getTreeTableView().getRoot())) {
+                        ObservableList<TreeItem<LadderTreeTableIo>> ovTreeTable = event.getTreeTableView().getRoot()
+                                .getChildren();
+                        int idx;
+                        for (idx = 0; idx < ovTreeTable.size(); idx++) {
+                            if (ovTreeTable.get(idx) == parent) {
+                                break;
+                            }
+                        }
+                        if (idx < ovTreeTable.size()) {
+                            String ioAddress = event.getRowValue().getValue().getAddress();
+                            if ((ioAddress != null) && !ioAddress.isEmpty()) {
+                                int targetIdx = ioAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)
+                                        ? idx
+                                        : LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+                                ladders_.setValue(targetIdx, ioAddress, event.getNewValue());
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -1116,8 +1093,9 @@ public class DesignLaddersController implements Initializable {
      */
     public void setIdealCycleTime(long idealCycleTime) {
         idealCycleTime_ = idealCycleTime;
+        final long value = idealCycleTime;
         Platform.runLater(() -> {
-            lblIdealCycleTime.setText(Long.toString(idealCycleTime_) + "ns(Ideal)");
+            lblIdealCycleTime.setText(Long.toString(value) + "ns(Ideal)");
         });
     }
 
@@ -1232,48 +1210,22 @@ public class DesignLaddersController implements Initializable {
      * @param filename
      */
     public void addRecentFile(String filename) {
-        if (filename != null) {
-            if (!filename.isEmpty()) {
-                String[] recent = new String[11];
-                int cnt, offset = 0;
-
-                recent[0] = filename;
-                recent[1] = menuFileRecentFile1.getText();
-                recent[2] = menuFileRecentFile2.getText();
-                recent[3] = menuFileRecentFile3.getText();
-                recent[4] = menuFileRecentFile4.getText();
-                recent[5] = menuFileRecentFile5.getText();
-                recent[6] = menuFileRecentFile6.getText();
-                recent[7] = menuFileRecentFile7.getText();
-                recent[8] = menuFileRecentFile8.getText();
-                recent[9] = menuFileRecentFile9.getText();
-                recent[10] = menuFileRecentFile10.getText();
-
-                for (cnt = 1; cnt < recent.length; cnt++) {
-                    if (recent[cnt].equals(recent[0])) {
-                        offset++;
-                    }
-
-                    if (cnt + offset < recent.length) {
-                        recent[cnt] = recent[cnt + offset];
-                    } else {
-                        recent[cnt] = "";
+        if ((filename != null) && !filename.isEmpty()) {
+            List<String> recent = new ArrayList<>();
+            recent.add(filename);
+            for (MenuItem recentFileMenu : recentFileMenus_) {
+                String existing = recentFileMenu.getText();
+                if ((existing != null) && !existing.isEmpty() && !existing.equals(filename)) {
+                    recent.add(existing);
+                    if (recent.size() >= recentFileMenus_.size()) {
+                        break;
                     }
                 }
-
-                menuFileRecentFile1.setText(recent[0]);
-                menuFileRecentFile2.setText(recent[1]);
-                menuFileRecentFile3.setText(recent[2]);
-                menuFileRecentFile4.setText(recent[3]);
-                menuFileRecentFile5.setText(recent[4]);
-                menuFileRecentFile6.setText(recent[5]);
-                menuFileRecentFile7.setText(recent[6]);
-                menuFileRecentFile8.setText(recent[7]);
-                menuFileRecentFile9.setText(recent[8]);
-                menuFileRecentFile10.setText(recent[9]);
-
-                runViewRecentFile();
             }
+            for (int i = 0; i < recentFileMenus_.size(); i++) {
+                recentFileMenus_.get(i).setText((i < recent.size()) ? recent.get(i) : "");
+            }
+            runViewRecentFile();
         }
     }
 
@@ -1288,16 +1240,10 @@ public class DesignLaddersController implements Initializable {
     }
 
     private void viewRecentFile() {
-        menuFileRecentFile1.setVisible(!menuFileRecentFile1.getText().isEmpty());
-        menuFileRecentFile2.setVisible(!menuFileRecentFile2.getText().isEmpty());
-        menuFileRecentFile3.setVisible(!menuFileRecentFile3.getText().isEmpty());
-        menuFileRecentFile4.setVisible(!menuFileRecentFile4.getText().isEmpty());
-        menuFileRecentFile5.setVisible(!menuFileRecentFile5.getText().isEmpty());
-        menuFileRecentFile6.setVisible(!menuFileRecentFile6.getText().isEmpty());
-        menuFileRecentFile7.setVisible(!menuFileRecentFile7.getText().isEmpty());
-        menuFileRecentFile8.setVisible(!menuFileRecentFile8.getText().isEmpty());
-        menuFileRecentFile9.setVisible(!menuFileRecentFile9.getText().isEmpty());
-        menuFileRecentFile10.setVisible(!menuFileRecentFile10.getText().isEmpty());
+        for (MenuItem recentFileMenu : recentFileMenus_) {
+            String text = recentFileMenu.getText();
+            recentFileMenu.setVisible((text != null) && !text.isEmpty());
+        }
     }
 
     private void initProperties() {
@@ -1320,16 +1266,9 @@ public class DesignLaddersController implements Initializable {
         ladders_.setScriptEnable(true);
 
         // menu
-        menuFileRecentFile1.setText("");
-        menuFileRecentFile2.setText("");
-        menuFileRecentFile3.setText("");
-        menuFileRecentFile4.setText("");
-        menuFileRecentFile5.setText("");
-        menuFileRecentFile6.setText("");
-        menuFileRecentFile7.setText("");
-        menuFileRecentFile8.setText("");
-        menuFileRecentFile9.setText("");
-        menuFileRecentFile10.setText("");
+        for (MenuItem recentFileMenu : recentFileMenus_) {
+            recentFileMenu.setText("");
+        }
     }
 
     /**
@@ -1348,7 +1287,13 @@ public class DesignLaddersController implements Initializable {
             return defaultValue;
         }
         try {
-            return Double.parseDouble(value);
+            double parsed = Double.parseDouble(value);
+            if (!Double.isFinite(parsed) || (parsed <= 0.0)) {
+                Console.write(DesignLaddersController.class.getName(),
+                        "properties : " + key + " is out of range [" + value + "]", true);
+                return defaultValue;
+            }
+            return parsed;
         } catch (NumberFormatException ex) {
             Console.write(DesignLaddersController.class.getName(),
                     "properties : " + key + " is not a number [" + value + "]", true);
@@ -1429,30 +1374,22 @@ public class DesignLaddersController implements Initializable {
                 ladders_.setScriptEnable(Boolean.parseBoolean(properties.getProperty("LADDER_SCRIPT_ENABLE", "true")));
 
                 // menu
-                menuFileRecentFile1.setText(properties.getProperty("MENU_RECENT_FILE_1", ""));
-                menuFileRecentFile2.setText(properties.getProperty("MENU_RECENT_FILE_2", ""));
-                menuFileRecentFile3.setText(properties.getProperty("MENU_RECENT_FILE_3", ""));
-                menuFileRecentFile4.setText(properties.getProperty("MENU_RECENT_FILE_4", ""));
-                menuFileRecentFile5.setText(properties.getProperty("MENU_RECENT_FILE_5", ""));
-                menuFileRecentFile6.setText(properties.getProperty("MENU_RECENT_FILE_6", ""));
-                menuFileRecentFile7.setText(properties.getProperty("MENU_RECENT_FILE_7", ""));
-                menuFileRecentFile8.setText(properties.getProperty("MENU_RECENT_FILE_8", ""));
-                menuFileRecentFile9.setText(properties.getProperty("MENU_RECENT_FILE_9", ""));
-                menuFileRecentFile10.setText(properties.getProperty("MENU_RECENT_FILE_10", ""));
+                for (int i = 0; i < recentFileMenus_.size(); i++) {
+                    recentFileMenus_.get(i).setText(properties.getProperty("MENU_RECENT_FILE_" + (i + 1), ""));
+                }
                 return true;
             } catch (IOException ex) {
                 Console.writeStackTrace(DesignLaddersController.class.getName(), ex);
             }
-        } else {
-            // stage
-            stageSettings_.setStageMaximized(stageSettings_.isStageMaximized(), true);
-            stageSettings_.setStageWidth(stageSettings_.getStageWidth(), true);
-            stageSettings_.setStageHeight(stageSettings_.getStageHeight(), true);
-            stageSettings_.setRootWidth(stageSettings_.getRootWidth(), true);
-            stageSettings_.setRootHeight(stageSettings_.getRootHeight(), true);
-            stageSettings_.setIoLadderDividerPositions(stageSettings_.getIoLadderDividerPositions(), true);
-            stageSettings_.setIoIoDividerPositions(stageSettings_.getIoIoDividerPositions(), true);
         }
+        // stage
+        stageSettings_.setStageMaximized(stageSettings_.isStageMaximized(), true);
+        stageSettings_.setStageWidth(stageSettings_.getStageWidth(), true);
+        stageSettings_.setStageHeight(stageSettings_.getStageHeight(), true);
+        stageSettings_.setRootWidth(stageSettings_.getRootWidth(), true);
+        stageSettings_.setRootHeight(stageSettings_.getRootHeight(), true);
+        stageSettings_.setIoLadderDividerPositions(stageSettings_.getIoLadderDividerPositions(), true);
+        stageSettings_.setIoIoDividerPositions(stageSettings_.getIoIoDividerPositions(), true);
         return false;
     }
 
@@ -1486,16 +1423,10 @@ public class DesignLaddersController implements Initializable {
                 properties.setProperty("LADDER_SCRIPT_ENABLE", Boolean.toString(ladders_.isScriptEnable()));
 
                 // menu
-                properties.setProperty("MENU_RECENT_FILE_1", menuFileRecentFile1.getText());
-                properties.setProperty("MENU_RECENT_FILE_2", menuFileRecentFile2.getText());
-                properties.setProperty("MENU_RECENT_FILE_3", menuFileRecentFile3.getText());
-                properties.setProperty("MENU_RECENT_FILE_4", menuFileRecentFile4.getText());
-                properties.setProperty("MENU_RECENT_FILE_5", menuFileRecentFile5.getText());
-                properties.setProperty("MENU_RECENT_FILE_6", menuFileRecentFile6.getText());
-                properties.setProperty("MENU_RECENT_FILE_7", menuFileRecentFile7.getText());
-                properties.setProperty("MENU_RECENT_FILE_8", menuFileRecentFile8.getText());
-                properties.setProperty("MENU_RECENT_FILE_9", menuFileRecentFile9.getText());
-                properties.setProperty("MENU_RECENT_FILE_10", menuFileRecentFile10.getText());
+                for (int i = 0; i < recentFileMenus_.size(); i++) {
+                    String text = recentFileMenus_.get(i).getText();
+                    properties.setProperty("MENU_RECENT_FILE_" + (i + 1), (text != null) ? text : "");
+                }
 
                 try (OutputStream outputStream = Files.newOutputStream(propertyFile)) {
                     properties.storeToXML(outputStream, "Ladders");
@@ -1565,7 +1496,9 @@ public class DesignLaddersController implements Initializable {
         }
 
         // save properties
-        saveProperties(ladderPath_.resolve("properties.xml"));
+        if (ladderPath_ != null) {
+            saveProperties(ladderPath_.resolve("properties.xml"));
+        }
 
         // clean up
         ladders_.cleanUp();
@@ -1578,6 +1511,9 @@ public class DesignLaddersController implements Initializable {
         stage_ = null;
         icons_ = null;
         stageSettings_ = new StageSettings();
+        recentFileMenus_ = List.of(menuFileRecentFile1, menuFileRecentFile2, menuFileRecentFile3,
+                menuFileRecentFile4, menuFileRecentFile5, menuFileRecentFile6, menuFileRecentFile7,
+                menuFileRecentFile8, menuFileRecentFile9, menuFileRecentFile10);
 
         ladders_ = new Ladders(this);
         historyGeneration_ = -1;

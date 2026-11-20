@@ -32,6 +32,13 @@ class SoemAdaptersTest {
      * @return the built shared library of DecoTofu-SOEM, null when there is none
      */
     private static Path library() {
+        String override = System.getProperty("decotofusoem.library");
+        if ((override != null) && !override.isEmpty()) {
+            Path path = Paths.get(override).toAbsolutePath().normalize();
+            if (Files.isRegularFile(path)) {
+                return path;
+            }
+        }
         for (String candidate : LIBRARY_CANDIDATES) {
             Path path = Paths.get(candidate).toAbsolutePath().normalize();
             if (Files.isRegularFile(path)) {
@@ -84,6 +91,23 @@ class SoemAdaptersTest {
 
         SoemLibrary soemLib = LibraryLoader.create(SoemLibrary.class).load(libraryName);
         jnr.ffi.Runtime runtime = jnr.ffi.Runtime.getRuntime(soemLib);
+
+        assertTrue(Soem.verifyNativeAbi(soemLib, runtime));
+        try {
+            assertNotNull(soemLib.ec_version());
+            assertEquals(SoemEtherCATMain.EC_MAXSLAVE, soemLib.ec_max_slave());
+            assertEquals(SoemEtherCATMain.EC_MAXGROUP, soemLib.ec_max_group());
+            assertEquals(SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCAT.ecx_parcelt(runtime)),
+                    soemLib.ec_sizeof_parcel());
+            assertEquals(SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCATMain.ec_slavet(runtime)),
+                    soemLib.ec_sizeof_slave());
+            assertEquals(SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCATMain.ec_groupt(runtime)),
+                    soemLib.ec_sizeof_group());
+            assertEquals(SoemEtherCATMain.ecx_contextt.expectedByteSize(runtime),
+                    soemLib.ec_sizeof_context());
+        } catch (UnsatisfiedLinkError ex) {
+            // Older DecoTofu-SOEM DLL builds predate introspection exports
+        }
 
         SoemEtherCATMain.ecx_contextt context = soemLib.ec_malloc_context().register();
         assertNotNull(context);

@@ -141,6 +141,9 @@ public enum LadderBlock {
      * @return the block of the command, EMPTY when no block holds the command
      */
     public static LadderBlock get(String command) {
+        if (command == null) {
+            return EMPTY;
+        }
         LadderBlock block = COMMANDS_.get(command.toUpperCase(Locale.ROOT));
         return (block != null) ? block : EMPTY;
     }

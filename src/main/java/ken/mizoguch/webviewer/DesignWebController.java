@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
@@ -64,6 +65,7 @@ public class DesignWebController implements Initializable {
     private List<Image> icons_;
     private Path currentPath_, webPath_, logPath_;
     private WebViewer webViewer_;
+    private final AtomicBoolean cleaningUp_ = new AtomicBoolean(false);
 
     /**
      * default window size used when properties.xml is absent or damaged
@@ -97,7 +99,7 @@ public class DesignWebController implements Initializable {
         public StageSettings() {
         }
 
-        private boolean bExit;
+        private volatile boolean bExit;
         private boolean stageMaximized;
         private double stageWidth, stageHeight;
 
@@ -235,7 +237,13 @@ public class DesignWebController implements Initializable {
             return defaultValue;
         }
         try {
-            return Double.parseDouble(value);
+            double parsed = Double.parseDouble(value);
+            if (!Double.isFinite(parsed) || (parsed <= 0.0)) {
+                Console.write(DesignWebController.class.getName(),
+                        "properties : " + key + " is out of range [" + value + "]", true);
+                return defaultValue;
+            }
+            return parsed;
         } catch (NumberFormatException ex) {
             Console.write(DesignWebController.class.getName(),
                     "properties : " + key + " is not a number [" + value + "]", true);
@@ -261,12 +269,11 @@ public class DesignWebController implements Initializable {
             } catch (IOException ex) {
                 Console.writeStackTrace(DesignWebController.class.getName(), ex);
             }
-        } else {
-            // stage
-            stageSettings_.setStageMaximized(stageSettings_.isStageMaximized(), true);
-            stageSettings_.setStageWidth(stageSettings_.getStageWidth(), true);
-            stageSettings_.setStageHeight(stageSettings_.getStageHeight(), true);
         }
+        // stage
+        stageSettings_.setStageMaximized(stageSettings_.isStageMaximized(), true);
+        stageSettings_.setStageWidth(stageSettings_.getStageWidth(), true);
+        stageSettings_.setStageHeight(stageSettings_.getStageHeight(), true);
         return false;
     }
 
@@ -319,7 +326,7 @@ public class DesignWebController implements Initializable {
         }
 
         // index path
-        indexPath = Paths.get(webPath_.toUri().resolve("index.html"));
+        indexPath = webPath_.resolve("index.html");
         if (!Files.exists(indexPath)) {
             try {
                 Files.writeString(indexPath, template_, StandardCharsets.UTF_8);
@@ -381,7 +388,10 @@ public class DesignWebController implements Initializable {
      * @return
      */
     public boolean cleanUp() {
-        if (!stageSettings_.isExit()) {
+        if (stageSettings_.isExit() || !cleaningUp_.compareAndSet(false, true)) {
+            return true;
+        }
+        try {
             // ladder
             if (ladders_ != null) {
                 if (!ladders_.getDesignController().cleanUp()) {
@@ -406,15 +416,21 @@ public class DesignWebController implements Initializable {
             }
 
             // save properties
-            saveProperties(currentPath_.resolve("properties.xml"));
+            if (currentPath_ != null) {
+                saveProperties(currentPath_.resolve("properties.xml"));
+            }
 
             // console
             Console.close();
 
             // exit
             stageSettings_.setExit(true);
+            return true;
+        } finally {
+            if (!stageSettings_.isExit()) {
+                cleaningUp_.set(false);
+            }
         }
-        return true;
     }
 
     @Override

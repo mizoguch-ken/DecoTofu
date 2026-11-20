@@ -259,6 +259,8 @@ public class SoemSlaveInfo {
         pIOmap_ = pIOmap;
     }
 
+    private static final EnumMapper EC_DATATYPE_MAPPER = EnumMapper.getInstance(SoemEtherCATType.ec_datatype.class);
+
     public SlaveInfo info(boolean printSDO, boolean printMAP) {
         if (context_ != null) {
             try {
@@ -274,6 +276,8 @@ public class SoemSlaveInfo {
                 }
                 info.SlaveCount = context_.slavecount.get();
                 info.ExpectedWKC = (context_.grouplist[0].outputsWKC.get() * 2) + context_.grouplist[0].inputsWKC.get();
+                context_.slavelist[0].blockLRW.set(0);
+                context_.slavelist[0].Ebuscurrent.set(0);
 
                 soem_.ecx_readstate(context_);
                 for (cnt = 1; (cnt < context_.slavelist.length) && (cnt <= context_.slavecount.get()); cnt++) {
@@ -305,7 +309,9 @@ public class SoemSlaveInfo {
                             sm.SMType = context_.slavelist[cnt].SMtype[nSM].get();
                         }
                     }
-                    for (cnt2 = 0; cnt2 < context_.slavelist[cnt].FMMUunused.get(); cnt2++) {
+                    int fmmuCount = Math.clamp(context_.slavelist[cnt].FMMUunused.get(), 0,
+                            SoemEtherCATMain.EC_MAXFMMU);
+                    for (cnt2 = 0; cnt2 < fmmuCount; cnt2++) {
                         fmmu = slave.newFMMU();
                         fmmu.Index = cnt2;
                         fmmu.LogStart = context_.slavelist[cnt].FMMU[cnt2].LogStart.get();
@@ -333,6 +339,8 @@ public class SoemSlaveInfo {
                         if ((soem_.ecx_siigetbyte(context_, cnt, ssigen + 0x0d) & 0x02) > 0) {
                             context_.slavelist[cnt].blockLRW.set(1);
                             context_.slavelist[0].blockLRW.set(context_.slavelist[0].blockLRW.get() + 1);
+                        } else {
+                            context_.slavelist[cnt].blockLRW.set(0);
                         }
                         context_.slavelist[cnt].Ebuscurrent.set(soem_.ecx_siigetbyte(context_, cnt, ssigen + 0x0e));
                         context_.slavelist[cnt].Ebuscurrent.set(context_.slavelist[cnt].Ebuscurrent.get()
@@ -367,8 +375,61 @@ public class SoemSlaveInfo {
         return null;
     }
 
+    static String formatSdoValue(SoemEtherCATType.ec_datatype edtype, Pointer pUsdo, String visibleString, int length) {
+        if (edtype == null) {
+            return "Unknown type";
+        }
+        return switch (edtype) {
+            case ECT_BOOLEAN -> (pUsdo.getByte(0) == SoemOsal.TRUE) ? "TRUE" : "FALSE";
+            case ECT_INTEGER8 -> String.format("0x%02X / %d", pUsdo.getByte(0), pUsdo.getByte(0));
+            case ECT_INTEGER16 -> String.format("0x%04X / %d", pUsdo.getShort(0), pUsdo.getShort(0));
+            case ECT_INTEGER24 -> {
+                int val = (pUsdo.getInt(0) << 8) >> 8;
+                yield String.format("0x%06X / %d", val & 0xFFFFFF, val);
+            }
+            case ECT_INTEGER32 -> String.format("0x%08X / %d", pUsdo.getInt(0), pUsdo.getInt(0));
+            case ECT_INTEGER64 -> {
+                long val = pUsdo.getLongLong(0);
+                yield String.format("0x%016X / %d", val, val);
+            }
+            case ECT_UNSIGNED8 -> {
+                int val = Byte.toUnsignedInt(pUsdo.getByte(0));
+                yield String.format("0x%02X / %d", val, val);
+            }
+            case ECT_UNSIGNED16 -> {
+                int val = Short.toUnsignedInt(pUsdo.getShort(0));
+                yield String.format("0x%04X / %d", val, val);
+            }
+            case ECT_UNSIGNED24 -> {
+                long val = Integer.toUnsignedLong(pUsdo.getInt(0)) & 0x00FFFFFFL;
+                yield String.format("0x%06X / %d", val, val);
+            }
+            case ECT_UNSIGNED32 -> {
+                long val = Integer.toUnsignedLong(pUsdo.getInt(0));
+                yield String.format("0x%08X / %d", val, val);
+            }
+            case ECT_UNSIGNED64 -> {
+                long val = pUsdo.getLongLong(0);
+                yield String.format("0x%016X / %s", val, Long.toUnsignedString(val));
+            }
+            case ECT_REAL32 -> String.format("%f", pUsdo.getFloat(0));
+            case ECT_REAL64 -> String.format("%f", pUsdo.getDouble(0));
+            case ECT_BIT1, ECT_BIT2, ECT_BIT3, ECT_BIT4, ECT_BIT5, ECT_BIT6, ECT_BIT7, ECT_BIT8 ->
+                String.format("0x%X", Byte.toUnsignedInt(pUsdo.getByte(0)));
+            case ECT_VISIBLE_STRING -> (visibleString != null) ? visibleString : "";
+            case ECT_OCTET_STRING -> {
+                StringBuilder str = new StringBuilder();
+                int len = Math.max(0, length);
+                for (int i = 0; i < len; i++) {
+                    str.append(String.format("0x%02X ", Byte.toUnsignedInt(pUsdo.getByte(i))));
+                }
+                yield str.toString();
+            }
+            default -> "Unknown type";
+        };
+    }
+
     private String SDO2string(SoemEtherCATMain.ecx_contextt context, int index, int idx, int subidx, int dtype) {
-        StringBuilder str;
         SoemLibrary.UTF8String usdo = new SoemLibrary.UTF8String(runtime_, 128);
         SoemLibrary.Int32 l = new SoemLibrary.Int32(runtime_);
         Pointer pUsdo = Memory.allocate(runtime_, Struct.size(usdo));
@@ -380,89 +441,14 @@ public class SoemSlaveInfo {
         soem_.ecx_SDOread(context, index, idx, subidx, SoemOsal.FALSE, pL, pUsdo, SoemEtherCATType.EC_TIMEOUTRXM);
         if (context.ecaterror.get() > 0) {
             return soem_.ecx_elist2string(context);
-        } else {
-            try {
-                SoemEtherCATType.ec_datatype edtype = (SoemEtherCATType.ec_datatype) EnumMapper
-                        .getInstance(SoemEtherCATType.ec_datatype.class).valueOf(dtype);
-                switch (edtype) {
-                    case ECT_BOOLEAN:
-                        if (pUsdo.getByte(0) == SoemOsal.TRUE) {
-                            str = new StringBuilder("TRUE");
-                        } else {
-                            str = new StringBuilder("FALSE");
-                        }
-                        break;
-                    case ECT_INTEGER8:
-                        str = new StringBuilder(String.format("0x%02X / %d", pUsdo.getByte(0), pUsdo.getByte(0)));
-                        break;
-                    case ECT_INTEGER16:
-                        str = new StringBuilder(String.format("0x%04X / %d", pUsdo.getShort(0), pUsdo.getShort(0)));
-                        break;
-                    case ECT_INTEGER32:
-                    case ECT_INTEGER24:
-                        str = new StringBuilder(String.format("0x%08X / %d", pUsdo.getInt(0), pUsdo.getInt(0)));
-                        break;
-                    case ECT_INTEGER64: {
-                        long val = pUsdo.getLongLong(0);
-                        str = new StringBuilder(String.format("0x%016X / %d", val, val));
-                        break;
-                    }
-                    case ECT_UNSIGNED8: {
-                        int val = Byte.toUnsignedInt(pUsdo.getByte(0));
-                        str = new StringBuilder(String.format("0x%02X / %d", val, val));
-                        break;
-                    }
-                    case ECT_UNSIGNED16: {
-                        int val = Short.toUnsignedInt(pUsdo.getShort(0));
-                        str = new StringBuilder(String.format("0x%04X / %d", val, val));
-                        break;
-                    }
-                    case ECT_UNSIGNED32:
-                    case ECT_UNSIGNED24: {
-                        long val = Integer.toUnsignedLong(pUsdo.getInt(0));
-                        str = new StringBuilder(String.format("0x%08X / %d", val, val));
-                        break;
-                    }
-                    case ECT_UNSIGNED64: {
-                        long val = pUsdo.getLongLong(0);
-                        str = new StringBuilder(
-                                String.format("0x%016X / %s", val, Long.toUnsignedString(val)));
-                        break;
-                    }
-                    case ECT_REAL32:
-                        str = new StringBuilder(String.format("%f", pUsdo.getFloat(0)));
-                        break;
-                    case ECT_REAL64:
-                        str = new StringBuilder(String.format("%f", pUsdo.getDouble(0)));
-                        break;
-                    case ECT_BIT1:
-                    case ECT_BIT2:
-                    case ECT_BIT3:
-                    case ECT_BIT4:
-                    case ECT_BIT5:
-                    case ECT_BIT6:
-                    case ECT_BIT7:
-                    case ECT_BIT8:
-                        str = new StringBuilder(String.format("0x%X", Byte.toUnsignedInt(pUsdo.getByte(0))));
-                        break;
-                    case ECT_VISIBLE_STRING:
-                        str = new StringBuilder(usdo.get());
-                        break;
-                    case ECT_OCTET_STRING: {
-                        str = new StringBuilder();
-                        int len = Math.clamp(l.get(), 0, Struct.size(usdo));
-                        for (int i = 0; i < len; i++) {
-                            str.append(String.format("0x%02X ", Byte.toUnsignedInt(pUsdo.getByte(i))));
-                        }
-                        break;
-                    }
-                    default:
-                        str = new StringBuilder("Unknown type");
-                }
-            } catch (IllegalArgumentException ex) {
-                str = new StringBuilder("Unknown type");
-            }
-            return str.toString();
+        }
+        try {
+            SoemEtherCATType.ec_datatype edtype = (SoemEtherCATType.ec_datatype) EC_DATATYPE_MAPPER.valueOf(dtype);
+            String visibleString = (edtype == SoemEtherCATType.ec_datatype.ECT_VISIBLE_STRING) ? usdo.get() : null;
+            int len = Math.clamp(l.get(), 0, Struct.size(usdo));
+            return formatSdoValue(edtype, pUsdo, visibleString, len);
+        } catch (IllegalArgumentException ex) {
+            return "Unknown type";
         }
     }
 
@@ -566,6 +552,10 @@ public class SoemSlaveInfo {
         return bsize;
     }
 
+    static int mapOffset(Pointer slaveMap, Pointer pIOmap) {
+        return ((slaveMap != null) && (pIOmap != null)) ? (int) (slaveMap.address() - pIOmap.address()) : 0;
+    }
+
     private int si_map_sdo(SoemEtherCATMain.ecx_contextt context, Pointer pIOmap, int index, SlaveInfo.Slave slave) {
         SlaveInfo.PDO pdo;
         int wkc;
@@ -628,7 +618,7 @@ public class SoemSlaveInfo {
                         pdo.Index = iSM;
                         if (context.slavelist[index].outputs.get() != null) {
                             Tsize = si_PDOassign(context, index, SoemEtherCATType.ECT_SDO_PDOASSIGN + iSM,
-                                    (int) (context.slavelist[index].outputs.get().address() - pIOmap.address()),
+                                    mapOffset(context.slavelist[index].outputs.get(), pIOmap),
                                     outputs_bo, pdo);
                             outputs_bo += Tsize;
                         }
@@ -640,7 +630,7 @@ public class SoemSlaveInfo {
                         pdo.Index = iSM;
                         if (context.slavelist[index].inputs.get() != null) {
                             Tsize = si_PDOassign(context, index, SoemEtherCATType.ECT_SDO_PDOASSIGN + iSM,
-                                    (int) (context.slavelist[index].inputs.get().address() - pIOmap.address()),
+                                    mapOffset(context.slavelist[index].inputs.get(), pIOmap),
                                     inputs_bo, pdo);
                             inputs_bo += Tsize;
                         }
@@ -778,25 +768,16 @@ public class SoemSlaveInfo {
     private int si_map_sii(SoemEtherCATMain.ecx_contextt context, Pointer pIOmap, int index, SlaveInfo.Slave slave) {
         int retVal = 0;
         int Tsize, outputs_bo, inputs_bo;
-        long address;
 
         outputs_bo = 0;
         inputs_bo = 0;
         /* read the assign RXPDOs */
-        if (context.slavelist[index].outputs.get() == null) {
-            address = 0;
-        } else {
-            address = context.slavelist[index].outputs.get().address();
-        }
-        Tsize = si_siiPDO(context, index, 1, (int) (address - pIOmap.address()), outputs_bo, slave);
+        Tsize = si_siiPDO(context, index, 1, mapOffset(context.slavelist[index].outputs.get(), pIOmap), outputs_bo,
+                slave);
         outputs_bo += Tsize;
         /* read the assign TXPDOs */
-        if (context.slavelist[index].inputs.get() == null) {
-            address = 0;
-        } else {
-            address = context.slavelist[index].inputs.get().address();
-        }
-        Tsize = si_siiPDO(context, index, 0, (int) (address - pIOmap.address()), inputs_bo, slave);
+        Tsize = si_siiPDO(context, index, 0, mapOffset(context.slavelist[index].inputs.get(), pIOmap), inputs_bo,
+                slave);
         inputs_bo += Tsize;
         /* found some I/O bits ? */
         if ((outputs_bo > 0) || (inputs_bo > 0)) {
@@ -816,7 +797,6 @@ public class SoemSlaveInfo {
         Pointer pL = Memory.allocate(runtime_, Struct.size(l));
         maxSub.useMemory(pMaxSub);
         l.useMemory(pL);
-        l.set(Struct.size(maxSub));
         int i, j;
 
         Pointer pODlist = Memory.allocate(runtime_, Struct.size(ODlist));
@@ -843,6 +823,8 @@ public class SoemSlaveInfo {
                     od.EcatError = soem_.ecx_elist2string(context);
                 }
                 if (od.ObjectCode != SoemNames.ec_objecttype.OTYPE_VAR.intValue()) {
+                    l.set(Struct.size(maxSub));
+                    maxSub.set(0);
                     soem_.ecx_SDOread(context, cnt, od.Index, 0, SoemOsal.FALSE, pL, pMaxSub,
                             SoemEtherCATType.EC_TIMEOUTRXM);
                     od.MaxSub = maxSub.get();

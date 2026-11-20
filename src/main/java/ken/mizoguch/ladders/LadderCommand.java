@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javafx.beans.value.ObservableValue;
@@ -225,12 +226,12 @@ public class LadderCommand {
                         blockChangeSelect(scrollPane, pane, grid, false);
                         break;
                 }
-                isDisableHistory_ = false;
                 return true;
             } catch (Exception ex) {
                 Console.writeStackTrace(LadderCommand.class.getName(), ex);
+            } finally {
+                isDisableHistory_ = false;
             }
-            isDisableHistory_ = false;
         }
         return false;
     }
@@ -310,14 +311,14 @@ public class LadderCommand {
                         }
                         break;
                     case LADDER_MOVE_LEFT:
-                        ladders_.getTabLadder().getSelectionModel().select(history_.getRevised().getIdx() - 1);
+                        ladders_.getTabLadder().getSelectionModel().select(history_.getOriginal().getIdx() - 1);
                         ladderMoveLeft(((LadderPane) ((ScrollPane) ladders_.getTabLadder().getTabs()
-                                .get(history_.getRevised().getIdx() - 1).getContent()).getContent()).getLadder());
+                                .get(history_.getOriginal().getIdx() - 1).getContent()).getContent()).getLadder());
                         break;
                     case LADDER_MOVE_RIGHT:
-                        ladders_.getTabLadder().getSelectionModel().select(history_.getRevised().getIdx() - 1);
+                        ladders_.getTabLadder().getSelectionModel().select(history_.getOriginal().getIdx() - 1);
                         ladderMoveRight(((LadderPane) ((ScrollPane) ladders_.getTabLadder().getTabs()
-                                .get(history_.getRevised().getIdx() - 1).getContent()).getContent()).getLadder());
+                                .get(history_.getOriginal().getIdx() - 1).getContent()).getContent()).getLadder());
                         break;
                     case LADDER_CHANGE_NAME:
                         ladders_.getTabLadder().getSelectionModel().select(history_.getOriginal().getIdx() - 1);
@@ -348,12 +349,12 @@ public class LadderCommand {
                         blockChangeSelect(scrollPane, pane, grid, false);
                         break;
                 }
-                isDisableHistory_ = false;
                 return true;
             } catch (Exception ex) {
                 Console.writeStackTrace(LadderCommand.class.getName(), ex);
+            } finally {
+                isDisableHistory_ = false;
             }
-            isDisableHistory_ = false;
         }
         return false;
     }
@@ -404,6 +405,12 @@ public class LadderCommand {
                             if (ladderGrid.getAddress().equals(oldAddress)) {
                                 ladderGrid.setAddress(newAddress);
                             }
+                            for (int fnIndex = 0; fnIndex < LadderGrid.LADDER_BLOCK_FUNCTIONS; fnIndex++) {
+                                LadderGrid.BlockFunction fn = ladderGrid.getBlockFunctions()[fnIndex];
+                                if (!fn.isNumber() && oldAddress.equals(fn.getAddress())) {
+                                    fn.setAddress(newAddress);
+                                }
+                            }
                         }
                     }
                 }
@@ -418,6 +425,17 @@ public class LadderCommand {
                             ladderGrid.setAddress(newAddress);
                             pane.findGridPane(ladderGrid).changeAddress();
                         }
+                        boolean fnChanged = false;
+                        for (int fnIndex = 0; fnIndex < LadderGrid.LADDER_BLOCK_FUNCTIONS; fnIndex++) {
+                            LadderGrid.BlockFunction fn = ladderGrid.getBlockFunctions()[fnIndex];
+                            if (!fn.isNumber() && oldAddress.equals(fn.getAddress())) {
+                                fn.setAddress(newAddress);
+                                fnChanged = true;
+                            }
+                        }
+                        if (fnChanged) {
+                            pane.findGridPane(ladderGrid).changeBlockFunction();
+                        }
                     }
                 }
             } else {
@@ -428,6 +446,12 @@ public class LadderCommand {
                         ladderGrid = ladder.getLadderGrids().get(index2);
                         if (ladderGrid.getAddress().equals(oldAddress)) {
                             ladderGrid.setAddress(newAddress);
+                        }
+                        for (int fnIndex = 0; fnIndex < LadderGrid.LADDER_BLOCK_FUNCTIONS; fnIndex++) {
+                            LadderGrid.BlockFunction fn = ladderGrid.getBlockFunctions()[fnIndex];
+                            if (!fn.isNumber() && oldAddress.equals(fn.getAddress())) {
+                                fn.setAddress(newAddress);
+                            }
                         }
                     }
                 }
@@ -440,6 +464,17 @@ public class LadderCommand {
                     if (ladderGrid.getAddress().equals(oldAddress)) {
                         ladderGrid.setAddress(newAddress);
                         pane.findGridPane(ladderGrid).changeAddress();
+                    }
+                    boolean fnChanged = false;
+                    for (int fnIndex = 0; fnIndex < LadderGrid.LADDER_BLOCK_FUNCTIONS; fnIndex++) {
+                        LadderGrid.BlockFunction fn = ladderGrid.getBlockFunctions()[fnIndex];
+                        if (!fn.isNumber() && oldAddress.equals(fn.getAddress())) {
+                            fn.setAddress(newAddress);
+                            fnChanged = true;
+                        }
+                    }
+                    if (fnChanged) {
+                        pane.findGridPane(ladderGrid).changeBlockFunction();
                     }
                 }
             }
@@ -502,6 +537,9 @@ public class LadderCommand {
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
             CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap, int idx, String address,
             String comment) {
+        if ((idx < 0) || (idx >= commentMap.size()) || (idx >= ioMap.size())) {
+            return false;
+        }
         String oldComment = LadderGrid.LADDER_GRID_INITIAL_COMMENT;
 
         if (comment == null) {
@@ -537,7 +575,7 @@ public class LadderCommand {
                 ((LadderPane) ((ScrollPane) tabPane.getTabs().get(index).getContent()).getContent())
                         .setComments(address, comment);
             }
-        } else {
+        } else if ((idx - 1) < tabPane.getTabs().size()) {
             ((LadderPane) ((ScrollPane) tabPane.getTabs().get(idx - 1).getContent()).getContent()).setComments(address,
                     comment);
         }
@@ -857,6 +895,13 @@ public class LadderCommand {
                 history_.setOriginal(new LadderJsonLadder(ladder.getIdx()));
             }
 
+            ObservableList<TreeItem<LadderTreeTableIo>> treeChildren = ladders_.getTreeTableIo().getRoot().getChildren();
+            if (idx < treeChildren.size()) {
+                TreeItem<LadderTreeTableIo> treeItem = treeChildren.remove(idx);
+                treeChildren.add(idx - 1, treeItem);
+            }
+            ladders_.getIoStore().swapLadderRows(idx, idx - 1);
+
             ((LadderPane) ((ScrollPane) ladders_.getTabLadder().getTabs().get(idx - 2).getContent()).getContent())
                     .getLadder().setIdx(idx);
             ladder.setIdx(idx - 1);
@@ -884,6 +929,13 @@ public class LadderCommand {
                 history_ = new LadderHistory(LadderCommandType.LADDER_MOVE_RIGHT);
                 history_.setOriginal(new LadderJsonLadder(ladder.getIdx()));
             }
+
+            ObservableList<TreeItem<LadderTreeTableIo>> treeChildren = ladders_.getTreeTableIo().getRoot().getChildren();
+            if ((idx + 1) < treeChildren.size()) {
+                TreeItem<LadderTreeTableIo> treeItem = treeChildren.remove(idx);
+                treeChildren.add(idx + 1, treeItem);
+            }
+            ladders_.getIoStore().swapLadderRows(idx, idx + 1);
 
             ((LadderPane) ((ScrollPane) ladders_.getTabLadder().getTabs().get(idx).getContent()).getContent())
                     .getLadder().setIdx(idx);
@@ -913,6 +965,11 @@ public class LadderCommand {
             }
 
             pane.getLadder().setName(name);
+            ObservableList<TreeItem<LadderTreeTableIo>> treeChildren = ladders_.getTreeTableIo().getRoot().getChildren();
+            int idx = pane.getLadder().getIdx();
+            if ((idx > LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX) && (idx < treeChildren.size())) {
+                treeChildren.get(idx).getValue().setAddress(name.replace(" ", "_"));
+            }
 
             if (!isDisableHistory_ && !isBlockChanging_) {
                 history_.setRevised(new LadderJsonLadder(pane.getLadder().getIdx(), pane.getLadder().getName()));
@@ -1010,6 +1067,11 @@ public class LadderCommand {
                         pane.findGridPane(grid.getDownLadderGrid()).changeStrokeVertical();
                     }
                 }
+            }
+        }
+        for (index = 0, size = grids.size(); index < size; index++) {
+            grid = grids.get(index);
+            if (grid.getBlock() != LadderBlock.CONTENTS) {
                 blockChangeRevised(ladder, grid);
             }
         }
@@ -1081,6 +1143,11 @@ public class LadderCommand {
                         pane.findGridPane(grid.getDownLadderGrid()).changeStrokeVertical();
                     }
                 }
+            }
+        }
+        for (index = 0, size = grids.size(); index < size; index++) {
+            grid = grids.get(index);
+            if (grid.getBlock() != LadderBlock.CONTENTS) {
                 blockChangeRevised(ladder, grid);
             }
         }
@@ -1341,8 +1408,7 @@ public class LadderCommand {
                                 gridPane.changeBlock();
 
                                 if (LadderGrid.LADDER_GRID_INITIAL_ADDRESS.equals(copyGrid.getAddress())) {
-                                    grid.setComment(ladders_.getComment(ladder.getIdx(),
-                                            LadderGrid.LADDER_GRID_INITIAL_COMMENT));
+                                    grid.setComment(LadderGrid.LADDER_GRID_INITIAL_COMMENT);
                                 } else {
                                     if (copyGrid.getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         if (ladders_.isComment(ladder.getIdx(), copyGrid.getAddress())) {
@@ -1417,8 +1483,7 @@ public class LadderCommand {
                                 gridPane.changeBlock();
 
                                 if (LadderGrid.LADDER_GRID_INITIAL_ADDRESS.equals(copyGrid.getAddress())) {
-                                    grid.setComment(ladders_.getComment(ladder.getIdx(),
-                                            LadderGrid.LADDER_GRID_INITIAL_COMMENT));
+                                    grid.setComment(LadderGrid.LADDER_GRID_INITIAL_COMMENT);
                                 } else {
                                     if (copyGrid.getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         if (ladders_.isComment(ladder.getIdx(), copyGrid.getAddress())) {
@@ -1511,13 +1576,15 @@ public class LadderCommand {
                             }
                         }
 
-                        previousGrid = pane.getPreviousGrids().get(pane.getPreviousGrids().size() - 1);
-                        previousGridPane = pane.findGridPane(previousGrid);
-                        previousGrid.setSelect(false);
-                        previousGridPane.changeStrokeSelect();
-                        if (previousGrid.getBlock() != LadderBlock.CONTENTS) {
-                            previousGrid.setSelectRange(true);
-                            previousGridPane.changeBackGroundSelect();
+                        if (!pane.getPreviousGrids().isEmpty()) {
+                            previousGrid = pane.getPreviousGrids().get(pane.getPreviousGrids().size() - 1);
+                            previousGridPane = pane.findGridPane(previousGrid);
+                            previousGrid.setSelect(false);
+                            previousGridPane.changeStrokeSelect();
+                            if (previousGrid.getBlock() != LadderBlock.CONTENTS) {
+                                previousGrid.setSelectRange(true);
+                                previousGridPane.changeBackGroundSelect();
+                            }
                         }
 
                         blockChangeView(scrollPane, gridPane);
@@ -1701,13 +1768,17 @@ public class LadderCommand {
                 hSub = scrollPane.getHmax() - hMin;
                 contWidth = scrollPane.getContent().getLayoutBounds().getWidth();
                 viewWidth = scrollPane.getViewportBounds().getWidth();
-                scrollPane.setHvalue(((gridMinX / (contWidth - viewWidth)) * hSub) + hMin);
+                if (contWidth > viewWidth) {
+                    scrollPane.setHvalue(((gridMinX / (contWidth - viewWidth)) * hSub) + hMin);
+                }
             } else if (gridMaxX > viewMaxX) {
                 hMin = scrollPane.getHmin();
                 hSub = scrollPane.getHmax() - hMin;
                 contWidth = scrollPane.getContent().getLayoutBounds().getWidth();
                 viewWidth = scrollPane.getViewportBounds().getWidth();
-                scrollPane.setHvalue((((gridMaxX - viewWidth) / (contWidth - viewWidth)) * hSub) + hMin);
+                if (contWidth > viewWidth) {
+                    scrollPane.setHvalue((((gridMaxX - viewWidth) / (contWidth - viewWidth)) * hSub) + hMin);
+                }
             }
 
             if (gridMinY < viewMinY) {
@@ -1715,13 +1786,17 @@ public class LadderCommand {
                 vSub = scrollPane.getVmax() - vMin;
                 contHeight = scrollPane.getContent().getLayoutBounds().getHeight();
                 viewHeight = scrollPane.getViewportBounds().getHeight();
-                scrollPane.setVvalue(((gridMinY / (contHeight - viewHeight)) * vSub) + vMin);
+                if (contHeight > viewHeight) {
+                    scrollPane.setVvalue(((gridMinY / (contHeight - viewHeight)) * vSub) + vMin);
+                }
             } else if (gridMaxY > viewMaxY) {
                 vMin = scrollPane.getVmin();
                 vSub = scrollPane.getVmax() - vMin;
                 contHeight = scrollPane.getContent().getLayoutBounds().getHeight();
                 viewHeight = scrollPane.getViewportBounds().getHeight();
-                scrollPane.setVvalue((((gridMaxY - viewHeight) / (contHeight - viewHeight)) * vSub) + vMin);
+                if (contHeight > viewHeight) {
+                    scrollPane.setVvalue((((gridMaxY - viewHeight) / (contHeight - viewHeight)) * vSub) + vMin);
+                }
             }
         }
     }
@@ -1991,6 +2066,9 @@ public class LadderCommand {
      */
     public void blockChangeConnectLineRight(Ladder ladder, LadderGrid previousGrid, LadderGrid grid,
             LadderGridPane previousGridPane, boolean isConnect) {
+        if ((previousGrid == null) || (grid == null) || (previousGridPane == null)) {
+            return;
+        }
         if (!isDisableHistory_ && !isBlockChanging_) {
             startBlockChange(jsonLadderAt(ladder, previousGrid), grid, previousGrid);
         }
@@ -2065,7 +2143,7 @@ public class LadderCommand {
             gridPane.changeBlockIO();
 
             if (LadderGrid.LADDER_GRID_INITIAL_ADDRESS.equals(address)) {
-                grid.setComment(ladders_.getComment(ladder.getIdx(), LadderGrid.LADDER_GRID_INITIAL_COMMENT));
+                grid.setComment(LadderGrid.LADDER_GRID_INITIAL_COMMENT);
             } else {
                 if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                     if (ladders_.isComment(ladder.getIdx(), address)) {
@@ -2106,7 +2184,7 @@ public class LadderCommand {
      * @return
      */
     public boolean blockChangeComment(Ladder ladder, LadderGrid grid, LadderGridPane gridPane, String comment) {
-        if (!grid.getComment().equals(comment)) {
+        if (!Objects.equals(grid.getComment(), comment)) {
             if (!isDisableHistory_ && !isBlockChanging_) {
                 startBlockChange(jsonLadderAt(ladder, grid), grid);
             }
@@ -2147,30 +2225,33 @@ public class LadderCommand {
             result = true;
             size = Math.min(blockFunctions.size(), LadderGrid.LADDER_BLOCK_FUNCTIONS);
             for (i = 0; i < size; i++) {
-                if (blockFunctions.get(i).address() != null) {
-                    if (!blockFunctions.get(i).address().equals(grid.getBlockFunctions()[i].getAddress())
+                LadderJsonBlock.JsonBlockFunction jsonFn = blockFunctions.get(i);
+                if (jsonFn == null) {
+                    result = false;
+                } else if (jsonFn.address() != null) {
+                    if (!jsonFn.address().equals(grid.getBlockFunctions()[i].getAddress())
                             || grid.getBlockFunctions()[i].isNumber()) {
                         if (!changed && !isDisableHistory_ && !isBlockChanging_) {
                             startBlockChange(jsonLadderAt(ladder, grid), grid);
                         }
 
-                        grid.getBlockFunctions()[i].setAddress(blockFunctions.get(i).address());
+                        grid.getBlockFunctions()[i].setAddress(jsonFn.address());
                         grid.getBlockFunctions()[i].setValue(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_VALUE);
                         grid.getBlockFunctions()[i].setRadix(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_RADIX);
                         grid.getBlockFunctions()[i].setNumber(false);
                         changed = true;
                     }
-                } else if ((blockFunctions.get(i).value() != null) && (blockFunctions.get(i).radix() != null)) {
+                } else if ((jsonFn.value() != null) && (jsonFn.radix() != null)) {
                     if (!grid.getBlockFunctions()[i].isNumber()
-                            || (blockFunctions.get(i).value() != grid.getBlockFunctions()[i].getValue())
-                            || (blockFunctions.get(i).radix() != grid.getBlockFunctions()[i].getRadix())) {
+                            || (jsonFn.value() != grid.getBlockFunctions()[i].getValue())
+                            || (jsonFn.radix() != grid.getBlockFunctions()[i].getRadix())) {
                         if (!changed && !isDisableHistory_ && !isBlockChanging_) {
                             startBlockChange(jsonLadderAt(ladder, grid), grid);
                         }
 
                         grid.getBlockFunctions()[i].setAddress(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_ADDRESS);
-                        grid.getBlockFunctions()[i].setValue(blockFunctions.get(i).value());
-                        grid.getBlockFunctions()[i].setRadix(blockFunctions.get(i).radix());
+                        grid.getBlockFunctions()[i].setValue(jsonFn.value());
+                        grid.getBlockFunctions()[i].setRadix(jsonFn.radix());
                         grid.getBlockFunctions()[i].setNumber(true);
                         changed = true;
                     }
@@ -2180,7 +2261,7 @@ public class LadderCommand {
             }
             for (i = size; i < LadderGrid.LADDER_BLOCK_FUNCTIONS; i++) {
                 LadderGrid.BlockFunction fn = grid.getBlockFunctions()[i];
-                if (!LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_ADDRESS.equals(fn.getAddress())
+                if (!Objects.equals(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_ADDRESS, fn.getAddress())
                         || (fn.getValue() != LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_VALUE)
                         || (fn.getRadix() != LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_RADIX)
                         || fn.isNumber()) {
@@ -2230,7 +2311,7 @@ public class LadderCommand {
                     startBlockChange(jsonLadderAt(ladder, grid), grid);
                 }
 
-                grid.getBlockFunctions()[index].setAddress(LadderGrid.LADDER_GRID_INITIAL_ADDRESS);
+                grid.getBlockFunctions()[index].setAddress(LadderGrid.LADDER_GRID_INITIAL_BLOCK_FUNCTION_ADDRESS);
                 grid.getBlockFunctions()[index].setValue(number.getValue());
                 grid.getBlockFunctions()[index].setRadix(number.getRadix());
                 grid.getBlockFunctions()[index].setNumber(true);
@@ -2249,7 +2330,7 @@ public class LadderCommand {
             }
         } else {
             if (grid.getBlockFunctions()[index].isNumber()
-                    || !functionValue.equals(grid.getBlockFunctions()[index].getAddress())) {
+                    || !Objects.equals(functionValue, grid.getBlockFunctions()[index].getAddress())) {
                 if (!isDisableHistory_ && !isBlockChanging_) {
                     startBlockChange(jsonLadderAt(ladder, grid), grid);
                 }
@@ -2560,8 +2641,8 @@ public class LadderCommand {
             CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap,
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> scriptIoMap, LadderJsonLadder jsonLadder,
             boolean isEditing) {
-        if ((jsonLadder.getIdx() == null) || (jsonLadder.getName() == null) || (jsonLadder.getColumn() == null)
-                || (jsonLadder.getRow() == null)) {
+        if ((jsonLadder == null) || (jsonLadder.getIdx() == null) || (jsonLadder.getName() == null)
+                || (jsonLadder.getColumn() == null) || (jsonLadder.getRow() == null)) {
             writeLog("Data format unexpected error" + " [idx][name][column][row]", true);
             return false;
         }
@@ -2613,7 +2694,7 @@ public class LadderCommand {
 
                 for (index = 0, size = jsonLadderRevised.getBlocks().size(); index < size; index++) {
                     jsonBlock = jsonLadderRevised.getBlocks().get(index);
-                    if (!restoreBlock(
+                    if ((jsonBlock == null) || !restoreBlock(
                             new LadderJsonBlock(jsonBlock.getColumnIndex(), jsonBlock.getRowIndex()),
                             pane, isEditing, isVerticalCheck)) {
                         return false;
@@ -2642,7 +2723,7 @@ public class LadderCommand {
 
                 for (index = 0, size = jsonLadderRevised.getBlocks().size(); index < size; index++) {
                     jsonBlock = jsonLadderRevised.getBlocks().get(index);
-                    if (!restoreBlock(
+                    if ((jsonBlock == null) || !restoreBlock(
                             new LadderJsonBlock(jsonBlock.getColumnIndex(), jsonBlock.getRowIndex()),
                             pane, isEditing, isVerticalCheck)) {
                         return false;
@@ -2668,7 +2749,7 @@ public class LadderCommand {
 
                 for (index = 0, size = jsonLadderRevised.getBlocks().size(); index < size; index++) {
                     jsonBlock = jsonLadderRevised.getBlocks().get(index);
-                    if (!restoreBlock(
+                    if ((jsonBlock == null) || !restoreBlock(
                             new LadderJsonBlock(jsonBlock.getColumnIndex(), jsonBlock.getRowIndex()),
                             pane, isEditing, isVerticalCheck)) {
                         return false;
@@ -2693,7 +2774,7 @@ public class LadderCommand {
         LadderGridPane gridPane;
         int i;
 
-        if ((jsonBlock.getColumnIndex() == null) || (jsonBlock.getRowIndex() == null)) {
+        if ((jsonBlock == null) || (jsonBlock.getColumnIndex() == null) || (jsonBlock.getRowIndex() == null)) {
             writeLog("Data format unexpected error" + " [columnIndex][rowIndex]", true);
             return false;
         }
@@ -2723,7 +2804,10 @@ public class LadderCommand {
         if (isVerticalCheck) {
             if (grid.getUpLadderGrid() != null) {
                 grid.getUpLadderGrid().setVerticalOr(jsonBlock.isVertical());
-                pane.findGridPane(grid.getUpLadderGrid()).changeStrokeVerticalOr();
+                LadderGridPane upGridPane = pane.findGridPane(grid.getUpLadderGrid());
+                if (upGridPane != null) {
+                    upGridPane.changeStrokeVerticalOr();
+                }
             }
         }
 
@@ -2735,7 +2819,10 @@ public class LadderCommand {
         if (isVerticalCheck) {
             if (grid.getDownLadderGrid() != null) {
                 grid.getDownLadderGrid().setVertical(jsonBlock.isVerticalOr());
-                pane.findGridPane(grid.getDownLadderGrid()).changeStrokeVertical();
+                LadderGridPane downGridPane = pane.findGridPane(grid.getDownLadderGrid());
+                if (downGridPane != null) {
+                    downGridPane.changeStrokeVertical();
+                }
             }
         }
 
@@ -2877,21 +2964,47 @@ public class LadderCommand {
     public boolean restoreComments(TabPane tabPane, TreeTableView<LadderTreeTableIo> treeTableView,
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
             CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMap, LadderJson ladderJson) {
-        if (ladderJson.getComments() != null) {
+        if ((ladderJson != null) && (ladderJson.getComments() != null)) {
             LadderJsonComment jsonComment;
             int index, size;
 
             for (index = 0, size = ladderJson.getComments().size(); index < size; index++) {
                 jsonComment = ladderJson.getComments().get(index);
 
-                if ((jsonComment.idx() == null) || (jsonComment.address() == null)
-                        || (jsonComment.comment() == null) || (jsonComment.value() == null)) {
-                    writeLog("Data format unexpected error" + " [idx][address][comment][value]", true);
+                if ((jsonComment == null) || (jsonComment.idx() == null) || (jsonComment.address() == null)
+                        || (jsonComment.comment() == null)) {
+                    writeLog("Data format unexpected error" + " [idx][address][comment]", true);
                     return false;
                 }
-                changeComment(tabPane, treeTableView, ioMap, commentMap, jsonComment.idx(), jsonComment.address(),
+                int idx = jsonComment.idx();
+                if ((idx < 0) || (idx >= commentMap.size()) || (idx >= ioMap.size())) {
+                    writeLog("Data format unexpected error" + " [idx]", true);
+                    return false;
+                }
+                changeComment(tabPane, treeTableView, ioMap, commentMap, idx, jsonComment.address(),
                         jsonComment.comment());
-                ladders_.setValue(jsonComment.idx(), jsonComment.address(), jsonComment.value());
+                if (jsonComment.value() != null) {
+                    if (ioMap == ladders_.getIoMap()) {
+                        ladders_.setValue(idx, jsonComment.address(), jsonComment.value());
+                    } else {
+                        LadderIo io = ioMap.get(idx).get(jsonComment.address());
+                        if (io != null) {
+                            io.setValue(jsonComment.value());
+                        }
+                        if ((treeTableView != null) && (treeTableView.getRoot() != null)) {
+                            ObservableList<TreeItem<LadderTreeTableIo>> ladderRows = treeTableView.getRoot().getChildren();
+                            if (idx < ladderRows.size()) {
+                                for (TreeItem<LadderTreeTableIo> row : ladderRows.get(idx).getChildren()) {
+                                    if ((row.getValue() != null)
+                                            && jsonComment.address().equals(row.getValue().getAddress())) {
+                                        row.getValue().setValue(jsonComment.value());
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         return true;

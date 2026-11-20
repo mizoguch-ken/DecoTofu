@@ -44,7 +44,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      */
     public void showLicenses() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        TextArea textAera = new TextArea();
+        TextArea textArea = new TextArea();
         StringBuilder stringBuilder = new StringBuilder();
 
         try (InputStream licenseStream = this.getClass().getClassLoader().getResourceAsStream("LICENSES")) {
@@ -62,16 +62,17 @@ public class StageSettingsPlugin implements WebViewerPlugin {
         } catch (IOException ex) {
             writeStackTrace(StageSettingsPlugin.class.getName(), ex);
         }
-        textAera.setText(stringBuilder.toString());
-        if ((webViewer_ != null) && !webViewer_.icons().isEmpty()) {
-            ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(webViewer_.icons());
+        textArea.setText(stringBuilder.toString());
+        List<Image> icons = icons();
+        if ((icons != null) && !icons.isEmpty()) {
+            ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons);
         }
         alert.setResizable(true);
         alert.setTitle("LICENSES");
         alert.getDialogPane().setHeaderText(null);
-        textAera.setEditable(false);
-        textAera.setWrapText(true);
-        alert.getDialogPane().setContent(textAera);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        alert.getDialogPane().setContent(textArea);
         alert.show();
     }
 
@@ -80,18 +81,42 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      */
     public void showVersion() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        StringBuilder version = new StringBuilder();
+        String version = "VERSION " + getVersion();
 
-        version.append("VERSION").append(" ").append(DecoTofu.class.getPackage().getImplementationVersion());
-
-        if ((webViewer_ != null) && !webViewer_.icons().isEmpty()) {
-            ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(webViewer_.icons());
+        List<Image> icons = icons();
+        if ((icons != null) && !icons.isEmpty()) {
+            ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons);
         }
         alert.setResizable(true);
         alert.setTitle("VERSION");
         alert.setHeaderText("DecoTofu");
-        alert.setContentText(version.toString());
+        alert.setContentText(version);
         alert.show();
+    }
+
+    public String getVersion() {
+        String implVersion = DecoTofu.class.getPackage().getImplementationVersion();
+        return (implVersion != null) ? implVersion : "unknown";
+    }
+
+    public Boolean isFullScreen() {
+        return (stage_ != null) ? stage_.isFullScreen() : null;
+    }
+
+    public void setFullScreen(boolean state) {
+        if (stage_ != null) {
+            stage_.setFullScreen(state);
+        }
+    }
+
+    public Boolean isIconified() {
+        return (stage_ != null) ? stage_.isIconified() : null;
+    }
+
+    public void setIconified(boolean state) {
+        if (stage_ != null) {
+            stage_.setIconified(state);
+        }
     }
 
     /**
@@ -99,21 +124,25 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Boolean isShowing() {
-        return stage_.isShowing();
+        return (stage_ != null) ? stage_.isShowing() : null;
     }
 
     /**
      *
      */
     public void show() {
-        stage_.show();
+        if (stage_ != null) {
+            stage_.show();
+        }
     }
 
     /**
      *
      */
     public void hide() {
-        stage_.hide();
+        if (stage_ != null) {
+            stage_.hide();
+        }
     }
 
     /**
@@ -121,14 +150,16 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Boolean isFocused() {
-        return stage_.isFocused();
+        return (stage_ != null) ? stage_.isFocused() : null;
     }
 
     /**
      *
      */
     public void requestFocus() {
-        stage_.requestFocus();
+        if (stage_ != null) {
+            stage_.requestFocus();
+        }
     }
 
     /**
@@ -136,7 +167,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public String getTitle() {
-        return stage_.getTitle();
+        return (stage_ != null) ? stage_.getTitle() : null;
     }
 
     /**
@@ -144,7 +175,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param title
      */
     public void setTitle(String title) {
-        stage_.setTitle(title);
+        if (stage_ != null) {
+            stage_.setTitle(title);
+        }
     }
 
     /**
@@ -152,7 +185,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getWidth() {
-        return stage_.getWidth();
+        return (stage_ != null) ? stage_.getWidth() : null;
     }
 
     /**
@@ -160,7 +193,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setWidth(double value) {
-        stage_.setWidth(value);
+        if (stage_ != null) {
+            stage_.setWidth(value);
+        }
     }
 
     /**
@@ -168,7 +203,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getMinWidth() {
-        return stage_.getMinWidth();
+        return (stage_ != null) ? stage_.getMinWidth() : null;
     }
 
     /**
@@ -176,7 +211,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setMinWidth(double value) {
-        stage_.setMinWidth(value);
+        if (stage_ != null) {
+            stage_.setMinWidth(value);
+        }
     }
 
     /**
@@ -184,7 +221,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getMaxWidth() {
-        return stage_.getMaxWidth();
+        return (stage_ != null) ? stage_.getMaxWidth() : null;
     }
 
     /**
@@ -192,7 +229,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setMaxWidth(double value) {
-        stage_.setMaxWidth(value);
+        if (stage_ != null) {
+            stage_.setMaxWidth(value);
+        }
     }
 
     /**
@@ -200,7 +239,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getHeight() {
-        return stage_.getHeight();
+        return (stage_ != null) ? stage_.getHeight() : null;
     }
 
     /**
@@ -208,7 +247,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setHeight(double value) {
-        stage_.setHeight(value);
+        if (stage_ != null) {
+            stage_.setHeight(value);
+        }
     }
 
     /**
@@ -216,7 +257,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getMinHeight() {
-        return stage_.getMinHeight();
+        return (stage_ != null) ? stage_.getMinHeight() : null;
     }
 
     /**
@@ -224,7 +265,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setMinHeight(double value) {
-        stage_.setMinHeight(value);
+        if (stage_ != null) {
+            stage_.setMinHeight(value);
+        }
     }
 
     /**
@@ -232,7 +275,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getMaxHeight() {
-        return stage_.getMaxHeight();
+        return (stage_ != null) ? stage_.getMaxHeight() : null;
     }
 
     /**
@@ -240,7 +283,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setMaxHeight(double value) {
-        stage_.setMaxHeight(value);
+        if (stage_ != null) {
+            stage_.setMaxHeight(value);
+        }
     }
 
     /**
@@ -248,7 +293,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getOpacity() {
-        return stage_.getOpacity();
+        return (stage_ != null) ? stage_.getOpacity() : null;
     }
 
     /**
@@ -256,7 +301,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setOpacity(double value) {
-        stage_.setOpacity(value);
+        if (stage_ != null) {
+            stage_.setOpacity(value);
+        }
     }
 
     /**
@@ -264,7 +311,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Boolean isAlwaysOnTop() {
-        return stage_.isAlwaysOnTop();
+        return (stage_ != null) ? stage_.isAlwaysOnTop() : null;
     }
 
     /**
@@ -272,7 +319,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param state
      */
     public void setAlwaysOnTop(boolean state) {
-        stage_.setAlwaysOnTop(state);
+        if (stage_ != null) {
+            stage_.setAlwaysOnTop(state);
+        }
     }
 
     /**
@@ -280,7 +329,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Boolean isMaximized() {
-        return stage_.isMaximized();
+        return (stage_ != null) ? stage_.isMaximized() : null;
     }
 
     /**
@@ -288,7 +337,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param state
      */
     public void setMaximized(boolean state) {
-        stage_.setMaximized(state);
+        if (stage_ != null) {
+            stage_.setMaximized(state);
+        }
     }
 
     /**
@@ -296,7 +347,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getX() {
-        return stage_.getX();
+        return (stage_ != null) ? stage_.getX() : null;
     }
 
     /**
@@ -304,7 +355,9 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setX(double value) {
-        stage_.setX(value);
+        if (stage_ != null) {
+            stage_.setX(value);
+        }
     }
 
     /**
@@ -312,7 +365,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getY() {
-        return stage_.getY();
+        return (stage_ != null) ? stage_.getY() : null;
     }
 
     /**
@@ -320,27 +373,33 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setY(double value) {
-        stage_.setY(value);
+        if (stage_ != null) {
+            stage_.setY(value);
+        }
     }
 
     /**
      *
      */
     public void toBack() {
-        stage_.toBack();
+        if (stage_ != null) {
+            stage_.toBack();
+        }
     }
 
     /**
      *
      */
     public void toFront() {
-        stage_.toFront();
+        if (stage_ != null) {
+            stage_.toFront();
+        }
     }
 
     @Override
     public void initialize(WebViewerPlugin webViewer) {
         webViewer_ = webViewer;
-        stage_ = webViewer.stage();
+        stage_ = (webViewer != null) ? webViewer.stage() : null;
     }
 
     @Override
@@ -360,31 +419,39 @@ public class StageSettingsPlugin implements WebViewerPlugin {
 
     @Override
     public javafx.stage.Stage stage() {
-        return webViewer_.stage();
+        return (webViewer_ != null) ? webViewer_.stage() : null;
     }
 
     @Override
     public List<Image> icons() {
-        return webViewer_.icons();
+        return (webViewer_ != null) ? webViewer_.icons() : null;
     }
 
     @Override
     public WebEngine webEngine() {
-        return webViewer_.webEngine();
+        return (webViewer_ != null) ? webViewer_.webEngine() : null;
     }
 
     @Override
     public Path webPath() {
-        return webViewer_.webPath();
+        return (webViewer_ != null) ? webViewer_.webPath() : null;
     }
 
     @Override
     public void writeStackTrace(String name, Throwable throwable) {
-        webViewer_.writeStackTrace(name, throwable);
+        if (webViewer_ != null) {
+            webViewer_.writeStackTrace(name, throwable);
+        } else {
+            ken.mizoguch.console.Console.writeStackTrace(name, throwable);
+        }
     }
 
     @Override
     public void write(String name, String msg, boolean err) {
-        webViewer_.write(name, msg, err);
+        if (webViewer_ != null) {
+            webViewer_.write(name, msg, err);
+        } else {
+            ken.mizoguch.console.Console.write(name, msg, err);
+        }
     }
 }

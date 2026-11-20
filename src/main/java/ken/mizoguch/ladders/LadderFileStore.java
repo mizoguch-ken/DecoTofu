@@ -14,6 +14,7 @@ import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -58,13 +59,11 @@ class LadderFileStore {
      * @return the name of the file of the ladder, null when the ladder is not saved
      */
     String getFileName() {
-        if (filePath_ == null) {
+        if ((filePath_ == null) || Files.isDirectory(filePath_)) {
             return null;
         }
-        if (Files.isDirectory(filePath_)) {
-            return null;
-        }
-        return filePath_.getFileName().toString();
+        Path fileName = filePath_.getFileName();
+        return (fileName != null) ? fileName.toString() : null;
     }
 
     /**
@@ -89,9 +88,14 @@ class LadderFileStore {
             if (workFilePath.isEmpty()) {
                 filePath_ = null;
             } else {
-                filePath_ = Paths.get(workFilePath);
-                if (!Files.isDirectory(filePath_)) {
-                    filePath_ = filePath_.getParent();
+                try {
+                    Path path = Paths.get(workFilePath);
+                    if (!Files.isDirectory(path)) {
+                        path = path.getParent();
+                    }
+                    filePath_ = path;
+                } catch (InvalidPathException ex) {
+                    writeLog("properties : WORK_FILE_PATH is not a valid path [" + workFilePath + "]", true);
                 }
             }
         }
@@ -107,7 +111,8 @@ class LadderFileStore {
         if ((filePath_ == null) || Files.isDirectory(filePath_)) {
             return null;
         }
-        return JavaLibrary.removeFileExtension(filePath_.getFileName());
+        Path fileName = filePath_.getFileName();
+        return (fileName != null) ? JavaLibrary.removeFileExtension(fileName) : null;
     }
 
     /**
@@ -174,10 +179,9 @@ class LadderFileStore {
         FileChooser fileChooser = new FileChooser();
 
         if (filePath_ != null) {
-            if (filePath_.getParent() != null) {
-                if (Files.exists(filePath_.getParent())) {
-                    fileChooser.setInitialDirectory(filePath_.getParent().toFile());
-                }
+            Path initialDir = Files.isDirectory(filePath_) ? filePath_ : filePath_.getParent();
+            if ((initialDir != null) && Files.isDirectory(initialDir)) {
+                fileChooser.setInitialDirectory(initialDir.toFile());
             }
         }
         if (fileName != null) {
@@ -206,12 +210,15 @@ class LadderFileStore {
             return 0;
         }
         for (LadderJsonLadder ladder : ladders) {
+            if (ladder == null) {
+                continue;
+            }
             blocks = ladder.getBlocks();
             if (blocks == null) {
                 continue;
             }
             for (LadderJsonBlock block : blocks) {
-                if (block.hasScript()) {
+                if ((block != null) && block.hasScript()) {
                     count++;
                 }
             }
@@ -239,12 +246,15 @@ class LadderFileStore {
             return 0;
         }
         for (LadderJsonLadder ladder : ladders) {
+            if (ladder == null) {
+                continue;
+            }
             blocks = ladder.getBlocks();
             if (blocks == null) {
                 continue;
             }
             for (LadderJsonBlock block : blocks) {
-                if (block.hasScript()) {
+                if ((block != null) && block.hasScript()) {
                     block.removeScript();
                     count++;
                 }

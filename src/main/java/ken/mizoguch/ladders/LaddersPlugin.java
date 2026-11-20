@@ -6,7 +6,6 @@
 package ken.mizoguch.ladders;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import javafx.concurrent.Worker;
 import javafx.scene.image.Image;
@@ -51,21 +50,25 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Boolean isShowing() {
-        return stage_.isShowing();
+        return (stage_ != null) ? stage_.isShowing() : null;
     }
 
     /**
      *
      */
     public void show() {
-        stage_.show();
+        if (stage_ != null) {
+            stage_.show();
+        }
     }
 
     /**
      *
      */
     public void hide() {
-        stage_.hide();
+        if (stage_ != null) {
+            stage_.hide();
+        }
     }
 
     /**
@@ -73,14 +76,16 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Boolean isFocused() {
-        return stage_.isFocused();
+        return (stage_ != null) ? stage_.isFocused() : null;
     }
 
     /**
      *
      */
     public void requestFocus() {
-        stage_.requestFocus();
+        if (stage_ != null) {
+            stage_.requestFocus();
+        }
     }
 
     /**
@@ -88,7 +93,13 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public String getTitle() {
-        return stage_.getTitle();
+        return (stage_ != null) ? stage_.getTitle() : null;
+    }
+
+    public void setTitle(String title) {
+        if (stage_ != null) {
+            stage_.setTitle(title);
+        }
     }
 
     /**
@@ -96,7 +107,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getWidth() {
-        return stage_.getWidth();
+        return (stage_ != null) ? stage_.getWidth() : null;
     }
 
     /**
@@ -104,7 +115,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setWidth(double value) {
-        stage_.setWidth(value);
+        if (stage_ != null) {
+            stage_.setWidth(value);
+        }
     }
 
     /**
@@ -112,7 +125,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getMinWidth() {
-        return stage_.getMinWidth();
+        return (stage_ != null) ? stage_.getMinWidth() : null;
     }
 
     /**
@@ -120,7 +133,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setMinWidth(double value) {
-        stage_.setMinWidth(value);
+        if (stage_ != null) {
+            stage_.setMinWidth(value);
+        }
     }
 
     /**
@@ -128,7 +143,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getMaxWidth() {
-        return stage_.getMaxWidth();
+        return (stage_ != null) ? stage_.getMaxWidth() : null;
     }
 
     /**
@@ -136,7 +151,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setMaxWidth(double value) {
-        stage_.setMaxWidth(value);
+        if (stage_ != null) {
+            stage_.setMaxWidth(value);
+        }
     }
 
     /**
@@ -144,7 +161,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getHeight() {
-        return stage_.getHeight();
+        return (stage_ != null) ? stage_.getHeight() : null;
     }
 
     /**
@@ -152,7 +169,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setHeight(double value) {
-        stage_.setHeight(value);
+        if (stage_ != null) {
+            stage_.setHeight(value);
+        }
     }
 
     /**
@@ -160,7 +179,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getMinHeight() {
-        return stage_.getMinHeight();
+        return (stage_ != null) ? stage_.getMinHeight() : null;
     }
 
     /**
@@ -168,7 +187,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setMinHeight(double value) {
-        stage_.setMinHeight(value);
+        if (stage_ != null) {
+            stage_.setMinHeight(value);
+        }
     }
 
     /**
@@ -176,7 +197,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getMaxHeight() {
-        return stage_.getMaxHeight();
+        return (stage_ != null) ? stage_.getMaxHeight() : null;
     }
 
     /**
@@ -184,7 +205,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setMaxHeight(double value) {
-        stage_.setMaxHeight(value);
+        if (stage_ != null) {
+            stage_.setMaxHeight(value);
+        }
     }
 
     /**
@@ -192,7 +215,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getOpacity() {
-        return stage_.getOpacity();
+        return (stage_ != null) ? stage_.getOpacity() : null;
     }
 
     /**
@@ -200,7 +223,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setOpacity(double value) {
-        stage_.setOpacity(value);
+        if (stage_ != null) {
+            stage_.setOpacity(value);
+        }
     }
 
     /**
@@ -208,7 +233,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Boolean isAlwaysOnTop() {
-        return stage_.isAlwaysOnTop();
+        return (stage_ != null) ? stage_.isAlwaysOnTop() : null;
     }
 
     /**
@@ -216,7 +241,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param state
      */
     public void setAlwaysOnTop(boolean state) {
-        stage_.setAlwaysOnTop(state);
+        if (stage_ != null) {
+            stage_.setAlwaysOnTop(state);
+        }
     }
 
     /**
@@ -224,7 +251,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Boolean isMaximized() {
-        return stage_.isMaximized();
+        return (stage_ != null) ? stage_.isMaximized() : null;
     }
 
     /**
@@ -232,7 +259,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param state
      */
     public void setMaximized(boolean state) {
-        stage_.setMaximized(state);
+        if (stage_ != null) {
+            stage_.setMaximized(state);
+        }
     }
 
     /**
@@ -240,7 +269,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getX() {
-        return stage_.getX();
+        return (stage_ != null) ? stage_.getX() : null;
     }
 
     /**
@@ -248,7 +277,9 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setX(double value) {
-        stage_.setX(value);
+        if (stage_ != null) {
+            stage_.setX(value);
+        }
     }
 
     /**
@@ -256,7 +287,7 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @return
      */
     public Double getY() {
-        return stage_.getY();
+        return (stage_ != null) ? stage_.getY() : null;
     }
 
     /**
@@ -264,7 +295,21 @@ public class LaddersPlugin implements WebViewerPlugin {
      * @param value
      */
     public void setY(double value) {
-        stage_.setY(value);
+        if (stage_ != null) {
+            stage_.setY(value);
+        }
+    }
+
+    public void toBack() {
+        if (stage_ != null) {
+            stage_.toBack();
+        }
+    }
+
+    public void toFront() {
+        if (stage_ != null) {
+            stage_.toFront();
+        }
     }
 
     /**
@@ -297,6 +342,34 @@ public class LaddersPlugin implements WebViewerPlugin {
      */
     public void setIdealCycleTime(long idealCycleTime) {
         ladders_.setIdealCycleTime(idealCycleTime);
+    }
+
+    public Long getCycleTime() {
+        return ladders_.getCycleTime();
+    }
+
+    public Long getMinCycleTime() {
+        return ladders_.getMinCycleTime();
+    }
+
+    public Long getMaxCycleTime() {
+        return ladders_.getMaxCycleTime();
+    }
+
+    public Boolean isRunning() {
+        return ladders_.isCycling();
+    }
+
+    public Boolean isChanged() {
+        return ladders_.isChanged();
+    }
+
+    public Boolean isScriptEnable() {
+        return ladders_.isScriptEnable();
+    }
+
+    public void setScriptEnable(boolean enable) {
+        ladders_.setScriptEnable(enable);
     }
 
     /**
@@ -362,6 +435,10 @@ public class LaddersPlugin implements WebViewerPlugin {
         ladders_.setValue(address, value);
     }
 
+    public String getComment(String address) {
+        return ladders_.getComment(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address);
+    }
+
     /**
      *
      * @return
@@ -419,12 +496,25 @@ public class LaddersPlugin implements WebViewerPlugin {
         return ladders_.fileSave();
     }
 
+    public Boolean fileSaveAs() {
+        return ladders_.fileSaveAs();
+    }
+
+    public Boolean exportPdf() {
+        return ladders_.exportPdf();
+    }
+
     /**
      *
      * @return
      */
     public String getFileName() {
         return ladders_.getFileName();
+    }
+
+    public String getFilePath() {
+        Path filePath = ladders_.getFilePath();
+        return (filePath != null) ? filePath.toString() : null;
     }
 
     @Override
@@ -442,7 +532,7 @@ public class LaddersPlugin implements WebViewerPlugin {
     public void state(Worker.State state) {
         state_ = state;
         if (ladders_ != null) {
-            if (ladders_.isRegistered(webEngine_)) {
+            if (Boolean.TRUE.equals(ladders_.isRegistered(webEngine_))) {
                 ladders_.register(webEngine_, state_);
             }
         }

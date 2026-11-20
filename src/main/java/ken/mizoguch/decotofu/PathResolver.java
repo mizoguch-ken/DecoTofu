@@ -67,11 +67,11 @@ public class PathResolver {
      * @return
      */
     public static boolean hasMarker(Path path, String... markers) {
-        if (path == null) {
+        if ((path == null) || (markers == null) || (markers.length == 0)) {
             return false;
         }
         for (String marker : markers) {
-            if (Files.exists(path.resolve(marker))) {
+            if ((marker != null) && !marker.isEmpty() && Files.exists(path.resolve(marker))) {
                 return true;
             }
         }

@@ -32,10 +32,10 @@ final class SoemAwait {
      * @return true when the counter answers zero before the timeout
      */
     static boolean awaitZero(AtomicInteger runningTasks, long timeoutMillis) {
-        long deadline = System.currentTimeMillis() + Math.max(0, timeoutMillis);
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(0L, timeoutMillis));
 
         while (runningTasks.get() > 0) {
-            if (System.currentTimeMillis() >= deadline) {
+            if (System.nanoTime() >= deadline) {
                 break;
             }
             try {

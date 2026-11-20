@@ -88,7 +88,7 @@ class LadderTabs {
 
         alert.initOwner(stage);
         alert.initStyle(StageStyle.UTILITY);
-        if (!icons.isEmpty()) {
+        if ((icons != null) && !icons.isEmpty()) {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons);
         }
 
@@ -97,7 +97,9 @@ class LadderTabs {
         alert.setContentText(null);
         alert.setGraphic(null);
         Optional<String> result = alert.showAndWait();
-        stage.requestFocus();
+        if (stage != null) {
+            stage.requestFocus();
+        }
 
         if (result.isPresent()) {
             String name = result.get().trim();
@@ -123,6 +125,9 @@ class LadderTabs {
      * @return true when the name is changed
      */
     boolean rename(int idx, String name) {
+        if ((name == null) || (idx < 1) || (idx > ladders_.getTabLadder().getTabs().size())) {
+            return false;
+        }
         name = name.trim();
         if (checkName(name)) {
             LadderPane pane = paneOf(idx - 1);
@@ -146,10 +151,10 @@ class LadderTabs {
      * @return true when no ladder holds the name
      */
     boolean checkName(String name) {
-        if (name == null) {
+        if ((name == null) || name.trim().isEmpty()) {
             return false;
         }
-        return !isNameUsed(name, usedNames(ladders_.getTabLadder()));
+        return !isNameUsed(name.trim(), usedNames(ladders_.getTabLadder()));
     }
 
     /**
@@ -235,8 +240,11 @@ class LadderTabs {
      * select the next tab, the first tab when the last tab is selected
      */
     void selectNext() {
-        int index = ladders_.getTabLadder().getSelectionModel().getSelectedIndex();
         int size = ladders_.getTabLadder().getTabs().size();
+        if (size <= 0) {
+            return;
+        }
+        int index = ladders_.getTabLadder().getSelectionModel().getSelectedIndex();
 
         if (index < (size - 1)) {
             ladders_.ladderChangeSelect(index + 1);
@@ -249,8 +257,11 @@ class LadderTabs {
      * select the previous tab, the last tab when the first tab is selected
      */
     void selectPrevious() {
-        int index = ladders_.getTabLadder().getSelectionModel().getSelectedIndex();
         int size = ladders_.getTabLadder().getTabs().size();
+        if (size <= 0) {
+            return;
+        }
+        int index = ladders_.getTabLadder().getSelectionModel().getSelectedIndex();
 
         if (index > 0) {
             ladders_.ladderChangeSelect(index - 1);

@@ -72,10 +72,12 @@ public class LadderJson {
      * @param comment
      */
     public void addComment(LadderJsonComment comment) {
-        if (comments == null) {
-            comments = new ArrayList<>();
+        if (comment != null) {
+            if (comments == null) {
+                comments = new ArrayList<>();
+            }
+            comments.add(comment);
         }
-        comments.add(comment);
     }
 
     /**
@@ -84,7 +86,9 @@ public class LadderJson {
     public void sortComments() {
         if (comments != null) {
             comments.sort((o1, o2) -> {
-                return o1.address().compareTo(o2.address());
+                String a1 = ((o1 != null) && (o1.address() != null)) ? o1.address() : "";
+                String a2 = ((o2 != null) && (o2.address() != null)) ? o2.address() : "";
+                return a1.compareTo(a2);
             });
         }
     }

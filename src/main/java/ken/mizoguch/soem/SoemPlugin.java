@@ -10,9 +10,10 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
@@ -42,7 +43,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
             .compile("^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*\\z");
 
     private WebEngine webEngine_;
-    private Worker.State state_;
+    private volatile Worker.State state_;
 
     private final Soem soem_;
 
@@ -61,7 +62,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         MESSAGE_ALL_SLAVES_RESUMED_OPERATIONAL
     }
 
-    private final EnumMap<CheckEvent, String> func_;
+    private final Map<CheckEvent, String> func_;
 
     /**
      *
@@ -71,7 +72,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         webEngine_ = null;
         state_ = Worker.State.READY;
         soem_ = soem;
-        func_ = new EnumMap<>(CheckEvent.class);
+        func_ = new ConcurrentHashMap<>();
     }
 
     /**
@@ -243,12 +244,79 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @param func js function name, null when the web page does not want it
      */
     private void setNotify(CheckEvent event, String func) {
-        if (func != null) {
-            func_.put(event, func);
-        } else {
+        if (func == null) {
             func_.remove(event);
+        } else if (!isScriptFunction(func)) {
+            write(FUNCTION_NAME, "invalid script function [" + func + "]", true);
+            return;
+        } else {
+            func_.put(event, func);
         }
         soem_.setNotifyCheck(!func_.isEmpty());
+    }
+
+    public Boolean isLoaded() {
+        return soem_.isLoaded();
+    }
+
+    public Boolean isRunning() {
+        return soem_.isRunning();
+    }
+
+    public String version() {
+        return soem_.version();
+    }
+
+    public Boolean stop() {
+        return soem_.close(this);
+    }
+
+    public Boolean setOverlappedMode(boolean enable) {
+        return soem_.setOverlappedMode(enable);
+    }
+
+    public Boolean isOverlappedMode() {
+        return soem_.isOverlappedMode();
+    }
+
+    public Boolean setPackedMode(boolean enable) {
+        return soem_.setPackedMode(enable);
+    }
+
+    public Boolean isPackedMode() {
+        return soem_.isPackedMode();
+    }
+
+    public Boolean enableCyclicMailbox(int slave) {
+        return soem_.enableCyclicMailbox(slave);
+    }
+
+    public Boolean dcsync0(int slave, boolean act, long cyclTime, int cyclShift) {
+        return soem_.dcsync0(slave, act, cyclTime, cyclShift);
+    }
+
+    public Boolean dcsync01(int slave, boolean act, long cyclTime0, long cyclTime1, int cyclShift) {
+        return soem_.dcsync01(slave, act, cyclTime0, cyclTime1, cyclShift);
+    }
+
+    public Integer wkc() {
+        return soem_.wkc();
+    }
+
+    public Integer expectedWkc() {
+        return soem_.expectedWkc();
+    }
+
+    public Long dcTime() {
+        return soem_.dcTime();
+    }
+
+    public Boolean isError() {
+        return soem_.isError();
+    }
+
+    public String popError() {
+        return soem_.popError();
     }
 
     /**
@@ -297,6 +365,10 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         return soem_.sdoRead(slave, index, subIndex, byteSize);
     }
 
+    public Byte[] sdoReadCA(int slave, int index, int subIndex, int byteSize) {
+        return soem_.sdoRead(slave, index, subIndex, true, byteSize);
+    }
+
     /**
      *
      * @param slave
@@ -307,10 +379,26 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      * @return
      */
     public Integer sdoWrite(int slave, int index, int subIndex, int byteSize, Object value) {
-        byte[] bytes = null;
+        byte[] bytes = toSdoBytes(byteSize, value);
 
+        if (bytes != null) {
+            return soem_.sdoWrite(slave, index, subIndex, bytes);
+        }
+        return null;
+    }
+
+    public Integer sdoWriteCA(int slave, int index, int subIndex, int byteSize, Object value) {
+        byte[] bytes = toSdoBytes(byteSize, value);
+
+        if (bytes != null) {
+            return soem_.sdoWrite(slave, index, subIndex, true, bytes);
+        }
+        return null;
+    }
+
+    private static byte[] toSdoBytes(int byteSize, Object value) {
         if (value instanceof Number number) {
-            bytes = switch (byteSize) {
+            return switch (byteSize) {
                 case 1 -> ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
                         .put(number.byteValue()).array();
                 case 2 -> ByteBuffer.allocate(byteSize).order(ByteOrder.LITTLE_ENDIAN)
@@ -321,23 +409,26 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
                         .putLong(number.longValue()).array();
                 default -> null;
             };
-        } else if (value instanceof JSObject object) {
+        }
+        if (value instanceof byte[] rawBytes) {
+            return (rawBytes.length > 0) ? rawBytes : null;
+        }
+        if (value instanceof JSObject object) {
             Object length = object.getMember("length");
 
             if (length instanceof Number lengthNumber) {
-                bytes = new byte[lengthNumber.intValue()];
-                for (int i = 0; i < bytes.length; i++) {
-                    if (object.getSlot(i) instanceof Number slot) {
-                        bytes[i] = slot.byteValue();
+                int len = lengthNumber.intValue();
+                if (len > 0) {
+                    byte[] bytes = new byte[len];
+                    for (int i = 0; i < bytes.length; i++) {
+                        if (object.getSlot(i) instanceof Number slot) {
+                            bytes[i] = slot.byteValue();
+                        }
                     }
+                    return bytes;
                 }
             }
         }
-
-        if (bytes != null) {
-            return soem_.sdoWrite(slave, index, subIndex, bytes);
-        }
-
         return null;
     }
 

@@ -30,7 +30,6 @@ public class LadderIo {
     private volatile double cumulativeValue_;
     private volatile boolean isDefaultLd_, isLd_, isLdRising_, isLdFalling_, isOldLd_;
 
-    private Object scriptObject_;
     private final StringBuilder script_;
     private final Object lockScript_;
     private volatile boolean isCycled_;
@@ -111,7 +110,7 @@ public class LadderIo {
      * check the rising and the falling edge of the io : it is done by the cycle of the
      * ladder which reads the io, so an edge is answered only to the cycle which makes it
      */
-    public void checkEdge() {
+    public synchronized void checkEdge() {
         isLdRising_ = (isLd_ && !isOldLd_);
         isLdFalling_ = (!isLd_ && isOldLd_);
     }
@@ -138,7 +137,7 @@ public class LadderIo {
      * @param value
      * @return
      */
-    public boolean setValue(double value) {
+    public synchronized boolean setValue(double value) {
         isDefaultLd_ = false;
         value_ = value;
         isLd_ = (value != 0.0);
@@ -152,7 +151,7 @@ public class LadderIo {
      * @param value
      * @return
      */
-    public boolean setValueNot(double value) {
+    public synchronized boolean setValueNot(double value) {
         isDefaultLd_ = true;
         value_ = value;
         isLd_ = (value != 0.0);
@@ -165,7 +164,7 @@ public class LadderIo {
      *
      * @return
      */
-    public boolean resetValue() {
+    public synchronized boolean resetValue() {
         isLd_ = isDefaultLd_;
         value_ = 0.0;
         cumulativeValue_ = 0.0;
@@ -179,7 +178,7 @@ public class LadderIo {
      * @param value
      * @return
      */
-    public boolean setValueRising(double value) {
+    public synchronized boolean setValueRising(double value) {
         isDefaultLd_ = false;
         isLd_ = (value != 0.0) && (value_ == 0.0);
         value_ = value;
@@ -193,7 +192,7 @@ public class LadderIo {
      * @param value
      * @return
      */
-    public boolean setValueRisingNot(double value) {
+    public synchronized boolean setValueRisingNot(double value) {
         isDefaultLd_ = true;
         isLd_ = !((value == 0.0) && (value_ != 0.0));
         value_ = value;
@@ -207,7 +206,7 @@ public class LadderIo {
      * @param value
      * @return
      */
-    public boolean setValueFalling(double value) {
+    public synchronized boolean setValueFalling(double value) {
         isDefaultLd_ = false;
         isLd_ = (value == 0.0) && (value_ != 0.0);
         value_ = value;
@@ -221,7 +220,7 @@ public class LadderIo {
      * @param value
      * @return
      */
-    public boolean setValueFallingNot(double value) {
+    public synchronized boolean setValueFallingNot(double value) {
         isDefaultLd_ = true;
         isLd_ = !((value != 0.0) && (value_ == 0.0));
         value_ = value;
@@ -237,7 +236,7 @@ public class LadderIo {
      * @param cycleTime
      * @return
      */
-    public boolean setValueTimer(double value, double time, long cycleTime) {
+    public synchronized boolean setValueTimer(double value, double time, long cycleTime) {
         isDefaultLd_ = false;
         if (value != 0.0) {
             cumulativeValue_ += (cycleTime / 1000000.0);
@@ -265,7 +264,7 @@ public class LadderIo {
      * @param cycleTime
      * @return
      */
-    public boolean setValueTimerNot(double value, double time, long cycleTime) {
+    public synchronized boolean setValueTimerNot(double value, double time, long cycleTime) {
         isDefaultLd_ = true;
         if (value != 0.0) {
             cumulativeValue_ += (cycleTime / 1000000.0);
@@ -292,7 +291,7 @@ public class LadderIo {
      * @param count
      * @return
      */
-    public boolean setValueCounter(double value, double count) {
+    public synchronized boolean setValueCounter(double value, double count) {
         isDefaultLd_ = false;
         if (value != 0.0) {
             cumulativeValue_++;
@@ -319,7 +318,7 @@ public class LadderIo {
      * @param count
      * @return
      */
-    public boolean setValueCounterNot(double value, double count) {
+    public synchronized boolean setValueCounterNot(double value, double count) {
         isDefaultLd_ = true;
         if (value != 0.0) {
             cumulativeValue_++;
@@ -371,14 +370,13 @@ public class LadderIo {
                     script_.setLength(0);
                 }
                 if (executeScript.length() > 0) {
-                    if (webEngine_ != null) {
-                        if (state_ == Worker.State.SUCCEEDED) {
-                            try {
-                                scriptObject_ = webEngine_.executeScript(executeScript);
-                            } catch (JSException | ClassCastException ex) {
-                                Console.writeStackTrace(LadderIo.class.getName(), ex);
-                            }
-                            setScriptValue(scriptObject_);
+                    WebEngine webEngine = webEngine_;
+                    if ((webEngine != null) && (state_ == Worker.State.SUCCEEDED)) {
+                        try {
+                            Object scriptResult = webEngine.executeScript(executeScript);
+                            setScriptValue(scriptResult);
+                        } catch (JSException | ClassCastException ex) {
+                            Console.writeStackTrace(LadderIo.class.getName(), ex);
                         }
                     }
                 }

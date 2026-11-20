@@ -5,6 +5,8 @@
  */
 package ken.mizoguch.decotofu;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import ken.mizoguch.webviewer.DesignWebController;
 import javafx.application.Platform;
 
@@ -13,6 +15,8 @@ import javafx.application.Platform;
  * @author mizoguch-ken
  */
 public class ShutdownHook extends Thread {
+
+    private static final long CLEANUP_WAIT_SECONDS = 5;
 
     final DesignWebController controller_;
 
@@ -26,16 +30,28 @@ public class ShutdownHook extends Thread {
 
     @Override
     public void run() {
+        if (controller_ == null) {
+            return;
+        }
         if (Platform.isFxApplicationThread()) {
-            if (controller_ != null) {
-                controller_.cleanUp();
-            }
+            controller_.cleanUp();
         } else {
-            Platform.runLater(() -> {
-                if (controller_ != null) {
-                    controller_.cleanUp();
-                }
-            });
+            CountDownLatch latch = new CountDownLatch(1);
+            try {
+                Platform.runLater(() -> {
+                    try {
+                        controller_.cleanUp();
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+                latch.await(CLEANUP_WAIT_SECONDS, TimeUnit.SECONDS);
+            } catch (IllegalStateException ex) {
+                // FX toolkit has already stopped
+                controller_.cleanUp();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

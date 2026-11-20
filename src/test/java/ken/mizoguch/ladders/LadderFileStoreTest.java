@@ -163,5 +163,35 @@ class LadderFileStoreTest {
         assertEquals("ladder", store.getFileBaseName());
         assertEquals(1, store.getFileChooser("JSON", "*.json", null).getExtensionFilters().size());
         assertEquals(directory.toFile(), store.getFileChooser("PDF", "*.pdf", "ladder").getInitialDirectory());
+
+        store.setFilePath(directory);
+        assertEquals(directory.toFile(), store.getFileChooser("JSON", "*.json", null).getInitialDirectory());
+    }
+
+    @Test
+    void invalidWorkFilePathIsIgnoredWithoutException(@TempDir Path directory) {
+        LadderFileStore store = new LadderFileStore();
+
+        store.setFilePath(directory);
+        assertDoesNotThrow(() -> store.setWorkFilePath("bad\0path"));
+        assertEquals(directory, store.getFilePath());
+    }
+
+    @Test
+    void scriptHelpersTolerateNullLaddersAndBlocks() {
+        LadderJson json = new LadderJson();
+        LadderJsonLadder ladder = new LadderJsonLadder(1, "ladder", 10, 10);
+        ladder.addBlock(new LadderJsonBlock(0, 0, "SCRIPT", false, false, "addr", null, null, "x();"));
+        json.addLadder(ladder);
+        if (ladder.getBlocks() != null) {
+            ladder.getBlocks().add(null);
+        }
+        if (json.getLadders() != null) {
+            json.getLadders().add(null);
+        }
+
+        assertEquals(1, LadderFileStore.countScripts(json));
+        assertEquals(1, LadderFileStore.removeScripts(json));
+        assertEquals(0, LadderFileStore.countScripts(json));
     }
 }

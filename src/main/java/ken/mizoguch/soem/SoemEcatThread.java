@@ -66,7 +66,7 @@ public class SoemEcatThread extends Service<Void> {
     private final ConcurrentMap<Integer, EcatPO2SO> po2so_;
     private final ConcurrentMap<Long, EcatData> out_;
     private final AtomicInteger runningTasks_;
-    private SoemEcatCheck ecatCheck_;
+    private volatile SoemEcatCheck ecatCheck_;
     private volatile boolean init_, exit_, portOpen_;
 
     /**
@@ -110,6 +110,13 @@ public class SoemEcatThread extends Service<Void> {
      */
     public boolean isPortOpen() {
         return portOpen_;
+    }
+
+    /**
+     * @return true when init() succeeded and shutdown()/initFail() has not cleared it
+     */
+    public boolean isInitialized() {
+        return init_;
     }
 
     /**
@@ -324,9 +331,10 @@ public class SoemEcatThread extends Service<Void> {
      * before init(), so that start() can be tried again
      */
     private void initFail() {
-        if (ecatCheck_ != null) {
-            ecatCheck_.exit();
-            ecatCheck_.cancel();
+        SoemEcatCheck ecatCheck = ecatCheck_;
+        if (ecatCheck != null) {
+            ecatCheck.exit();
+            cancelCheck(ecatCheck);
             ecatCheck_ = null;
         }
         init_ = false;
@@ -344,10 +352,25 @@ public class SoemEcatThread extends Service<Void> {
     }
 
     private void runEcatCheck() {
-        if (ecatCheck_.getState() == State.READY) {
-            ecatCheck_.start();
+        SoemEcatCheck ecatCheck = ecatCheck_;
+        if (ecatCheck == null) {
+            return;
+        }
+        if (ecatCheck.getState() == State.READY) {
+            ecatCheck.start();
         } else {
-            ecatCheck_.restart();
+            ecatCheck.restart();
+        }
+    }
+
+    private void cancelCheck(SoemEcatCheck ecatCheck) {
+        if (Platform.isFxApplicationThread()) {
+            ecatCheck.cancel();
+        } else {
+            try {
+                Platform.runLater(ecatCheck::cancel);
+            } catch (IllegalStateException ex) {
+            }
         }
     }
 
@@ -359,9 +382,10 @@ public class SoemEcatThread extends Service<Void> {
      */
     public void exit() {
         exit_ = true;
-        if (ecatCheck_ != null) {
-            ecatCheck_.exit();
-            ecatCheck_.cancel();
+        SoemEcatCheck ecatCheck = ecatCheck_;
+        if (ecatCheck != null) {
+            ecatCheck.exit();
+            cancelCheck(ecatCheck);
         }
     }
 
@@ -391,17 +415,18 @@ public class SoemEcatThread extends Service<Void> {
      * @return true when both tasks are no longer in the native calls
      */
     public boolean awaitTermination(long timeoutMillis) {
-        long deadline = System.currentTimeMillis() + Math.max(0, timeoutMillis);
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(0L, timeoutMillis));
         boolean terminated = true;
+        SoemEcatCheck ecatCheck = ecatCheck_;
 
-        if (ecatCheck_ != null) {
-            terminated = ecatCheck_.awaitTermination(remainingMillis(deadline));
+        if (ecatCheck != null) {
+            terminated = ecatCheck.awaitTermination(remainingMillis(deadline));
         }
         return SoemAwait.awaitZero(runningTasks_, remainingMillis(deadline)) && terminated;
     }
 
     private long remainingMillis(long deadline) {
-        return Math.max(1, deadline - System.currentTimeMillis());
+        return Math.max(1L, TimeUnit.NANOSECONDS.toMillis(Math.max(0L, deadline - System.nanoTime())));
     }
 
     /**
@@ -410,8 +435,9 @@ public class SoemEcatThread extends Service<Void> {
      * @return
      */
     public Boolean setNotifyCheck(boolean bln) {
-        if (ecatCheck_ != null) {
-            return ecatCheck_.setNotifyCheck(bln);
+        SoemEcatCheck ecatCheck = ecatCheck_;
+        if (ecatCheck != null) {
+            return ecatCheck.setNotifyCheck(bln);
         }
         return null;
     }
@@ -434,12 +460,15 @@ public class SoemEcatThread extends Service<Void> {
             long Obits = sl.Obits.get();
             long bits = Obits - bitsOffset;
 
-            if ((bitsOffset >= 0) && (bitsOffset < Obits) && (bitsMask > 0) && (bits > 0)) {
+            if ((bitsOffset >= 0) && (bitsOffset < Obits) && (bitsMask != 0) && (bits > 0)) {
                 long address = outputs.address() - group.address() + (bitsOffset / 8);
                 int startbit = mapStartbit + ((int) (bitsOffset % 8));
 
                 if (bits < SoemBits.MAX_BITS) {
                     bitsMask &= (1L << bits) - 1;
+                }
+                if (bitsMask == 0) {
+                    return 0L;
                 }
                 // the bytes of the map of the group that hold the variable : no
                 // byte of a neighbour slave is written

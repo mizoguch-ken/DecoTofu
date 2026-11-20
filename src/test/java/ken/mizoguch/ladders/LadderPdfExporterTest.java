@@ -77,4 +77,20 @@ class LadderPdfExporterTest {
         assertSame(file, exporter.export(file));
         assertTrue(Files.exists(file));
     }
+
+    @Test
+    void blockCommentAndScriptWithControlCharsExportSafely(@TempDir Path directory) throws IOException {
+        Path file = directory.resolve("sanitized.pdf");
+        LadderJson json = ladderJson("line\nname");
+        json.getLadders().get(0).addBlock(new LadderJsonBlock(1, 1, LadderBlock.BLOCK_COMMENT.toString(),
+                false, false, null, "hello\r\nworld\t!", null, null));
+        json.getLadders().get(0).addBlock(new LadderJsonBlock(2, 1, LadderBlock.SCRIPT.toString(),
+                false, false, "IO_SCRIPT", null, null, "x();\ny();"));
+        json.getLadders().get(0).addBlock(new LadderJsonBlock(3, 1, "UNKNOWN_BLOCK",
+                false, false, "", null, null, null));
+        LadderPdfExporter exporter = new LadderPdfExporter(json, "ladder\t.json", new CopyOnWriteArrayList<>());
+
+        assertSame(file, exporter.export(file));
+        assertTrue(Files.exists(file));
+    }
 }

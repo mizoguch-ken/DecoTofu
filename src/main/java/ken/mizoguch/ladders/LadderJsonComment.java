@@ -30,7 +30,7 @@ public record LadderJsonComment(Integer idx, String address, String comment, Dou
             if (value.isNaN()) {
                 value = 0.0;
             } else if (value == Double.NEGATIVE_INFINITY) {
-                value = Double.MIN_VALUE;
+                value = -Double.MAX_VALUE;
             } else if (value == Double.POSITIVE_INFINITY) {
                 value = Double.MAX_VALUE;
             }

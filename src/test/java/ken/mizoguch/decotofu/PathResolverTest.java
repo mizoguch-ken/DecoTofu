@@ -26,7 +26,9 @@ class PathResolverTest {
 
         assertTrue(PathResolver.hasMarker(tempDir, "marker_a.txt"));
         assertTrue(PathResolver.hasMarker(tempDir, "marker_b.txt", "marker_a.txt"));
+        assertTrue(PathResolver.hasMarker(tempDir, null, "", "marker_a.txt"));
         assertFalse(PathResolver.hasMarker(tempDir, "marker_b.txt"));
+        assertFalse(PathResolver.hasMarker(tempDir, (String[]) null));
         assertFalse(PathResolver.hasMarker(null, "marker_a.txt"));
     }
 

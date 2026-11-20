@@ -164,7 +164,7 @@ class LadderHistoryManagerTest {
     }
 
     @Test
-    void setSharesDequeReferencesForUnlimitedGeneration() {
+    void setCopiesDequeWithoutSharingWithSource() {
         LadderHistoryManager source = new LadderHistoryManager();
         LadderHistoryManager copy = new LadderHistoryManager();
         LadderHistory first = history(LadderCommandType.LADDER_CREATE);
@@ -172,13 +172,14 @@ class LadderHistoryManagerTest {
         source.push(first, -1);
         copy.set(source, -1);
 
-        assertSame(source.getPasts(), copy.getPasts());
+        assertNotSame(source.getPasts(), copy.getPasts());
         assertNull(copy.getFutures());
         assertEquals(1, copy.getPasts().size());
+        assertSame(first, copy.getPasts().peek());
     }
 
     @Test
-    void setWithGenerationZeroClearsSharedPasts() {
+    void setWithGenerationZeroClearsCopyWithoutMutatingSource() {
         LadderHistoryManager source = new LadderHistoryManager();
         LadderHistoryManager copy = new LadderHistoryManager();
 
@@ -187,12 +188,11 @@ class LadderHistoryManagerTest {
         copy.set(source, 0);
 
         assertNull(copy.getPasts());
-        // the shared deque is emptied but source still references the empty deque
-        assertTrue(source.getPasts().isEmpty());
+        assertEquals(2, source.getPasts().size());
     }
 
     @Test
-    void setTrimsSharedFuturesToGenerationLimit() {
+    void setTrimsCopiedFuturesWithoutMutatingSource() {
         LadderHistoryManager source = new LadderHistoryManager();
         LadderHistoryManager copy = new LadderHistoryManager();
 
@@ -206,8 +206,14 @@ class LadderHistoryManagerTest {
         assertEquals(3, source.getFutures().size());
 
         copy.set(source, 2);
-        assertSame(source.getFutures(), copy.getFutures());
+        assertNotSame(source.getFutures(), copy.getFutures());
         assertEquals(2, copy.getFutures().size());
+        assertEquals(3, source.getFutures().size());
         assertNull(copy.getPasts());
+
+        copy.set(null, -1);
+        assertNull(copy.getFutures());
+        source.set(source, 1);
+        assertEquals(1, source.getFutures().size());
     }
 }

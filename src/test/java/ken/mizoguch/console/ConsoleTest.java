@@ -76,7 +76,9 @@ class ConsoleTest {
         assertDoesNotThrow(() -> {
             Console.write("ConsoleTest", "logged", true);
             Console.write("ConsoleTest", "logged", false);
+            Console.write(null, "null logger", false);
             Console.writeStackTrace(ConsoleTest.class.getName(), new RuntimeException("logged"));
+            Console.writeStackTrace(null, new RuntimeException("null logger"));
             Console.writeStackTrace(ConsoleTest.class.getName(), null);
         });
     }

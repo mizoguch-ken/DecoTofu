@@ -9,6 +9,9 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
+import jnr.ffi.Memory;
+import jnr.ffi.Pointer;
+import jnr.ffi.Runtime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -98,5 +101,35 @@ class SoemSlaveInfoTest {
         assertEquals(keys("AccessType", "BitLength", "DataType", "DataTypeName", "Index", "Name", "ObjectAccess",
                 "SDO"),
                 keys(SoemSlaveInfo.SlaveInfo.SDO.OD.OE.class));
+    }
+
+    @Test
+    @DisplayName("24-bit integer SDO values sign-extend signed values and mask unsigned values")
+    void sdo24BitFormatting() {
+        Pointer ptr = Memory.allocate(Runtime.getSystemRuntime(), 4);
+
+        ptr.putInt(0, 0x7F_FFFFFF);
+        assertEquals("0xFFFFFF / -1",
+                SoemSlaveInfo.formatSdoValue(SoemEtherCATType.ec_datatype.ECT_INTEGER24, ptr, null, 3));
+        assertEquals("0xFFFFFF / 16777215",
+                SoemSlaveInfo.formatSdoValue(SoemEtherCATType.ec_datatype.ECT_UNSIGNED24, ptr, null, 3));
+
+        ptr.putInt(0, 0xFF_000005);
+        assertEquals("0x000005 / 5",
+                SoemSlaveInfo.formatSdoValue(SoemEtherCATType.ec_datatype.ECT_INTEGER24, ptr, null, 3));
+        assertEquals("0x000005 / 5",
+                SoemSlaveInfo.formatSdoValue(SoemEtherCATType.ec_datatype.ECT_UNSIGNED24, ptr, null, 3));
+        assertEquals("Unknown type", SoemSlaveInfo.formatSdoValue(null, ptr, null, 0));
+    }
+
+    @Test
+    @DisplayName("mapOffset returns zero when either pointer is null")
+    void mapOffsetNullSafety() {
+        Pointer ptr = Memory.allocate(Runtime.getSystemRuntime(), 8);
+
+        assertEquals(0, SoemSlaveInfo.mapOffset(null, ptr));
+        assertEquals(0, SoemSlaveInfo.mapOffset(ptr, null));
+        assertEquals(0, SoemSlaveInfo.mapOffset(null, null));
+        assertEquals(0, SoemSlaveInfo.mapOffset(ptr, ptr));
     }
 }

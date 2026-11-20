@@ -130,10 +130,11 @@ public class JavaLibrary {
     public static boolean extractResourceZip(ClassLoader classLoader, String zipPath, boolean systemLoad) {
         String zipName;
 
-        if (zipPath == null) {
+        if ((classLoader == null) || (zipPath == null) || zipPath.isEmpty()) {
             return false;
         }
-        if (zipPath.isEmpty()) {
+        if (classLoader.getResource(zipPath) == null) {
+            Console.write(JavaLibrary.class.getName(), "resource not found : " + zipPath, true);
             return false;
         }
 
@@ -146,25 +147,26 @@ public class JavaLibrary {
                 return true;
             }
 
-            InputStream resourceStream = classLoader.getResourceAsStream(zipPath);
-            if (resourceStream == null) {
-                Console.write(JavaLibrary.class.getName(), "resource not found : " + zipPath, true);
-                return false;
-            }
-            try (ZipInputStream zipInputStream = new ZipInputStream(resourceStream)) {
-                ZipEntry zipEntry = zipInputStream.getNextEntry();
-                while (zipEntry != null) {
-                    Path file = resolveZipEntry(local, zipEntry);
-                    if (file != null) {
-                        if (zipEntry.isDirectory()) {
-                            Files.createDirectories(file);
-                        } else {
-                            Files.createDirectories(file.getParent());
-                            Files.copy(zipInputStream, file, StandardCopyOption.REPLACE_EXISTING);
+            try (InputStream resourceStream = classLoader.getResourceAsStream(zipPath)) {
+                if (resourceStream == null) {
+                    Console.write(JavaLibrary.class.getName(), "resource not found : " + zipPath, true);
+                    return false;
+                }
+                try (ZipInputStream zipInputStream = new ZipInputStream(resourceStream)) {
+                    ZipEntry zipEntry = zipInputStream.getNextEntry();
+                    while (zipEntry != null) {
+                        Path file = resolveZipEntry(local, zipEntry);
+                        if (file != null) {
+                            if (zipEntry.isDirectory()) {
+                                Files.createDirectories(file);
+                            } else {
+                                Files.createDirectories(file.getParent());
+                                Files.copy(zipInputStream, file, StandardCopyOption.REPLACE_EXISTING);
+                            }
                         }
+                        zipInputStream.closeEntry();
+                        zipEntry = zipInputStream.getNextEntry();
                     }
-                    zipInputStream.closeEntry();
-                    zipEntry = zipInputStream.getNextEntry();
                 }
             } catch (IOException ex) {
                 Console.writeStackTrace(JavaLibrary.class.getName(), ex);
@@ -214,10 +216,7 @@ public class JavaLibrary {
         Path resource;
         String libraryName;
 
-        if (resourcePath == null) {
-            return false;
-        }
-        if (resourcePath.isEmpty()) {
+        if ((classLoader == null) || (resourcePath == null) || resourcePath.isEmpty()) {
             return false;
         }
 
@@ -239,6 +238,11 @@ public class JavaLibrary {
             return true;
         }
 
+        if (classLoader.getResource(resourcePath) == null) {
+            Console.write(JavaLibrary.class.getName(), "resource not found : " + resourcePath, true);
+            return false;
+        }
+
         for (int i = 0; i < 10; i++) {
             Path local = Paths.get(System.getProperty("java.io.tmpdir"), getClassName() + "_" + getUserName() + "_" + i);
             if (addResourceLibraryPath(classLoader, resourcePath, local, libraryName, systemLoad)) {
@@ -254,7 +258,7 @@ public class JavaLibrary {
      * @return the library name without the "lib" prefix when it has one
      */
     public static String stripLibraryPrefix(String libraryName) {
-        if (libraryName.startsWith("lib")) {
+        if ((libraryName != null) && libraryName.startsWith("lib")) {
             return libraryName.substring("lib".length());
         }
         return libraryName;
@@ -271,6 +275,9 @@ public class JavaLibrary {
      */
     public static boolean addResourceLibraryPath(ClassLoader classLoader, String resourcePath, Path localPath,
             String libraryName, boolean systemLoad) {
+        if ((classLoader == null) || (resourcePath == null) || (localPath == null) || (libraryName == null)) {
+            return false;
+        }
         String prefix, suffix;
 
         // set prefix suffix
@@ -329,7 +336,10 @@ public class JavaLibrary {
         // library paths check
         if ((path != null) && Files.exists(path)) {
             if (Files.isRegularFile(path)) {
-                path = path.getParent();
+                path = path.toAbsolutePath().getParent();
+                if (path == null) {
+                    return false;
+                }
             }
             if (isLibraryPath(path)) {
                 return loadLibrary(libraryName, systemLoad);
@@ -428,6 +438,9 @@ public class JavaLibrary {
         fileNames.add(libraryName);
 
         for (Path path : PATHS) {
+            if (path == null) {
+                continue;
+            }
             for (String fileName : fileNames) {
                 Path file = path.resolve(fileName);
                 if (Files.isRegularFile(file)) {
@@ -442,12 +455,8 @@ public class JavaLibrary {
      *
      * @return
      */
-    /**
-     *
-     * @return
-     */
     public static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows");
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows");
     }
 
     /**
@@ -458,9 +467,15 @@ public class JavaLibrary {
     public static synchronized String refreshLibraryPath() {
         StringBuilder pathString = new StringBuilder(DEFAULT_LIBRARY_PATH);
         PATHS.stream().forEach((p) -> {
+            if (p == null) {
+                return;
+            }
             try {
-                pathString.append(File.pathSeparator);
-                pathString.append(p.toRealPath().toString());
+                String realPath = p.toRealPath().toString();
+                if (pathString.length() > 0) {
+                    pathString.append(File.pathSeparator);
+                }
+                pathString.append(realPath);
             } catch (IOException ex) {
                 Console.writeStackTrace(JavaLibrary.class.getName(), ex);
             }
@@ -479,7 +494,7 @@ public class JavaLibrary {
      * @return
      */
     public static boolean isLinux() {
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("linux");
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("linux");
     }
 
     /**
@@ -487,7 +502,7 @@ public class JavaLibrary {
      * @return
      */
     public static boolean isMac() {
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("mac");
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("mac");
     }
 
     /**
@@ -554,7 +569,11 @@ public class JavaLibrary {
      * @return
      */
     public static String removeFileExtension(Path file) {
-        return removeFileExtension(file.getFileName().toString());
+        if (file == null) {
+            return "";
+        }
+        Path fileName = file.getFileName();
+        return (fileName != null) ? removeFileExtension(fileName.toString()) : "";
     }
 
     /**
@@ -563,6 +582,9 @@ public class JavaLibrary {
      * @return
      */
     public static String removeFileExtension(String name) {
+        if (name == null) {
+            return "";
+        }
         int lastDotPos = name.lastIndexOf('.');
 
         if (lastDotPos < 1) {

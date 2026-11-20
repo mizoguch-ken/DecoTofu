@@ -66,8 +66,8 @@ class LadderCycleTask extends Task<Void> {
             LadderIo cycleIo;
             Soem soem;
             Long registerSoemValue;
-            long waitTime;
-            int index, size;
+            long waitTime, cycleStartTime;
+            int index;
 
             controller = ladders_.getDesignController();
             lock = ladders_.getLock();
@@ -78,7 +78,9 @@ class LadderCycleTask extends Task<Void> {
 
             controller.runViewRunning(true);
 
-            statistics = new LadderCycleStatistics(System.nanoTime());
+            cycleStartTime = System.nanoTime();
+            statistics = new LadderCycleStatistics(cycleStartTime);
+            ladders_.updateCycleTimes(0L, 0L, 0L);
             errors = new LadderCycleErrors(LADDER_CYCLE_ERROR_LIMIT);
 
             while (ladders_.isCycling() && !isCancelled()) {
@@ -88,7 +90,7 @@ class LadderCycleTask extends Task<Void> {
                         // soem
                         soem = ladders_.getSoem();
                         if (soem != null) {
-                            for (index = 0, size = registerSoemOut.size(); index < size; index++) {
+                            for (index = 0; index < registerSoemOut.size(); index++) {
                                 registerSoemIo = registerSoemOut.get(index);
                                 cycleIo = ioStore.globalIo(registerSoemIo.address());
                                 if (cycleIo != null) {
@@ -96,7 +98,7 @@ class LadderCycleTask extends Task<Void> {
                                             registerSoemIo.bitsMask(), (long) cycleIo.getValue());
                                 }
                             }
-                            for (index = 0, size = registerSoemIn.size(); index < size; index++) {
+                            for (index = 0; index < registerSoemIn.size(); index++) {
                                 registerSoemIo = registerSoemIn.get(index);
                                 registerSoemValue = soem.in(registerSoemIo.slave(),
                                         registerSoemIo.bitsOffset(), registerSoemIo.bitsMask());
@@ -112,7 +114,7 @@ class LadderCycleTask extends Task<Void> {
                         // ladder
                         Ladder[] laddersLocal = ladders_.getLadders();
                         if (laddersLocal != null) {
-                            for (index = 0; index < ladders_.getLaddersSize(); index++) {
+                            for (index = 0; index < laddersLocal.length; index++) {
                                 laddersLocal[index].run(ioMap, statistics.cycleTime());
                             }
                         }
@@ -144,20 +146,26 @@ class LadderCycleTask extends Task<Void> {
                 }
 
                 // ideal cycletime
-                waitTime = ladders_.getIdealCycleTime() - statistics.cycleTime();
-                if (waitTime > 0) {
-                    try {
-                        TimeUnit.NANOSECONDS.sleep(waitTime);
-                    } catch (InterruptedException ex) {
-                        // the task has been interrupted : the cycle has to end,
-                        // otherwise the sleep would answer immediately again
-                        Thread.currentThread().interrupt();
-                        ladders_.setCycling(false);
+                long idealCycleTime = ladders_.getIdealCycleTime();
+                if (idealCycleTime > 0) {
+                    waitTime = idealCycleTime - (System.nanoTime() - cycleStartTime);
+                    if (waitTime > 0) {
+                        try {
+                            TimeUnit.NANOSECONDS.sleep(waitTime);
+                        } catch (InterruptedException ex) {
+                            // the task has been interrupted : the cycle has to end,
+                            // otherwise the sleep would answer immediately again
+                            Thread.currentThread().interrupt();
+                            ladders_.setCycling(false);
+                        }
                     }
                 }
 
                 // cycletimme
-                statistics.add(System.nanoTime());
+                long cycleEndTime = System.nanoTime();
+                long cycleTime = statistics.add(cycleEndTime);
+                updateCycleMetrics(cycleTime, statistics);
+                cycleStartTime = cycleEndTime;
                 if (statistics.isMinCycleTimeChanged()) {
                     controller.setMinCycleTime(statistics.minCycleTime());
                 } else if (statistics.isMaxCycleTimeChanged()) {
@@ -184,5 +192,11 @@ class LadderCycleTask extends Task<Void> {
             }
         }
         return null;
+    }
+
+    private void updateCycleMetrics(long cycleTime, LadderCycleStatistics statistics) {
+        long min = statistics.minCycleTime();
+        ladders_.updateCycleTimes(Math.max(0L, cycleTime), (min == Long.MAX_VALUE) ? 0L : min,
+                statistics.maxCycleTime());
     }
 }

@@ -52,4 +52,30 @@ class SoemPluginTest {
         assertFalse(plugin.load("decoTofuNoSuchLibraryXyz"));
         assertFalse(plugin.load("decoTofuNoSuchLibraryXyz/decoTofuNoSuchLibraryXyz.dll"));
     }
+
+    @Test
+    void newPluginHelpersDelegateSafelyWhenUnloaded() {
+        SoemPlugin plugin = new SoemPlugin(new Soem());
+
+        assertFalse(plugin.isLoaded());
+        assertFalse(plugin.isRunning());
+        assertNull(plugin.version());
+        assertNull(plugin.stop());
+        assertNull(plugin.setOverlappedMode(true));
+        assertNull(plugin.isOverlappedMode());
+        assertNull(plugin.setPackedMode(true));
+        assertNull(plugin.isPackedMode());
+        assertNull(plugin.enableCyclicMailbox(1));
+        assertNull(plugin.dcsync0(1, true, 1000L, 0));
+        assertNull(plugin.dcsync01(1, true, 1000L, 2000L, 0));
+        assertNull(plugin.wkc());
+        assertNull(plugin.expectedWkc());
+        assertNull(plugin.dcTime());
+        assertNull(plugin.isError());
+        assertNull(plugin.popError());
+        assertNull(plugin.sdoReadCA(1, 0x1018, 1, 4));
+        assertNull(plugin.sdoWriteCA(1, 0x1018, 1, 4, 42));
+        assertNull(plugin.sdoWriteCA(1, 0x1018, 1, 0, new byte[] { 1, 2 }));
+        assertDoesNotThrow(() -> plugin.setNotifyErrorLost("bad();call"));
+    }
 }

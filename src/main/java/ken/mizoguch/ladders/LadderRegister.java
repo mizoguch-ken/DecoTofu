@@ -38,9 +38,9 @@ class LadderRegister {
     private final View view_;
     private final CopyOnWriteArrayList<LadderRegisterSoemIo> registerSoemIn_, registerSoemOut_;
 
-    private WebEngine webEngine_;
-    private Worker.State state_;
-    private Soem soem_;
+    private volatile WebEngine webEngine_;
+    private volatile Worker.State state_;
+    private volatile Soem soem_;
 
     /**
      *
@@ -175,6 +175,12 @@ class LadderRegister {
                 case WebEngine webEngine -> {
                     webEngine_ = null;
                     state_ = Worker.State.READY;
+                    CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap = ioStore_.getIoMap();
+                    for (int idx = 0; idx < ioMap.size(); idx++) {
+                        ioMap.get(idx).forEach((key, io) -> {
+                            io.setWebEngineState(null, Worker.State.READY);
+                        });
+                    }
                 }
                 case Soem soem -> {
                     clearSoem();
@@ -221,8 +227,13 @@ class LadderRegister {
             }
 
             String address = given.trim();
-            if (!address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX) && !address.contains(" ")) {
+            if (!address.isEmpty() && !address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)
+                    && !address.contains(" ")) {
                 if (ioStore_.createIo(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address)) {
+                    LadderIo io = ioStore_.io(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, address);
+                    if ((io != null) && (webEngine_ != null)) {
+                        io.setWebEngineState(webEngine_, state_);
+                    }
                     view_.addIoRow(address);
                 }
 

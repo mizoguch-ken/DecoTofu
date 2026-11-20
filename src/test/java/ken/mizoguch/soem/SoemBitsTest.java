@@ -201,6 +201,16 @@ class SoemBitsTest {
     }
 
     @Test
+    @DisplayName("Soem.readBits accepts full 64-bit mask (-1L) and rejects zero mask")
+    void soemReadBitsSupportsFull64BitMask() {
+        Pointer map = map(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
+
+        assertEquals(0x0807060504030201L, Soem.readBits(0, -1L, map, 0, 64));
+        assertNull(Soem.readBits(0, 0L, map, 0, 64));
+        assertNull(Soem.readBits(0, -1L, null, 0, 64));
+    }
+
+    @Test
     @DisplayName("merging multiple writes in the same byte clears bits overwritten with zero")
     void mergeOverwritesPreviousQueuedBits() {
         int keep1 = SoemBits.keepMask(0x0f);

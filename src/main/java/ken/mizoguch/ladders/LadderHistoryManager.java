@@ -39,23 +39,39 @@ public class LadderHistoryManager {
      * @param generation
      */
     public void set(LadderHistoryManager historyManager, int generation) {
-        clear();
-        pasts = historyManager.getPasts();
-        futures = historyManager.getFutures();
-
-        if (pasts != null) {
-            if ((generation == 0) || (pasts.isEmpty())) {
-                clearPasts();
-            } else {
-                trimToGeneration(pasts, generation);
-            }
+        if (historyManager == null) {
+            clear();
+            return;
         }
-        if (futures != null) {
-            if ((generation == 0) || (futures.isEmpty())) {
-                clearFutures();
-            } else {
-                trimToGeneration(futures, generation);
+        if (historyManager == this) {
+            if (pasts != null) {
+                if ((generation == 0) || pasts.isEmpty()) {
+                    clearPasts();
+                } else {
+                    trimToGeneration(pasts, generation);
+                }
             }
+            if (futures != null) {
+                if ((generation == 0) || futures.isEmpty()) {
+                    clearFutures();
+                } else {
+                    trimToGeneration(futures, generation);
+                }
+            }
+            return;
+        }
+
+        clear();
+        Deque<LadderHistory> sourcePasts = historyManager.getPasts();
+        Deque<LadderHistory> sourceFutures = historyManager.getFutures();
+
+        if ((sourcePasts != null) && (generation != 0) && !sourcePasts.isEmpty()) {
+            pasts = new ArrayDeque<>(sourcePasts);
+            trimToGeneration(pasts, generation);
+        }
+        if ((sourceFutures != null) && (generation != 0) && !sourceFutures.isEmpty()) {
+            futures = new ArrayDeque<>(sourceFutures);
+            trimToGeneration(futures, generation);
         }
     }
 

@@ -25,6 +25,7 @@ public class Console {
 
     private static final DateTimeFormatter DATE_FORMAT
             = DateTimeFormatter.ofPattern("yyyy'/'MM'/'dd' 'HH':'mm':'ss");
+    private static final Object STREAM_LOCK = new Object();
     private static volatile PrintStream printStream_ = null;
 
     /**
@@ -32,28 +33,31 @@ public class Console {
      * @param file
      * @return
      */
-    public static synchronized boolean setPrintStream(Path file) {
-        if (file == null) {
-            if (printStream_ != null) {
-                printStream_.close();
-                printStream_ = null;
-            }
-        } else {
-            Path parent = file.getParent();
-            if ((parent != null) && Files.exists(parent)) {
-                try {
-                    PrintStream printStream = new PrintStream(Files.newOutputStream(file), true, StandardCharsets.UTF_8);
-                    if (printStream_ != null) {
-                        printStream_.close();
+    public static boolean setPrintStream(Path file) {
+        synchronized (STREAM_LOCK) {
+            if (file == null) {
+                if (printStream_ != null) {
+                    printStream_.close();
+                    printStream_ = null;
+                }
+            } else {
+                Path parent = file.getParent();
+                if ((parent != null) && Files.exists(parent)) {
+                    try {
+                        PrintStream printStream = new PrintStream(Files.newOutputStream(file), true,
+                                StandardCharsets.UTF_8);
+                        if (printStream_ != null) {
+                            printStream_.close();
+                        }
+                        printStream_ = printStream;
+                        return true;
+                    } catch (IOException ex) {
+                        Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    printStream_ = printStream;
-                    return true;
-                } catch (IOException ex) {
-                    Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+            return false;
         }
-        return false;
     }
 
     /**
@@ -72,24 +76,28 @@ public class Console {
         if (throwable == null) {
             return;
         }
-        PrintStream printStream = printStream_;
+        String loggerName = (name != null) ? name : Console.class.getName();
 
-        if (printStream == null) {
-            Logger.getLogger(name).log(Level.SEVERE, null, throwable);
-        } else {
-            StringWriter stringWriter = new StringWriter();
-            PrintWriter printWriter = new PrintWriter(stringWriter, true);
-            for (StackTraceElement ste : throwable.getStackTrace()) {
-                if (ste.getClassName().equals(name)) {
-                    stringWriter.append(
-                            LocalDateTime.now().format(DATE_FORMAT) + " " + name + " " + ste.getMethodName() + "\n");
-                    break;
+        synchronized (STREAM_LOCK) {
+            PrintStream printStream = printStream_;
+            if (printStream != null) {
+                StringWriter stringWriter = new StringWriter();
+                PrintWriter printWriter = new PrintWriter(stringWriter, true);
+                for (StackTraceElement ste : throwable.getStackTrace()) {
+                    if (ste.getClassName().equals(loggerName)) {
+                        stringWriter.append(
+                                LocalDateTime.now().format(DATE_FORMAT) + " " + loggerName + " " + ste.getMethodName()
+                                        + "\n");
+                        break;
+                    }
                 }
-            }
-            throwable.printStackTrace(printWriter);
+                throwable.printStackTrace(printWriter);
 
-            printStream.println(stringWriter.getBuffer().toString());
+                printStream.println(stringWriter.getBuffer().toString());
+                return;
+            }
         }
+        Logger.getLogger(loggerName).log(Level.SEVERE, null, throwable);
     }
 
     /**
@@ -99,18 +107,21 @@ public class Console {
      * @param err
      */
     public static void write(final String name, String msg, final boolean err) {
-        PrintStream printStream = printStream_;
+        String loggerName = (name != null) ? name : Console.class.getName();
 
-        if (printStream == null) {
-            if (err) {
-                Logger.getLogger(name).log(Level.WARNING, msg);
-            } else {
-                Logger.getLogger(name).log(Level.INFO, msg);
+        synchronized (STREAM_LOCK) {
+            PrintStream printStream = printStream_;
+            if (printStream != null) {
+                String timestamp = LocalDateTime.now().format(DATE_FORMAT);
+                printStream.println(err ? timestamp + " :: " + loggerName + " Error :: " + msg
+                        : timestamp + " :: " + loggerName + " :: " + msg);
+                return;
             }
+        }
+        if (err) {
+            Logger.getLogger(loggerName).log(Level.WARNING, msg);
         } else {
-            String timestamp = LocalDateTime.now().format(DATE_FORMAT);
-            printStream.println(err ? timestamp + " :: " + name + " Error :: " + msg
-                    : timestamp + " :: " + name + " :: " + msg);
+            Logger.getLogger(loggerName).log(Level.INFO, msg);
         }
     }
 }

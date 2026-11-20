@@ -81,6 +81,24 @@ class JavaLibraryTest {
 
         assertFalse(JavaLibrary.extractResourceLibrary(classLoader, "missing.dll", false));
         assertFalse(JavaLibrary.extractResourceZip(classLoader, "missing.zip", false));
+        assertFalse(JavaLibrary.extractResourceLibrary(null, "missing.dll", false));
+        assertFalse(JavaLibrary.extractResourceZip(null, "missing.zip", false));
+    }
+
+    @Test
+    void addLibraryPathWithRelativeFileDoesNotPoisonPaths() throws Exception {
+        Path originalDir = Paths.get(System.getProperty("user.dir"));
+        Path relativeFile = Files.createTempFile(originalDir, "decotofu-rel-", ".tmp");
+        try {
+            assertTrue(Files.isRegularFile(relativeFile));
+            assertDoesNotThrow(() -> {
+                JavaLibrary.addLibraryPath(relativeFile.getFileName(), "nonExistentRelLibXyz", false);
+                JavaLibrary.refreshLibraryPath();
+            });
+            assertFalse(JavaLibrary.isLibraryPath(null));
+        } finally {
+            Files.deleteIfExists(relativeFile);
+        }
     }
 
     @Test

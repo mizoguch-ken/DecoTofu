@@ -339,12 +339,12 @@ class LadderFileActions {
                 }
             }
 
-            ladderCommand.setDisableHistory(false);
             return true;
         } catch (Exception ex) {
             Console.writeStackTrace(Ladders.class.getName(), ex);
+        } finally {
+            ladderCommand.setDisableHistory(false);
         }
-        ladderCommand.setDisableHistory(false);
         return false;
     }
 
@@ -479,7 +479,7 @@ class LadderFileActions {
         }
         file = ladderOpen(filePath);
         if (file == null) {
-            if (filePath != null) {
+            if ((filePath != null) && !Files.exists(filePath)) {
                 fileNotFound(filePath);
             }
         } else {

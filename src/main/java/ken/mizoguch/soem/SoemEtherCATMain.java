@@ -103,14 +103,13 @@ public interface SoemEtherCATMain {
         }
 
         public ec_adaptert getNext(jnr.ffi.Runtime runtime) {
-            ec_adaptert adapter = new ec_adaptert(runtime);
             jnr.ffi.Pointer pNext = _next.get();
             if (pNext == null) {
                 return null;
-            } else {
-                adapter.useMemory(_next.get());
-                return adapter;
             }
+            ec_adaptert adapter = new ec_adaptert(runtime);
+            adapter.useMemory(pNext);
+            return adapter;
         }
     }
 
@@ -1392,6 +1391,59 @@ public interface SoemEtherCATMain {
 
         private static long alignOffset(long offset, int alignment) {
             return ((offset + alignment - 1) / alignment) * alignment;
+        }
+
+        static long alignedSize(Struct s) {
+            return alignOffset(Struct.size(s), Struct.alignment(s));
+        }
+
+        private static long advanceStruct(long offset, Struct s, int[] maxAlign) {
+            int alignment = Struct.alignment(s);
+            if (alignment > maxAlign[0]) {
+                maxAlign[0] = alignment;
+            }
+            return alignOffset(offset, alignment) + alignedSize(s);
+        }
+
+        private static long advanceStructArray(long offset, Struct[] array, int[] maxAlign) {
+            for (Struct s : array) {
+                offset = advanceStruct(offset, s, maxAlign);
+            }
+            return offset;
+        }
+
+        public long expectedByteSize() {
+            int[] maxAlign = { 1 };
+            long offset = 0;
+            offset = advanceStruct(offset, port, maxAlign);
+            offset = advanceStructArray(offset, slavelist, maxAlign);
+            offset = advanceStruct(offset, slavecount, maxAlign);
+            offset = advanceStructArray(offset, grouplist, maxAlign);
+            offset = advanceStruct(offset, ecaterror, maxAlign);
+            offset = advanceStruct(offset, DCtime, maxAlign);
+            offset = advanceStructArray(offset, esibuf, maxAlign);
+            offset = advanceStructArray(offset, esimap, maxAlign);
+            offset = advanceStruct(offset, esislave, maxAlign);
+            offset = advanceStruct(offset, elist, maxAlign);
+            offset = advanceStruct(offset, idxstack, maxAlign);
+            offset = advanceStructArray(offset, SMcommtype, maxAlign);
+            offset = advanceStructArray(offset, PDOassign, maxAlign);
+            offset = advanceStructArray(offset, PDOdesc, maxAlign);
+            offset = advanceStruct(offset, eepSM, maxAlign);
+            offset = advanceStruct(offset, eepFMMU, maxAlign);
+            offset = advanceStruct(offset, mbxpool, maxAlign);
+            offset = advanceStruct(offset, ENI, maxAlign);
+            offset = advanceStruct(offset, FOEhook, maxAlign);
+            offset = advanceStruct(offset, EOEhook, maxAlign);
+            offset = advanceStruct(offset, manualstatechange, maxAlign);
+            offset = advanceStruct(offset, userdata, maxAlign);
+            offset = advanceStruct(offset, overlappedMode, maxAlign);
+            offset = advanceStruct(offset, packedMode, maxAlign);
+            return alignOffset(offset, maxAlign[0]);
+        }
+
+        public static long expectedByteSize(jnr.ffi.Runtime runtime) {
+            return new ecx_contextt(runtime).expectedByteSize();
         }
 
         private static long sliceStruct(jnr.ffi.Pointer base, long offset, Struct s) {

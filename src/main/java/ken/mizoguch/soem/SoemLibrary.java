@@ -10,6 +10,7 @@ import jnr.ffi.Struct;
 import jnr.ffi.annotations.Delegate;
 import jnr.ffi.types.int16_t;
 import jnr.ffi.types.int32_t;
+import jnr.ffi.types.size_t;
 import jnr.ffi.types.u_int16_t;
 import jnr.ffi.types.u_int32_t;
 import jnr.ffi.types.u_int64_t;
@@ -349,6 +350,22 @@ public interface SoemLibrary {
      * running, -1 when the platform of the shared library can not wait it
      */
     public int ec_wait_thread(SoemEtherCAT.ecx_parcelt parcel, int timeoutMillis);
+
+    public int ec_stop(SoemEtherCAT.ecx_parcelt parcel, int timeoutMillis);
+
+    public String ec_version();
+
+    public @size_t long ec_sizeof_context();
+
+    public @size_t long ec_sizeof_parcel();
+
+    public @size_t long ec_sizeof_slave();
+
+    public @size_t long ec_sizeof_group();
+
+    public int ec_max_slave();
+
+    public int ec_max_group();
 
     // SoemEtherCATBase
     public int ecx_setupdatagram(Pointer port, Pointer frame, @u_int8_t int com, @u_int8_t int idx, @u_int16_t int ADP,

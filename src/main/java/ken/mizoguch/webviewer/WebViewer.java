@@ -61,6 +61,7 @@ public class WebViewer implements WebViewerPlugin {
      * used, because a plugin loads its own classes and resources lazily
      */
     private final List<URLClassLoader> pluginLoaders_ = new ArrayList<>();
+    private final List<Stage> popupStages_ = new ArrayList<>();
 
     private boolean ownsPlugins_;
 
@@ -251,7 +252,11 @@ public class WebViewer implements WebViewerPlugin {
 
                     if (ownsPlugins_) {
                         for (int index = 0, size = plugins_.size(); index < size; index++) {
-                            plugins_.get(index).state(workerState_);
+                            try {
+                                plugins_.get(index).state(workerState_);
+                            } catch (Exception ex) {
+                                writeStackTrace(WebViewer.class.getName(), ex);
+                            }
                         }
                     }
                     if (workerState_ == Worker.State.SUCCEEDED) {
@@ -282,9 +287,21 @@ public class WebViewer implements WebViewerPlugin {
      *
      */
     public void cleanUp() {
+        for (Stage popupStage : new ArrayList<>(popupStages_)) {
+            try {
+                popupStage.close();
+            } catch (Exception ex) {
+                writeStackTrace(WebViewer.class.getName(), ex);
+            }
+        }
+        popupStages_.clear();
         if (ownsPlugins_) {
             for (int index = 0, size = plugins_.size(); index < size; index++) {
-                plugins_.get(index).close();
+                try {
+                    plugins_.get(index).close();
+                } catch (Exception ex) {
+                    writeStackTrace(WebViewer.class.getName(), ex);
+                }
             }
             ownsPlugins_ = false;
         }
@@ -312,12 +329,17 @@ public class WebViewer implements WebViewerPlugin {
             WebViewer viewer = new WebViewer(view);
 
             stage.setScene(new Scene(view));
-            if (!icons_.isEmpty()) {
+            if ((icons_ != null) && !icons_.isEmpty()) {
                 stage.getIcons().addAll(icons_);
             }
             stage.setResizable(param.isResizable());
+            popupStages_.add(stage);
             stage.setOnCloseRequest((WindowEvent event) -> {
+                popupStages_.remove(stage);
                 viewer.cleanUp();
+            });
+            stage.setOnHidden((WindowEvent event) -> {
+                popupStages_.remove(stage);
             });
             viewer.startUpPopup(stage, icons_, webPath_, plugins_);
 
@@ -327,7 +349,7 @@ public class WebViewer implements WebViewerPlugin {
 
         webEngine_.setOnAlert((WebEvent<String> event) -> {
             Alert alert = new Alert(Alert.AlertType.WARNING);
-            if (!icons_.isEmpty()) {
+            if ((icons_ != null) && !icons_.isEmpty()) {
                 ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
             }
             alert.setResizable(true);
@@ -339,7 +361,7 @@ public class WebViewer implements WebViewerPlugin {
 
         webEngine_.setConfirmHandler((String param) -> {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            if (!icons_.isEmpty()) {
+            if ((icons_ != null) && !icons_.isEmpty()) {
                 ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
             }
             alert.setResizable(true);
@@ -352,7 +374,7 @@ public class WebViewer implements WebViewerPlugin {
 
         webEngine_.setPromptHandler((PromptData param) -> {
             TextInputDialog alert = new TextInputDialog(param.getDefaultValue());
-            if (!icons_.isEmpty()) {
+            if ((icons_ != null) && !icons_.isEmpty()) {
                 ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
             }
             alert.setResizable(true);

@@ -51,14 +51,14 @@ class LadderJsonTest {
         assertEquals(Double.valueOf(1.0), json.getComments().get(0).value());
         assertSame(second, json.getComments().get(1));
 
-        // current behavior: addComment has no null check, null entries are stored
+        // null entries are ignored so sorting comments cannot fail
         json.addComment(null);
-        assertEquals(3, json.getComments().size());
-        assertNull(json.getComments().get(2));
+        assertEquals(2, json.getComments().size());
+        json.sortComments();
     }
 
     @Test
-    void historyManagerIntegrationSharesState() {
+    void historyManagerIntegrationCopiesState() {
         LadderJson json = new LadderJson();
         assertNull(json.getHistoryManager());
 
@@ -67,12 +67,12 @@ class LadderJsonTest {
 
         json.setHistoryManager(manager, -1);
         assertNotNull(json.getHistoryManager());
-        assertSame(manager.getPasts(), json.getHistoryManager().getPasts());
+        assertNotSame(manager.getPasts(), json.getHistoryManager().getPasts());
+        assertEquals(1, json.getHistoryManager().getPasts().size());
 
         json.setHistoryManager(manager, 0);
         assertNull(json.getHistoryManager().getPasts());
-        // the shared deque is emptied but the caller manager still references the empty deque
-        assertTrue(manager.getPasts().isEmpty());
+        assertEquals(1, manager.getPasts().size());
     }
 
     @Test
@@ -80,7 +80,7 @@ class LadderJsonTest {
         assertEquals(Double.valueOf(0.0), new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.NaN).value());
         assertEquals(Double.valueOf(Double.MAX_VALUE),
                 new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.POSITIVE_INFINITY).value());
-        assertEquals(Double.valueOf(Double.MIN_VALUE),
+        assertEquals(Double.valueOf(-Double.MAX_VALUE),
                 new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.NEGATIVE_INFINITY).value());
         assertEquals(Double.valueOf(5.0), new LadderJsonComment(Integer.valueOf(1), "a", "c", Double.valueOf(5.0)).value());
     }

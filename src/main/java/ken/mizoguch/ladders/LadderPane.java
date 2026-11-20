@@ -39,8 +39,6 @@ public class LadderPane extends GridPane {
     private final List<LadderGrid> previousGrids_;
     private final double gridMinSize_, gridMaxSize_, gridContentsWidth_, gridContentsHight_;
     private boolean isChanged_;
-    private String address_;
-    private Double value_;
 
     private static final Pattern PATTERN_INPUT = Pattern.compile("[\\s]*;[\\s]*");
     private static final Pattern PATTERN_BLOCK = Pattern.compile("[\\s]+");
@@ -183,11 +181,13 @@ public class LadderPane extends GridPane {
             grid = ladder_.getInGrids().get(index);
             if (grid != null) {
                 gridPane = findGridPane(grid);
+                address = grid.getAddress();
                 idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-                if (grid.getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                if ((address != null) && address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                     idx = ladder_.getIdx();
                 }
-                LadderIo io = ioMap.get(idx).get(grid.getAddress());
+                LadderIo io = ((address != null) && (idx >= 0) && (idx < ioMap.size())) ? ioMap.get(idx).get(address)
+                        : null;
                 if ((gridPane != null) && (io != null)) {
                     gridMinX = gridPane.getBoundsInParent().getMinX() + gridPane.getWidth();
                     gridMinY = gridPane.getBoundsInParent().getMinY() + gridPane.getHeight();
@@ -220,10 +220,12 @@ public class LadderPane extends GridPane {
                                 if (!grid.getBlockFunctions()[0].isNumber()) {
                                     address = grid.getBlockFunctions()[0].getAddress();
                                     idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-                                    if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                    if ((address != null)
+                                            && address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                         idx = ladder_.getIdx();
                                     }
-                                    if (ioMap.get(idx).containsKey(address)) {
+                                    if ((address != null) && (idx >= 0) && (idx < ioMap.size())
+                                            && ioMap.get(idx).containsKey(address)) {
                                         grid.getBlockFunctions()[0].setValue(ioMap.get(idx).get(address).getValue());
                                     }
                                 }
@@ -242,11 +244,13 @@ public class LadderPane extends GridPane {
             grid = ladder_.getOutGrids().get(index);
             if (grid != null) {
                 gridPane = findGridPane(grid);
+                address = grid.getAddress();
                 idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-                if (grid.getAddress().startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                if ((address != null) && address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                     idx = ladder_.getIdx();
                 }
-                LadderIo io = ioMap.get(idx).get(grid.getAddress());
+                LadderIo io = ((address != null) && (idx >= 0) && (idx < ioMap.size())) ? ioMap.get(idx).get(address)
+                        : null;
                 if ((gridPane != null) && (io != null)) {
                     gridMinX = gridPane.getBoundsInParent().getMinX() + gridPane.getWidth();
                     gridMinY = gridPane.getBoundsInParent().getMinY() + gridPane.getHeight();
@@ -475,7 +479,9 @@ public class LadderPane extends GridPane {
                                         break;
                                 }
                                 changed = keyInput(defaultValue.toString(), previousGrid, previousGridPane);
-                                stage_.requestFocus();
+                                if (stage_ != null) {
+                                    stage_.requestFocus();
+                                }
                             }
                         }
                     }
@@ -541,13 +547,17 @@ public class LadderPane extends GridPane {
                         }
                     } else if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
                         previousGrid = previousGrids_.get(previousGrids_.size() - 1);
-                        if ((previousGrid.getColumnIndex() > 0) && (previousGrid.getRowIndex() > 0)) {
+                        if ((previousGrid.getColumnIndex() > 0)
+                                && (previousGrid.getColumnIndex() < (ladder_.getColumn() - 1))
+                                && (previousGrid.getRowIndex() > 0)) {
                             grid = previousGrid.getRightLadderGrid();
-                            previousGridPane = findGridPane(previousGrid);
-                            ladderCommand_.blockChangeConnectLineRight(ladder_, previousGrid, grid, previousGridPane,
-                                    previousGrid.getBlock() != LadderBlock.CONNECT_LINE);
-                            ladderCommand_.blockChangeSelect(scrollPane, this, grid, false);
-                            changed = true;
+                            if (grid != null) {
+                                previousGridPane = findGridPane(previousGrid);
+                                ladderCommand_.blockChangeConnectLineRight(ladder_, previousGrid, grid, previousGridPane,
+                                        previousGrid.getBlock() != LadderBlock.CONNECT_LINE);
+                                ladderCommand_.blockChangeSelect(scrollPane, this, grid, false);
+                                changed = true;
+                            }
                         }
                     } else if (!event.isShiftDown() && !event.isShortcutDown() && !event.isAltDown()) {
                         previousGrid = previousGrids_.get(previousGrids_.size() - 1);
@@ -571,14 +581,17 @@ public class LadderPane extends GridPane {
                         }
                     } else if (!event.isShiftDown() && event.isShortcutDown() && !event.isAltDown()) {
                         previousGrid = previousGrids_.get(previousGrids_.size() - 1);
-                        if ((previousGrid.getColumnIndex() > 1) && (previousGrid.getRowIndex() > 0)) {
+                        if ((previousGrid.getColumnIndex() > 1) && (previousGrid.getRowIndex() > 0)
+                                && (previousGrid.getRowIndex() < (ladder_.getRow() - 1))) {
                             grid = previousGrid.getDownLadderGrid();
-                            gridPane = findGridPane(grid);
-                            previousGridPane = findGridPane(previousGrid);
-                            ladderCommand_.blockChangeVerticalVerticalOr(ladder_, previousGrid, previousGridPane, grid,
-                                    gridPane, !grid.isVertical());
-                            ladderCommand_.blockChangeSelect(scrollPane, this, grid, false);
-                            changed = true;
+                            if (grid != null) {
+                                gridPane = findGridPane(grid);
+                                previousGridPane = findGridPane(previousGrid);
+                                ladderCommand_.blockChangeVerticalVerticalOr(ladder_, previousGrid, previousGridPane,
+                                        grid, gridPane, !grid.isVertical());
+                                ladderCommand_.blockChangeSelect(scrollPane, this, grid, false);
+                                changed = true;
+                            }
                         }
                     } else if (!event.isShiftDown() && !event.isShortcutDown() && !event.isAltDown()) {
                         previousGrid = previousGrids_.get(previousGrids_.size() - 1);
@@ -886,7 +899,7 @@ public class LadderPane extends GridPane {
         TextInputDialog alert = new TextInputDialog(defaultValue);
 
         alert.initOwner(stage_);
-        if (!icons_.isEmpty()) {
+        if ((icons_ != null) && !icons_.isEmpty()) {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
         }
         alert.setTitle("Input");
@@ -1373,6 +1386,9 @@ public class LadderPane extends GridPane {
 
                                     // script
                                     grid.setBlockScript(LadderGrid.LADDER_GRID_INITIAL_BLOCK_SCRIPT);
+                                } else {
+                                    ladderCommand_.blockChangeEnd(ladder_.getColumn(), ladder_.getRow());
+                                    return false;
                                 }
                                 break;
                             case AND_BITS:
@@ -1431,6 +1447,9 @@ public class LadderPane extends GridPane {
 
                                     // script
                                     grid.setBlockScript(LadderGrid.LADDER_GRID_INITIAL_BLOCK_SCRIPT);
+                                } else {
+                                    ladderCommand_.blockChangeEnd(ladder_.getColumn(), ladder_.getRow());
+                                    return false;
                                 }
                                 break;
                             case NOT_BITS:
@@ -1484,6 +1503,9 @@ public class LadderPane extends GridPane {
 
                                     // script
                                     grid.setBlockScript(LadderGrid.LADDER_GRID_INITIAL_BLOCK_SCRIPT);
+                                } else {
+                                    ladderCommand_.blockChangeEnd(ladder_.getColumn(), ladder_.getRow());
+                                    return false;
                                 }
                                 break;
                             default:
@@ -1680,19 +1702,18 @@ public class LadderPane extends GridPane {
                         case 2:
                             if (!LadderNumber.isNumber(grid.getAddress())) {
                                 int idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+                                String gridAddress = grid.getAddress();
 
-                                address_ = grid.getAddress();
-
-                                if (address_.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+                                if (gridAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                                     idx = ladder_.getIdx();
                                 }
 
-                                value_ = ladders_.getValue(idx, address_);
-                                if (value_ != null) {
-                                    if (value_ == 0) {
-                                        ladders_.setValue(idx, address_, 1.0);
+                                Double gridValue = ladders_.getValue(idx, gridAddress);
+                                if (gridValue != null) {
+                                    if (gridValue == 0) {
+                                        ladders_.setValue(idx, gridAddress, 1.0);
                                     } else {
-                                        ladders_.setValue(idx, address_, 0.0);
+                                        ladders_.setValue(idx, gridAddress, 0.0);
                                     }
                                 }
                             }
@@ -1725,7 +1746,7 @@ public class LadderPane extends GridPane {
     }
 
     private void addTableIo(String address, LadderGrid previousGrid) {
-        if (address != null) {
+        if ((address != null) && !address.isEmpty()) {
             TableView<LadderTableIo> tableIo;
             LadderGrid grid;
             int idx, siz, index, size, i;
@@ -1734,6 +1755,9 @@ public class LadderPane extends GridPane {
             if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
                 for (index = 0, size = getChildren().size(); index < size; index++) {
                     grid = ((LadderGridPane) getChildren().get(index)).getLadderGrid();
+                    if (grid.getBlock() == LadderBlock.BLOCK_COMMENT) {
+                        continue;
+                    }
                     if (address.equals(grid.getAddress())) {
                         tableIo.getItems().add(new LadderTableIo(ladder_.getName(), address, grid.getBlock().toString(),
                                 grid.getColumnIndex(), grid.getRowIndex()));
@@ -1771,6 +1795,9 @@ public class LadderPane extends GridPane {
                             .getContent();
                     for (index = 0, size = pane.getChildren().size(); index < size; index++) {
                         grid = ((LadderGridPane) pane.getChildren().get(index)).getLadderGrid();
+                        if (grid.getBlock() == LadderBlock.BLOCK_COMMENT) {
+                            continue;
+                        }
                         if (address.equals(grid.getAddress())) {
                             tableIo.getItems().add(new LadderTableIo(pane.getLadder().getName(), address,
                                     grid.getBlock().toString(), grid.getColumnIndex(), grid.getRowIndex()));

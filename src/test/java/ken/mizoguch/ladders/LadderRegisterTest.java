@@ -164,4 +164,14 @@ class LadderRegisterTest {
         assertNull(register.isRegistered(null));
         assertFalse(register.isRegistered(new Object()));
     }
+
+    @Test
+    void registerSoemRefusesEmptyAddress() {
+        LadderRegister register = register(store());
+
+        assertFalse(register.registerIn(new Soem(), "", 1, 0L, 1L));
+        assertFalse(register.registerOut(new Soem(), "   ", 1, 0L, 1L));
+        assertTrue(register.getRegisterSoemIn().isEmpty());
+        assertTrue(register.getRegisterSoemOut().isEmpty());
+    }
 }

@@ -7,7 +7,6 @@ package ken.mizoguch.ladders;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -84,7 +83,8 @@ public class Ladders extends Service<Void> {
      * use as their live io
      */
     private final LadderIoStore ioStore_;
-    private long idealCycleTime_;
+    private volatile long idealCycleTime_;
+    private volatile long lastCycleTime_, minCycleTime_, maxCycleTime_;
     private volatile boolean isCycling_, isChanged_;
     /**
      * run the javascript of the script blocks of a ladder loaded from a file
@@ -414,7 +414,9 @@ public class Ladders extends Service<Void> {
             register_.clearSoem();
             ioStore_.clear();
             ladders_ = null;
+            laddersSize_ = 0;
         }
+        updateCycleTimes(0L, 0L, 0L);
 
         tabLadder_.getTabs().clear();
         treeTableIo_.getRoot().getChildren().clear();
@@ -531,12 +533,6 @@ public class Ladders extends Service<Void> {
         int idx = ladder.getIdx();
 
         if (idx > 1) {
-            TreeItem<LadderTreeTableIo> treeItem = treeTableIo_.getRoot().getChildren().get(idx);
-            treeTableIo_.getRoot().getChildren().set(idx, treeTableIo_.getRoot().getChildren().get(idx - 1));
-            treeTableIo_.getRoot().getChildren().set(idx - 1, treeItem);
-
-            ioStore_.swapLadderRows(idx, idx - 1);
-
             ladderCommand_.ladderMoveLeft(ladder);
             isChanged_ = true;
 
@@ -555,12 +551,6 @@ public class Ladders extends Service<Void> {
         int idx = ladder.getIdx();
 
         if (idx < getTabLadder().getTabs().size()) {
-            TreeItem<LadderTreeTableIo> treeItem = treeTableIo_.getRoot().getChildren().get(idx);
-            treeTableIo_.getRoot().getChildren().set(idx, treeTableIo_.getRoot().getChildren().get(idx + 1));
-            treeTableIo_.getRoot().getChildren().set(idx + 1, treeItem);
-
-            ioStore_.swapLadderRows(idx, idx + 1);
-
             ladderCommand_.ladderMoveRight(ladder);
             isChanged_ = true;
 
@@ -611,7 +601,7 @@ public class Ladders extends Service<Void> {
                 }
             }
 
-            if (tab != null) {
+            if ((tab != null) && (pane != null)) {
                 pane.setChanged(true);
                 tab.setText(pane.getLadder().getName() + " *");
             }
@@ -639,7 +629,7 @@ public class Ladders extends Service<Void> {
                 }
             }
 
-            if (tab != null) {
+            if ((tab != null) && (pane != null)) {
                 pane.setChanged(true);
                 tab.setText(pane.getLadder().getName() + " *");
             }
@@ -709,7 +699,9 @@ public class Ladders extends Service<Void> {
         ladderCommand_ = new LadderCommand(stage_, icons_, this);
         ladderCommand_.setHistoryGeneration(historyGeneration_);
 
-        fileStore_.setFilePath(ladderPath);
+        if (fileStore_.getFilePath() == null) {
+            fileStore_.setFilePath(ladderPath);
+        }
         ladderNew();
         return false;
     }
@@ -720,7 +712,14 @@ public class Ladders extends Service<Void> {
     public void cleanUp() {
         // clear
         allClear();
-        cancel();
+        if (Platform.isFxApplicationThread()) {
+            cancel();
+        } else {
+            try {
+                Platform.runLater(this::cancel);
+            } catch (IllegalStateException ex) {
+            }
+        }
     }
 
     @Override
@@ -751,6 +750,24 @@ public class Ladders extends Service<Void> {
     public void setIdealCycleTime(long idealCycleTime) {
         idealCycleTime_ = idealCycleTime;
         ladderController_.setIdealCycleTime(idealCycleTime_);
+    }
+
+    void updateCycleTimes(long lastCycleTime, long minCycleTime, long maxCycleTime) {
+        lastCycleTime_ = lastCycleTime;
+        minCycleTime_ = minCycleTime;
+        maxCycleTime_ = maxCycleTime;
+    }
+
+    public long getCycleTime() {
+        return lastCycleTime_;
+    }
+
+    public long getMinCycleTime() {
+        return minCycleTime_;
+    }
+
+    public long getMaxCycleTime() {
+        return maxCycleTime_;
     }
 
     /**
@@ -942,11 +959,14 @@ public class Ladders extends Service<Void> {
      * @return true when the cycle task is no longer running
      */
     public boolean awaitCycleStop(long timeoutMillis) {
-        long deadline = System.currentTimeMillis() + Math.max(0, timeoutMillis);
         final AtomicBoolean finished = cycleFinished_;
+        if (finished == null) {
+            return !isCycling_;
+        }
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(0L, timeoutMillis));
 
         while (!finished.get() || isCycling_) {
-            if (System.currentTimeMillis() >= deadline) {
+            if (System.nanoTime() >= deadline) {
                 break;
             }
             try {

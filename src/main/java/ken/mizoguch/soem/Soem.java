@@ -25,14 +25,14 @@ import ken.mizoguch.decotofu.JavaLibrary;
  */
 public class Soem {
 
-    private SoemLibrary soem_;
-    private jnr.ffi.Runtime runtime_;
+    private volatile SoemLibrary soem_;
+    private volatile jnr.ffi.Runtime runtime_;
 
-    private SoemEtherCAT.ecx_parcelt parcel_;
-    private SoemEtherCATMain.ecx_contextt context_;
-    private SoemEcatThread ecatThread_;
+    private volatile SoemEtherCAT.ecx_parcelt parcel_;
+    private volatile SoemEtherCATMain.ecx_contextt context_;
+    private volatile SoemEcatThread ecatThread_;
 
-    private Pointer pIOmap_;
+    private volatile Pointer pIOmap_;
 
     private final Gson gson_ = new Gson();
 
@@ -84,6 +84,25 @@ public class Soem {
         pIOmap_ = null;
     }
 
+    Soem(SoemLibrary soem, jnr.ffi.Runtime runtime) {
+        soem_ = soem;
+        runtime_ = runtime;
+        parcel_ = null;
+        context_ = null;
+        ecatThread_ = null;
+        pIOmap_ = null;
+    }
+
+    Soem(SoemLibrary soem, jnr.ffi.Runtime runtime, SoemEtherCATMain.ecx_contextt context,
+            SoemEtherCAT.ecx_parcelt parcel, SoemEcatThread ecatThread) {
+        soem_ = soem;
+        runtime_ = runtime;
+        context_ = context;
+        parcel_ = parcel;
+        ecatThread_ = ecatThread;
+        pIOmap_ = null;
+    }
+
     public Boolean load(Path libraryPath) {
         if ((soem_ == null) && (runtime_ == null)) {
             try {
@@ -102,8 +121,13 @@ public class Soem {
                     // library is already registered, that is not a failure
                     JavaLibrary.addLibraryPath(parent, libraryName, false);
                 }
-                soem_ = LibraryLoader.create(SoemLibrary.class).load(libraryName);
-                runtime_ = jnr.ffi.Runtime.getRuntime(soem_);
+                SoemLibrary soem = LibraryLoader.create(SoemLibrary.class).load(libraryName);
+                jnr.ffi.Runtime runtime = jnr.ffi.Runtime.getRuntime(soem);
+                if (!verifyNativeAbi(soem, runtime)) {
+                    return null;
+                }
+                soem_ = soem;
+                runtime_ = runtime;
                 return true;
             } catch (UnsatisfiedLinkError ex) {
                 Console.write(Soem.class.getName(), "the library can not be loaded : " + libraryPath, true);
@@ -120,12 +144,103 @@ public class Soem {
         return false;
     }
 
+    /**
+     * verify that the native library constants and struct byte sizes match the
+     * JNR-FFI definitions before any context or parcel is allocated. Older
+     * DecoTofu-SOEM builds that do not export introspection symbols are tolerated.
+     */
+    static boolean verifyNativeAbi(SoemLibrary soem, jnr.ffi.Runtime runtime) {
+        if ((soem == null) || (runtime == null)) {
+            return false;
+        }
+        try {
+            int maxSlave = soem.ec_max_slave();
+            if (maxSlave != SoemEtherCATMain.EC_MAXSLAVE) {
+                Console.write(Soem.class.getName(), "SOEM ABI mismatch : EC_MAXSLAVE expected ["
+                        + SoemEtherCATMain.EC_MAXSLAVE + "] native [" + maxSlave + "]", true);
+                return false;
+            }
+            int maxGroup = soem.ec_max_group();
+            if (maxGroup != SoemEtherCATMain.EC_MAXGROUP) {
+                Console.write(Soem.class.getName(), "SOEM ABI mismatch : EC_MAXGROUP expected ["
+                        + SoemEtherCATMain.EC_MAXGROUP + "] native [" + maxGroup + "]", true);
+                return false;
+            }
+            long expectedParcel = SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCAT.ecx_parcelt(runtime));
+            long actualParcel = soem.ec_sizeof_parcel();
+            if (actualParcel != expectedParcel) {
+                Console.write(Soem.class.getName(), "SOEM ABI mismatch : sizeof(ecx_parcelt) expected ["
+                        + expectedParcel + "] native [" + actualParcel + "]", true);
+                return false;
+            }
+            long expectedSlave = SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCATMain.ec_slavet(runtime));
+            long actualSlave = soem.ec_sizeof_slave();
+            if (actualSlave != expectedSlave) {
+                Console.write(Soem.class.getName(), "SOEM ABI mismatch : sizeof(ec_slavet) expected ["
+                        + expectedSlave + "] native [" + actualSlave + "]", true);
+                return false;
+            }
+            long expectedGroup = SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCATMain.ec_groupt(runtime));
+            long actualGroup = soem.ec_sizeof_group();
+            if (actualGroup != expectedGroup) {
+                Console.write(Soem.class.getName(), "SOEM ABI mismatch : sizeof(ec_groupt) expected ["
+                        + expectedGroup + "] native [" + actualGroup + "]", true);
+                return false;
+            }
+            long expectedContext = SoemEtherCATMain.ecx_contextt.expectedByteSize(runtime);
+            long actualContext = soem.ec_sizeof_context();
+            if (actualContext != expectedContext) {
+                Console.write(Soem.class.getName(), "SOEM ABI mismatch : sizeof(ecx_contextt) expected ["
+                        + expectedContext + "] native [" + actualContext + "]", true);
+                return false;
+            }
+        } catch (UnsatisfiedLinkError ex) {
+            return true;
+        }
+        return true;
+    }
+
+    public boolean isLoaded() {
+        return (soem_ != null) && (runtime_ != null);
+    }
+
+    public boolean isRunning() {
+        SoemEcatThread ecatThread = ecatThread_;
+        return (ecatThread != null) && ecatThread.isInitialized();
+    }
+
+    public String version() {
+        SoemLibrary soem = soem_;
+        if (soem != null) {
+            try {
+                return soem.ec_version();
+            } catch (UnsatisfiedLinkError ex) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     public Boolean init(int ioSize) {
         if (soem_ != null) {
+            if (ioSize <= 0) {
+                return false;
+            }
             if ((parcel_ == null) && (context_ == null) && (pIOmap_ == null) && (ecatThread_ == null)) {
+                SoemEtherCATMain.ecx_contextt ctx = soem_.ec_malloc_context();
+                if (ctx == null) {
+                    return false;
+                }
+                ctx = ctx.register();
+                SoemEtherCAT.ecx_parcelt parcel = soem_.ec_malloc_parcel(ctx);
+                if (parcel == null) {
+                    soem_.ec_free_context(ctx);
+                    return false;
+                }
+                parcel = parcel.register();
                 pIOmap_ = Memory.allocateDirect(runtime_, ioSize, true);
-                context_ = soem_.ec_malloc_context().register();
-                parcel_ = soem_.ec_malloc_parcel(context_).register();
+                context_ = ctx;
+                parcel_ = parcel;
                 ecatThread_ = new SoemEcatThread(soem_, parcel_, context_, ecatLock_);
                 return true;
             }
@@ -136,8 +251,9 @@ public class Soem {
 
     public Boolean po2so(int slave, long eep_man, long eep_id, Callable<Integer> func) {
         if (soem_ != null) {
-            if (ecatThread_ != null) {
-                ecatThread_.po2so(slave, eep_man, eep_id, func);
+            SoemEcatThread ecatThread = ecatThread_;
+            if (ecatThread != null) {
+                ecatThread.po2so(slave, eep_man, eep_id, func);
                 return true;
             }
             return false;
@@ -147,12 +263,15 @@ public class Soem {
 
     public Boolean start(String ifname, String ifname2, long cycletime, SoemPluginListener listener) {
         if (soem_ != null) {
-            if (ecatThread_ != null) {
-                ecatThread_.addSoemEcatListener(listener);
-                if (ecatThread_.init(ifname, ifname2, pIOmap_)) {
-                    parcel_.wkc.set(0);
-                    parcel_.cycletime.set(cycletime);
-                    parcel_.dorun.set(SoemOsal.TRUE);
+            SoemEcatThread ecatThread = ecatThread_;
+            SoemEtherCAT.ecx_parcelt parcel = parcel_;
+            Pointer pIOmap = pIOmap_;
+            if ((ecatThread != null) && (parcel != null) && (pIOmap != null)) {
+                ecatThread.addSoemEcatListener(listener);
+                if (ecatThread.init(ifname, ifname2, pIOmap)) {
+                    parcel.wkc.set(0);
+                    parcel.cycletime.set(cycletime);
+                    parcel.dorun.set(SoemOsal.TRUE);
                     if (Platform.isFxApplicationThread()) {
                         runEcatThread();
                     } else {
@@ -169,34 +288,49 @@ public class Soem {
     }
 
     private void runEcatThread() {
-        if (ecatThread_.getState() == Worker.State.READY) {
-            ecatThread_.start();
+        SoemEcatThread ecatThread = ecatThread_;
+        if (ecatThread == null) {
+            return;
+        }
+        if (ecatThread.getState() == Worker.State.READY) {
+            ecatThread.start();
         } else {
-            ecatThread_.restart();
+            ecatThread.restart();
         }
     }
 
     public Boolean setNotifyCheck(boolean state) {
-        if (ecatThread_ != null) {
-            return ecatThread_.setNotifyCheck(state);
+        SoemEcatThread ecatThread = ecatThread_;
+        if (ecatThread != null) {
+            return ecatThread.setNotifyCheck(state);
         }
         return null;
     }
 
     public Boolean close(SoemPluginListener listener) {
         if (soem_ != null) {
+            SoemEcatThread ecatThread = ecatThread_;
+            SoemEtherCAT.ecx_parcelt parcel = parcel_;
+            SoemEtherCATMain.ecx_contextt context = context_;
             // the port of SOEM is closed only when ecx_init() opened it
-            boolean closePort = (ecatThread_ == null) || ecatThread_.isPortOpen();
+            boolean closePort = (ecatThread == null) || ecatThread.isPortOpen();
 
-            if ((ecatThread_ != null) && (parcel_ != null)) {
+            if ((ecatThread != null) && (parcel != null)) {
                 // stop the cyclic process before to wait the end of the native calls
-                parcel_.dorun.set(SoemOsal.FALSE);
+                parcel.dorun.set(SoemOsal.FALSE);
             }
-            if (ecatThread_ != null) {
-                ecatThread_.exit();
-                ecatThread_.cancel();
-                ecatThread_.removeSoemEcatListener(listener);
-                if (!ecatThread_.awaitTermination(ECAT_TERMINATION_WAIT_MILLIS)) {
+            if (ecatThread != null) {
+                ecatThread.exit();
+                if (Platform.isFxApplicationThread()) {
+                    ecatThread.cancel();
+                } else {
+                    try {
+                        Platform.runLater(ecatThread::cancel);
+                    } catch (IllegalStateException ex) {
+                    }
+                }
+                ecatThread.removeSoemEcatListener(listener);
+                if (!ecatThread.awaitTermination(ECAT_TERMINATION_WAIT_MILLIS)) {
                     // the native calls of the java tasks are still running : keep the native
                     // memory to avoid a crash
                     Console.write(Soem.class.getName(),
@@ -205,25 +339,25 @@ public class Soem {
                 }
                 // the thread of the process data is a thread of the shared library and not a
                 // java task : it has to be out of ecatthread() before the parcel is freed
-                if (!waitEcatThread()) {
+                if (!waitEcatThread(soem_, parcel)) {
                     Console.write(Soem.class.getName(),
                             "the ecat thread is still running : the native memory is not freed", true);
                     return false;
                 }
                 // every native call is over : the slaves can be left in INIT state
-                ecatThread_.shutdown();
+                ecatThread.shutdown();
                 ecatThread_ = null;
             }
-            if (parcel_ != null) {
-                parcel_.dorun.set(SoemOsal.FALSE);
-                soem_.ec_free_parcel(parcel_);
+            if (parcel != null) {
+                parcel.dorun.set(SoemOsal.FALSE);
+                soem_.ec_free_parcel(parcel);
                 parcel_ = null;
             }
-            if (context_ != null) {
+            if (context != null) {
                 if (closePort) {
-                    soem_.ecx_close(context_);
+                    soem_.ecx_close(context);
                 }
-                soem_.ec_free_context(context_);
+                soem_.ec_free_context(context);
                 context_ = null;
             }
             pIOmap_ = null;
@@ -241,9 +375,17 @@ public class Soem {
      * @return true when the thread is known to be out of ecatthread() or when
      * one cycle was waited on a platform that can not join it
      */
-    private boolean waitEcatThread() {
+    private boolean waitEcatThread(SoemLibrary soem, SoemEtherCAT.ecx_parcelt parcel) {
+        if ((soem == null) || (parcel == null)) {
+            return true;
+        }
         try {
-            int ret = soem_.ec_wait_thread(parcel_, ECAT_THREAD_JOIN_WAIT_MILLIS);
+            int ret;
+            try {
+                ret = soem.ec_stop(parcel, ECAT_THREAD_JOIN_WAIT_MILLIS);
+            } catch (UnsatisfiedLinkError ex) {
+                ret = soem.ec_wait_thread(parcel, ECAT_THREAD_JOIN_WAIT_MILLIS);
+            }
 
             if (ret > 0) {
                 return true;
@@ -259,7 +401,7 @@ public class Soem {
             Console.write(Soem.class.getName(), "ec_wait_thread() is not exported : one cycle is waited", true);
         }
         try {
-            TimeUnit.MILLISECONDS.sleep((parcel_.cycletime.get() / EC_NSEC_PER_MILLIS)
+            TimeUnit.MILLISECONDS.sleep((parcel.cycletime.get() / EC_NSEC_PER_MILLIS)
                     + (SoemEtherCATType.EC_TIMEOUTRET / 1000) + ECAT_CYCLE_WAIT_MARGIN_MILLIS);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -269,8 +411,9 @@ public class Soem {
     }
 
     public Integer slavecount() {
-        if (context_ != null) {
-            return context_.slavecount.get();
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (context != null) {
+            return context.slavecount.get();
         }
         return null;
     }
@@ -278,46 +421,193 @@ public class Soem {
     /**
      * check the slave index against the slave list of the context
      *
+     * @param context
      * @param slave
      * @return
      */
-    private boolean checkSlave(int slave) {
-        return (context_ != null) && (slave >= 0) && (slave <= context_.slavecount.get())
-                && (slave < context_.slavelist.length);
+    private static boolean checkSlave(SoemEtherCATMain.ecx_contextt context, int slave) {
+        return (context != null) && (slave >= 0) && (slave <= context.slavecount.get())
+                && (slave < context.slavelist.length);
     }
 
     public Integer state(int slave) {
-        if (checkSlave(slave)) {
-            return context_.slavelist[slave].state.get();
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (checkSlave(context, slave)) {
+            return context.slavelist[slave].state.get();
         }
         return null;
     }
 
     public Boolean islost(int slave) {
-        if (checkSlave(slave)) {
-            return (context_.slavelist[slave].islost.get() == SoemOsal.TRUE);
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (checkSlave(context, slave)) {
+            return (context.slavelist[slave].islost.get() == SoemOsal.TRUE);
         }
         return null;
     }
 
     public Boolean docheckstate() {
-        if (context_ != null) {
-            return (context_.grouplist[0].docheckstate.get() == SoemOsal.TRUE);
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (context != null) {
+            return (context.grouplist[0].docheckstate.get() == SoemOsal.TRUE);
+        }
+        return null;
+    }
+
+    public Boolean setOverlappedMode(boolean enable) {
+        if (soem_ == null) {
+            return null;
+        }
+        SoemEtherCATMain.ecx_contextt context = context_;
+        SoemEcatThread ecatThread = ecatThread_;
+        if ((context != null) && ((ecatThread == null) || (!ecatThread.isPortOpen() && !ecatThread.isInitialized()))) {
+            context.overlappedMode.set((short) (enable ? SoemOsal.TRUE : SoemOsal.FALSE));
+            return true;
+        }
+        return false;
+    }
+
+    public Boolean isOverlappedMode() {
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (context != null) {
+            return (context.overlappedMode.get() == SoemOsal.TRUE);
+        }
+        return null;
+    }
+
+    public Boolean setPackedMode(boolean enable) {
+        if (soem_ == null) {
+            return null;
+        }
+        SoemEtherCATMain.ecx_contextt context = context_;
+        SoemEcatThread ecatThread = ecatThread_;
+        if ((context != null) && ((ecatThread == null) || (!ecatThread.isPortOpen() && !ecatThread.isInitialized()))) {
+            context.packedMode.set((short) (enable ? SoemOsal.TRUE : SoemOsal.FALSE));
+            return true;
+        }
+        return false;
+    }
+
+    public Boolean isPackedMode() {
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (context != null) {
+            return (context.packedMode.get() == SoemOsal.TRUE);
+        }
+        return null;
+    }
+
+    public Boolean enableCyclicMailbox(int slave) {
+        SoemLibrary soem = soem_;
+        if (soem == null) {
+            return null;
+        }
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if ((slave >= 1) && checkSlave(context, slave)) {
+            synchronized (ecatLock_) {
+                return soem.ecx_slavembxcyclic(context, slave) > 0;
+            }
+        }
+        return false;
+    }
+
+    public Boolean dcsync0(int slave, boolean act, long cyclTime, int cyclShift) {
+        SoemLibrary soem = soem_;
+        if (soem == null) {
+            return null;
+        }
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if ((slave >= 1) && checkSlave(context, slave) && (cyclTime >= 0) && (cyclTime <= 0xFFFFFFFFL)) {
+            synchronized (ecatLock_) {
+                soem.ecx_dcsync0(context, slave, act ? SoemOsal.TRUE : SoemOsal.FALSE, cyclTime, cyclShift);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public Boolean dcsync01(int slave, boolean act, long cyclTime0, long cyclTime1, int cyclShift) {
+        SoemLibrary soem = soem_;
+        if (soem == null) {
+            return null;
+        }
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if ((slave >= 1) && checkSlave(context, slave) && (cyclTime0 >= 0) && (cyclTime0 <= 0xFFFFFFFFL)
+                && (cyclTime1 >= 0) && (cyclTime1 <= 0xFFFFFFFFL)) {
+            synchronized (ecatLock_) {
+                soem.ecx_dcsync01(context, slave, act ? SoemOsal.TRUE : SoemOsal.FALSE, cyclTime0, cyclTime1,
+                        cyclShift);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public Integer wkc() {
+        SoemEtherCAT.ecx_parcelt parcel = parcel_;
+        if (parcel != null) {
+            return parcel.wkc.get();
+        }
+        return null;
+    }
+
+    public Integer expectedWkc() {
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (context != null) {
+            return (context.grouplist[0].outputsWKC.get() * 2) + context.grouplist[0].inputsWKC.get();
+        }
+        return null;
+    }
+
+    public Long dcTime() {
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (context != null) {
+            return context.DCtime.get();
+        }
+        return null;
+    }
+
+    public Boolean isError() {
+        SoemLibrary soem = soem_;
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if ((soem != null) && (context != null)) {
+            synchronized (ecatLock_) {
+                return soem.ecx_iserror(context) == SoemOsal.TRUE;
+            }
+        }
+        return null;
+    }
+
+    public String popError() {
+        SoemLibrary soem = soem_;
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if ((soem != null) && (context != null)) {
+            synchronized (ecatLock_) {
+                if (soem.ecx_iserror(context) == SoemOsal.TRUE) {
+                    return soem.ecx_elist2string(context);
+                }
+            }
         }
         return null;
     }
 
     public Byte[] sdoRead(int slave, int index, int subIndex, int byteSize) {
-        if (checkSlave(slave) && (byteSize > 0)) {
-            Pointer psize = Memory.allocate(runtime_, Integer.BYTES);
-            Pointer p = Memory.allocate(runtime_, byteSize);
+        return sdoRead(slave, index, subIndex, false, byteSize);
+    }
+
+    public Byte[] sdoRead(int slave, int index, int subIndex, boolean completeAccess, int byteSize) {
+        SoemLibrary soem = soem_;
+        jnr.ffi.Runtime runtime = runtime_;
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if ((soem != null) && (runtime != null) && checkSlave(context, slave) && (byteSize > 0)) {
+            Pointer psize = Memory.allocate(runtime, Integer.BYTES);
+            Pointer p = Memory.allocate(runtime, byteSize);
             int wkc;
 
             psize.putInt(0, byteSize);
             // the mailbox of the slave is shared with the monitor task
             synchronized (ecatLock_) {
-                wkc = soem_.ecx_SDOread(context_, slave, index, subIndex, SoemOsal.FALSE, psize, p,
-                        SoemEtherCATType.EC_TIMEOUTRXM);
+                wkc = soem.ecx_SDOread(context, slave, index, subIndex,
+                        completeAccess ? SoemOsal.TRUE : SoemOsal.FALSE, psize, p, SoemEtherCATType.EC_TIMEOUTRXM);
             }
             if (wkc > 0) {
                 int size = psize.getInt(0);
@@ -337,13 +627,22 @@ public class Soem {
     }
 
     public Integer sdoWrite(int slave, int index, int subIndex, byte[] value) {
-        if (checkSlave(slave) && (value != null)) {
-            Pointer p = Memory.allocate(runtime_, value.length);
+        return sdoWrite(slave, index, subIndex, false, value);
+    }
+
+    public Integer sdoWrite(int slave, int index, int subIndex, boolean completeAccess, byte[] value) {
+        SoemLibrary soem = soem_;
+        jnr.ffi.Runtime runtime = runtime_;
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if ((soem != null) && (runtime != null) && checkSlave(context, slave) && (value != null)
+                && (value.length > 0)) {
+            Pointer p = Memory.allocate(runtime, value.length);
 
             p.put(0, value, 0, value.length);
             // the mailbox of the slave is shared with the monitor task
             synchronized (ecatLock_) {
-                return soem_.ecx_SDOwrite(context_, slave, index, subIndex, SoemOsal.FALSE, value.length, p,
+                return soem.ecx_SDOwrite(context, slave, index, subIndex,
+                        completeAccess ? SoemOsal.TRUE : SoemOsal.FALSE, value.length, p,
                         SoemEtherCATType.EC_TIMEOUTRXM);
             }
         }
@@ -351,8 +650,9 @@ public class Soem {
     }
 
     public Long in(int slave, long bitsOffset, long bitsMask) {
-        if (checkSlave(slave)) {
-            SoemEtherCATMain.ec_slavet sl = context_.slavelist[slave];
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (checkSlave(context, slave)) {
+            SoemEtherCATMain.ec_slavet sl = context.slavelist[slave];
 
             return readBits(bitsOffset, bitsMask, sl.inputs.get(), sl.Istartbit.get(), sl.Ibits.get());
         }
@@ -360,8 +660,9 @@ public class Soem {
     }
 
     public Long out(int slave, long bitsOffset, long bitsMask) {
-        if (checkSlave(slave)) {
-            SoemEtherCATMain.ec_slavet sl = context_.slavelist[slave];
+        SoemEtherCATMain.ecx_contextt context = context_;
+        if (checkSlave(context, slave)) {
+            SoemEtherCATMain.ec_slavet sl = context.slavelist[slave];
 
             return readBits(bitsOffset, bitsMask, sl.outputs.get(), sl.Ostartbit.get(), sl.Obits.get());
         }
@@ -373,15 +674,15 @@ public class Soem {
      * the bits of the neighbours of the slave are never read
      *
      * @param bitsOffset offset of the variable in the bits of the slave
-     * @param bitsMask bit mask of the variable (&gt; 0)
+     * @param bitsMask bit mask of the variable (non-zero, all 64 bits supported)
      * @param map map of the slave, null when the slave has none
      * @param mapStartbit bit offset of the map of the slave in the first byte of
      * the map of the group
      * @param mapBits number of the bits of the map of the slave
      * @return the value of the variable, null when it is not in the map
      */
-    private Long readBits(long bitsOffset, long bitsMask, Pointer map, int mapStartbit, long mapBits) {
-        if ((map == null) || (bitsMask <= 0) || (bitsOffset < 0) || (bitsOffset >= mapBits)) {
+    static Long readBits(long bitsOffset, long bitsMask, Pointer map, int mapStartbit, long mapBits) {
+        if ((map == null) || (bitsMask == 0) || (bitsOffset < 0) || (bitsOffset >= mapBits)) {
             return null;
         }
         long bits = mapBits - bitsOffset;
@@ -389,14 +690,19 @@ public class Soem {
         if (bits < SoemBits.MAX_BITS) {
             bitsMask &= (1L << bits) - 1;
         }
+        if (bitsMask == 0) {
+            return 0L;
+        }
         return SoemBits.read(map, bitsOffset / 8, mapStartbit + ((int) (bitsOffset % 8)), bitsMask,
                 SoemBits.mapBytes(mapStartbit, mapBits));
     }
 
     public Long out(int slave, long bitsOffset, long bitsMask, long value) {
-        if (checkSlave(slave) && (ecatThread_ != null)) {
-            if ((bitsOffset >= 0) && (bitsOffset < context_.slavelist[slave].Obits.get())) {
-                return ecatThread_.out(slave, bitsOffset, bitsMask, value);
+        SoemEtherCATMain.ecx_contextt context = context_;
+        SoemEcatThread ecatThread = ecatThread_;
+        if (checkSlave(context, slave) && (ecatThread != null)) {
+            if ((bitsOffset >= 0) && (bitsOffset < context.slavelist[slave].Obits.get())) {
+                return ecatThread.out(slave, bitsOffset, bitsMask, value);
             }
         }
         return null;
@@ -410,16 +716,18 @@ public class Soem {
      * null when the shared library of SOEM is not loaded or the call failed
      */
     public String find_adapters() {
-        if (soem_ != null) {
+        SoemLibrary soem = soem_;
+        jnr.ffi.Runtime runtime = runtime_;
+        if ((soem != null) && (runtime != null)) {
             // the order of the machine is kept : the description is only a label
             // for the user, the name behind it is what SOEM opens
             Map<String, String> adapters = new LinkedHashMap<>();
             Pointer list = null;
 
             try {
-                list = soem_.ec_adapters();
+                list = soem.ec_adapters();
                 if (list != null) {
-                    SoemEtherCATMain.ec_adaptert adapter = new SoemEtherCATMain.ec_adaptert(runtime_);
+                    SoemEtherCATMain.ec_adaptert adapter = new SoemEtherCATMain.ec_adaptert(runtime);
 
                     adapter.useMemory(list);
                     for (int i = 0; (adapter != null) && (i < ADAPTERS_MAX); i++) {
@@ -430,7 +738,7 @@ public class Soem {
 
                             adapters.put((desc == null) ? name : desc, name);
                         }
-                        adapter = adapter.getNext(runtime_);
+                        adapter = adapter.getNext(runtime);
                     }
                 }
                 if (adapters.isEmpty()) {
@@ -445,7 +753,7 @@ public class Soem {
                 Console.writeStackTrace(Soem.class.getName(), ex);
             } finally {
                 if (list != null) {
-                    soem_.ec_free_adapters_list(list);
+                    soem.ec_free_adapters_list(list);
                 }
             }
         }
@@ -453,11 +761,15 @@ public class Soem {
     }
 
     public String slaveinfo(boolean printSDO, boolean printMAP) {
-        if (soem_ != null) {
+        SoemLibrary soem = soem_;
+        jnr.ffi.Runtime runtime = runtime_;
+        SoemEtherCATMain.ecx_contextt context = context_;
+        Pointer pIOmap = pIOmap_;
+        if ((soem != null) && (runtime != null)) {
             // the mailboxes and the state of the slaves are read : the monitor
             // task and the sdo calls of the java side use them at the same time
             synchronized (ecatLock_) {
-                SoemSlaveInfo soemSlaveInfo = new SoemSlaveInfo(soem_, runtime_, context_, pIOmap_);
+                SoemSlaveInfo soemSlaveInfo = new SoemSlaveInfo(soem, runtime, context, pIOmap);
                 return gson_.toJson(soemSlaveInfo.info(printSDO, printMAP));
             }
         }

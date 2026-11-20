@@ -119,12 +119,16 @@ public class LadderTableIo {
      * @param position
      */
     public void setPosition(String position) {
+        if (position == null) {
+            return;
+        }
         String[] pos = position.split(":");
-        int column, row;
-
+        if (pos.length < 2) {
+            return;
+        }
         try {
-            column = Integer.parseInt(pos[0]);
-            row = Integer.parseInt(pos[1]);
+            int column = Integer.parseInt(pos[0].trim());
+            int row = Integer.parseInt(pos[1].trim());
             column_ = column;
             row_ = row;
             position_.set(column_ + " : " + row_);

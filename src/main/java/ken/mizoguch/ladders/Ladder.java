@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableView;
 import ken.mizoguch.console.Console;
@@ -300,9 +301,7 @@ public class Ladder {
     private int connectRoute(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
             TreeTableView<LadderTreeTableIo> ioTreeTable, LadderGrid grid, int connectNumber, int connectNumberLast) {
         LadderGrid lgrid, ugrid, rgrid, dgrid;
-        String address, functionAddress;
-        int idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-        int funcIdx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+        String address;
 
         if (grid != null) {
             lgrid = grid.getLeftLadderGrid();
@@ -319,11 +318,8 @@ public class Ladder {
                     case LOAD_FALLING:
                     case LOAD_FALLING_NOT:
                         address = grid.getAddress();
-                        if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            idx = idx_;
-                        }
-                        if (!LadderNumber.isNumber(address)) {
-                            registerIo(ioMap, ioTreeTable, idx, address);
+                        if ((address != null) && !address.isEmpty() && !LadderNumber.isNumber(address)) {
+                            registerIo(ioMap, ioTreeTable, addressIndex(address), address);
                             grid.setInConnectNumber(connectNumber);
                             grid.setOutConnectNumber(0);
                             inGrids_.add(grid);
@@ -343,22 +339,9 @@ public class Ladder {
                     case COMPARISON_OR_BITS:
                     case COMPARISON_XOR_BITS:
                         address = grid.getAddress();
-                        if (!LadderNumber.isNumber(address)) {
-                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                idx = idx_;
-                            }
-                            registerIo(ioMap, ioTreeTable, idx, address);
-                            if (!grid.getBlockFunctions()[0].isNumber()) {
-                                functionAddress = grid.getBlockFunctions()[0].getAddress();
-                                if (!LadderNumber.isNumber(functionAddress)) {
-                                    if (functionAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                        funcIdx = idx_;
-                                    }
-                                    registerIo(ioMap, ioTreeTable, funcIdx, functionAddress);
-                                } else {
-                                    writeNumericAddressError(grid);
-                                }
-                            }
+                        if ((address != null) && !address.isEmpty() && !LadderNumber.isNumber(address)) {
+                            registerIo(ioMap, ioTreeTable, addressIndex(address), address);
+                            registerFunctionIo(ioMap, ioTreeTable, grid, 0);
                             grid.setInConnectNumber(connectNumber);
                             grid.setOutConnectNumber(0);
                             inGrids_.add(grid);
@@ -376,15 +359,11 @@ public class Ladder {
                     case OUT_FALLING_NOT:
                     case SET:
                     case RESET:
-                    case NOT_BITS:
                     case RANDOM:
                     case SCRIPT:
                         address = grid.getAddress();
-                        if (!LadderNumber.isNumber(address)) {
-                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                idx = idx_;
-                            }
-                            registerIo(ioMap, ioTreeTable, idx, address);
+                        if ((address != null) && !address.isEmpty() && !LadderNumber.isNumber(address)) {
+                            registerIo(ioMap, ioTreeTable, addressIndex(address), address);
                             grid.setInConnectNumber(connectNumber);
                             grid.setOutConnectNumber(0);
                             outGrids_.add(grid);
@@ -406,33 +385,10 @@ public class Ladder {
                     case SHIFT_RIGHT_BITS:
                     case SIGMOID:
                         address = grid.getAddress();
-                        if (!LadderNumber.isNumber(address)) {
-                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                idx = idx_;
-                            }
-                            registerIo(ioMap, ioTreeTable, idx, address);
-                            if (!grid.getBlockFunctions()[0].isNumber()) {
-                                functionAddress = grid.getBlockFunctions()[0].getAddress();
-                                if (!LadderNumber.isNumber(functionAddress)) {
-                                    if (functionAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                        funcIdx = idx_;
-                                    }
-                                    registerIo(ioMap, ioTreeTable, funcIdx, functionAddress);
-                                } else {
-                                    writeNumericAddressError(grid);
-                                }
-                            }
-                            if (!grid.getBlockFunctions()[1].isNumber()) {
-                                functionAddress = grid.getBlockFunctions()[1].getAddress();
-                                if (!LadderNumber.isNumber(functionAddress)) {
-                                    if (functionAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                        funcIdx = idx_;
-                                    }
-                                    registerIo(ioMap, ioTreeTable, funcIdx, functionAddress);
-                                } else {
-                                    writeNumericAddressError(grid);
-                                }
-                            }
+                        if ((address != null) && !address.isEmpty() && !LadderNumber.isNumber(address)) {
+                            registerIo(ioMap, ioTreeTable, addressIndex(address), address);
+                            registerFunctionIo(ioMap, ioTreeTable, grid, 0);
+                            registerFunctionIo(ioMap, ioTreeTable, grid, 1);
                             grid.setInConnectNumber(connectNumber);
                             grid.setOutConnectNumber(0);
                             outGrids_.add(grid);
@@ -442,28 +398,16 @@ public class Ladder {
                             writeNumericAddressError(grid);
                         }
                         break;
+                    case NOT_BITS:
                     case TIMER:
                     case TIMER_NOT:
                     case COUNTER:
                     case COUNTER_NOT:
                     case MOVE:
                         address = grid.getAddress();
-                        if (!LadderNumber.isNumber(address)) {
-                            if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                idx = idx_;
-                            }
-                            registerIo(ioMap, ioTreeTable, idx, address);
-                            if (!grid.getBlockFunctions()[0].isNumber()) {
-                                functionAddress = grid.getBlockFunctions()[0].getAddress();
-                                if (!LadderNumber.isNumber(functionAddress)) {
-                                    if (functionAddress.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                                        funcIdx = idx_;
-                                    }
-                                    registerIo(ioMap, ioTreeTable, funcIdx, functionAddress);
-                                } else {
-                                    writeNumericAddressError(grid);
-                                }
-                            }
+                        if ((address != null) && !address.isEmpty() && !LadderNumber.isNumber(address)) {
+                            registerIo(ioMap, ioTreeTable, addressIndex(address), address);
+                            registerFunctionIo(ioMap, ioTreeTable, grid, 0);
                             grid.setInConnectNumber(connectNumber);
                             grid.setOutConnectNumber(0);
                             outGrids_.add(grid);
@@ -549,7 +493,7 @@ public class Ladder {
     public void run(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap, long cycleTime) {
         LadderGrid grid;
         LadderIo io;
-        int idx, funcIdx, index, size;
+        int idx, index, size;
 
         Arrays.fill(runConnectNumbers_, 0);
         for (index = 0, size = outGrids_.size(); index < size; index++) {
@@ -763,8 +707,7 @@ public class Ladder {
 
         address = grid.getAddress();
         if ((address == null) || address.isEmpty()) {
-            // the block uses no address of the io map
-            return true;
+            return writeRunIoError("");
         }
         if ((idx < 0) || (idx >= ioMap.size()) || (ioMap.get(idx).get(address) == null)) {
             // the address of the block itself is always looked up in the io map : a
@@ -798,18 +741,6 @@ public class Ladder {
             }
         }
         return true;
-    }
-
-    /**
-     * a real number is never used as an address of the io map : the pattern is only used
-     * when the address can be a number, so that the cycle of the ladder is not slowed by
-     * a regular expression for every block
-     *
-     * @param address
-     * @return
-     */
-    private static boolean isRunAddressNumber(String address) {
-        return LadderNumber.isNumber(address);
     }
 
     /**
@@ -1059,10 +990,31 @@ public class Ladder {
      * @return the index of the io map of the address
      */
     private int addressIndex(String address) {
-        if (address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
+        if ((address != null) && address.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
             return idx_;
         }
         return LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+    }
+
+    /**
+     * register a block function operand address when it is not a numeric literal
+     *
+     * @param ioMap
+     * @param ioTreeTable
+     * @param grid
+     * @param functionIndex
+     */
+    private void registerFunctionIo(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
+            TreeTableView<LadderTreeTableIo> ioTreeTable, LadderGrid grid, int functionIndex) {
+        LadderGrid.BlockFunction fn = grid.getBlockFunctions()[functionIndex];
+        if (!fn.isNumber()) {
+            String functionAddress = fn.getAddress();
+            if ((functionAddress != null) && !functionAddress.isEmpty() && !LadderNumber.isNumber(functionAddress)) {
+                registerIo(ioMap, ioTreeTable, addressIndex(functionAddress), functionAddress);
+            } else {
+                writeNumericAddressError(grid);
+            }
+        }
     }
 
     /**
@@ -1076,11 +1028,17 @@ public class Ladder {
      */
     private void registerIo(CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMap,
             TreeTableView<LadderTreeTableIo> ioTreeTable, int idx, String address) {
-        if (ioMap.get(idx).containsKey(address)) {
+        if ((idx < 0) || (idx >= ioMap.size()) || (address == null)) {
             return;
         }
-        ioMap.get(idx).put(address, new LadderIo(address));
-        ioTreeTable.getRoot().getChildren().get(idx).getChildren().add(new TreeItem<>(new LadderTreeTableIo(address)));
+        if (ioMap.get(idx).putIfAbsent(address, new LadderIo(address)) == null) {
+            if (ioTreeTable != null) {
+                ObservableList<TreeItem<LadderTreeTableIo>> children = ioTreeTable.getRoot().getChildren();
+                if (idx < children.size()) {
+                    children.get(idx).getChildren().add(new TreeItem<>(new LadderTreeTableIo(address)));
+                }
+            }
+        }
     }
 
     /**

@@ -41,4 +41,11 @@ class LadderBlockTest {
         assertFalse(LadderBlock.MOVE.isContact());
         assertFalse(LadderBlock.SCRIPT.isContact());
     }
+
+    @Test
+    void getHandlesNullAndCaseInsensitiveCommands() {
+        assertEquals(LadderBlock.EMPTY, LadderBlock.get(null));
+        assertEquals(LadderBlock.EMPTY, LadderBlock.get("unknown"));
+        assertEquals(LadderBlock.LOAD, LadderBlock.get("ld"));
+    }
 }
