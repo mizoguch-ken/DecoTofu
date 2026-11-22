@@ -23,6 +23,7 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import ken.mizoguch.console.Console;
 
@@ -111,6 +112,32 @@ public class LadderCommand {
      */
     public void setHistoryGeneration(int historyGeneration) {
         historyGeneration_ = historyGeneration;
+    }
+
+    /**
+     *
+     * @return true when at least one undoable change exists
+     */
+    public boolean canUndo() {
+        return (historyGeneration_ != 0) && (historyManager_.getPasts() != null)
+                && !historyManager_.getPasts().isEmpty();
+    }
+
+    /**
+     *
+     * @return true when at least one redoable change exists
+     */
+    public boolean canRedo() {
+        return (historyGeneration_ != 0) && (historyManager_.getFutures() != null)
+                && !historyManager_.getFutures().isEmpty();
+    }
+
+    /**
+     *
+     * @return true when the block copy buffer contains at least one grid entry
+     */
+    public boolean hasCopyBuffer() {
+        return !copyGrids_.isEmpty();
     }
 
     /**
@@ -663,11 +690,18 @@ public class LadderCommand {
                     scrollPane.requestLayout();
                 });
         scrollPane.addEventFilter(KeyEvent.KEY_PRESSED, (KeyEvent event) -> {
-            event.consume();
-
-            if (ladders != null) {
+            if ((ladders != null) && ladders.isEditorKey(event)) {
+                event.consume();
                 ladders.onKeyPressed(pane, event, scrollPane);
             }
+        });
+        scrollPane.addEventFilter(KeyEvent.KEY_TYPED, (KeyEvent event) -> {
+            if ((ladders != null) && ladders.onKeyTyped(pane, event, scrollPane)) {
+                event.consume();
+            }
+        });
+        scrollPane.addEventFilter(MouseEvent.MOUSE_PRESSED, (MouseEvent event) -> {
+            scrollPane.requestFocus();
         });
         tabPane.getTabs().add(idx - 1, new Tab(name, scrollPane));
         pane.startUp(stage_, icons_);

@@ -673,6 +673,26 @@ public class Ladders extends Service<Void> {
         return keyHandler_.handle(pane, event, scrollPane);
     }
 
+    boolean isEditorKey(KeyEvent event) {
+        return LadderKeyHandler.isEditorKey(event);
+    }
+
+    boolean onKeyTyped(LadderPane pane, KeyEvent event, ScrollPane scrollPane) {
+        return keyHandler_.handleKeyTyped(pane, event, scrollPane);
+    }
+
+    boolean isCommandInputActive() {
+        return (ladderController_ != null) && ladderController_.isCommandInputActive();
+    }
+
+    boolean openCommandInput(LadderPane pane, ScrollPane scrollPane, String initialText,
+            boolean selectAll, String customHint) {
+        if (ladderController_ != null) {
+            return ladderController_.showCommandInput(pane, scrollPane, initialText, selectAll, customHint);
+        }
+        return false;
+    }
+
     void setTitle() {
         if (stage_ == null) {
             return;

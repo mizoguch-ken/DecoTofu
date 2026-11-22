@@ -39,6 +39,7 @@ public class LadderPane extends GridPane {
     private final List<LadderGrid> previousGrids_;
     private final double gridMinSize_, gridMaxSize_, gridContentsWidth_, gridContentsHight_;
     private boolean isChanged_;
+    private boolean suppressNextSlashTyped_;
 
     private static final Pattern PATTERN_INPUT = Pattern.compile("[\\s]*;[\\s]*");
     private static final Pattern PATTERN_BLOCK = Pattern.compile("[\\s]+");
@@ -73,8 +74,122 @@ public class LadderPane extends GridPane {
         gridContentsWidth_ = gridContentsWidth;
         gridContentsHight_ = gridContentsHight;
         isChanged_ = false;
+        suppressNextSlashTyped_ = false;
 
         createGrids();
+    }
+
+    boolean consumeSuppressedSlashTyped() {
+        if (suppressNextSlashTyped_) {
+            suppressNextSlashTyped_ = false;
+            return true;
+        }
+        return false;
+    }
+
+    static String formatGridCommand(LadderGrid grid) {
+        if (grid == null) {
+            return "";
+        }
+        StringBuilder defaultValue = new StringBuilder();
+        String address = (grid.getAddress() != null) ? grid.getAddress() : "";
+        switch (grid.getBlock()) {
+            case BLOCK_COMMENT:
+                defaultValue.append(LadderBlock.BLOCK_COMMENT.toCommand());
+                if (grid.getComment() != null) {
+                    defaultValue.append(grid.getComment());
+                }
+                break;
+            case LOAD:
+            case LOAD_NOT:
+            case LOAD_RISING:
+            case LOAD_RISING_NOT:
+            case LOAD_FALLING:
+            case LOAD_FALLING_NOT:
+            case OUT:
+            case OUT_NOT:
+            case OUT_RISING:
+            case OUT_RISING_NOT:
+            case OUT_FALLING:
+            case OUT_FALLING_NOT:
+            case SET:
+            case RESET:
+            case RANDOM:
+                defaultValue.append(grid.getBlock().toCommand());
+                defaultValue.append(" ");
+                defaultValue.append(address);
+                break;
+            case COMPARISON_EQUAL:
+            case COMPARISON_NOT_EQUAL:
+            case COMPARISON_LESS:
+            case COMPARISON_LESS_EQUAL:
+            case COMPARISON_GREATER:
+            case COMPARISON_GREATER_EQUAL:
+            case COMPARISON_AND_BITS:
+            case COMPARISON_OR_BITS:
+            case COMPARISON_XOR_BITS:
+            case NOT_BITS:
+            case TIMER:
+            case TIMER_NOT:
+            case COUNTER:
+            case COUNTER_NOT:
+            case MOVE:
+                defaultValue.append(grid.getBlock().toCommand());
+                defaultValue.append(" ");
+                defaultValue.append(address);
+                defaultValue.append(" ");
+                if (grid.getBlockFunctions()[0].isNumber()) {
+                    defaultValue.append(LadderNumber.format(
+                            grid.getBlockFunctions()[0].getValue(),
+                            grid.getBlockFunctions()[0].getRadix()));
+                } else if (grid.getBlockFunctions()[0].getAddress() != null) {
+                    defaultValue.append(grid.getBlockFunctions()[0].getAddress());
+                }
+                break;
+            case AND_BITS:
+            case OR_BITS:
+            case XOR_BITS:
+            case ADDITION:
+            case SUBTRACTION:
+            case MULTIPLICATION:
+            case DIVISION:
+            case AVERAGE:
+            case SHIFT_LEFT_BITS:
+            case SHIFT_RIGHT_BITS:
+            case SIGMOID:
+                defaultValue.append(grid.getBlock().toCommand());
+                defaultValue.append(" ");
+                defaultValue.append(address);
+                defaultValue.append(" ");
+                if (grid.getBlockFunctions()[0].isNumber()) {
+                    defaultValue.append(LadderNumber.format(
+                            grid.getBlockFunctions()[0].getValue(),
+                            grid.getBlockFunctions()[0].getRadix()));
+                } else if (grid.getBlockFunctions()[0].getAddress() != null) {
+                    defaultValue.append(grid.getBlockFunctions()[0].getAddress());
+                }
+                defaultValue.append(" ");
+                if (grid.getBlockFunctions()[1].isNumber()) {
+                    defaultValue.append(LadderNumber.format(
+                            grid.getBlockFunctions()[1].getValue(),
+                            grid.getBlockFunctions()[1].getRadix()));
+                } else if (grid.getBlockFunctions()[1].getAddress() != null) {
+                    defaultValue.append(grid.getBlockFunctions()[1].getAddress());
+                }
+                break;
+            case SCRIPT:
+                defaultValue.append(LadderBlock.SCRIPT.toCommand());
+                defaultValue.append(" ");
+                defaultValue.append(address).append(";");
+                defaultValue.append(" ");
+                if (grid.getBlockScript() != null) {
+                    defaultValue.append(grid.getBlockScript());
+                }
+                break;
+            default:
+                break;
+        }
+        return defaultValue.toString();
     }
 
     /**
@@ -316,11 +431,11 @@ public class LadderPane extends GridPane {
      */
     public boolean onKeyPressed(KeyEvent event, ScrollPane scrollPane) {
         boolean changed = false;
+        suppressNextSlashTyped_ = false;
 
         if ((ladders_ != null) && (!previousGrids_.isEmpty())) {
             LadderGrid grid, previousGrid;
             LadderGridPane gridPane, previousGridPane;
-            StringBuilder defaultValue;
 
             switch (event.getCode()) {
                 case ENTER:
@@ -328,159 +443,15 @@ public class LadderPane extends GridPane {
                         if (previousGrids_.size() == 1) {
                             previousGrid = previousGrids_.get(previousGrids_.size() - 1);
                             if ((previousGrid.getColumnIndex() > 0) && (previousGrid.getRowIndex() > 0)) {
-                                defaultValue = new StringBuilder();
-                                previousGridPane = findGridPane(previousGrid);
-                                switch (previousGrid.getBlock()) {
-                                    case BLOCK_COMMENT:
-                                        defaultValue.append(LadderBlock.BLOCK_COMMENT.toCommand());
-                                        defaultValue.append(previousGrid.getComment());
-                                        break;
-                                    case LOAD:
-                                        defaultValue.append(LadderBlock.LOAD.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case LOAD_NOT:
-                                        defaultValue.append(LadderBlock.LOAD_NOT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case LOAD_RISING:
-                                        defaultValue.append(LadderBlock.LOAD_RISING.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case LOAD_RISING_NOT:
-                                        defaultValue.append(LadderBlock.LOAD_RISING_NOT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case LOAD_FALLING:
-                                        defaultValue.append(LadderBlock.LOAD_FALLING.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case LOAD_FALLING_NOT:
-                                        defaultValue.append(LadderBlock.LOAD_FALLING_NOT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case OUT:
-                                        defaultValue.append(LadderBlock.OUT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case OUT_NOT:
-                                        defaultValue.append(LadderBlock.OUT_NOT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case OUT_RISING:
-                                        defaultValue.append(LadderBlock.OUT_RISING.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case OUT_RISING_NOT:
-                                        defaultValue.append(LadderBlock.OUT_RISING_NOT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case OUT_FALLING:
-                                        defaultValue.append(LadderBlock.OUT_FALLING.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case OUT_FALLING_NOT:
-                                        defaultValue.append(LadderBlock.OUT_FALLING_NOT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case COMPARISON_EQUAL:
-                                    case COMPARISON_NOT_EQUAL:
-                                    case COMPARISON_LESS:
-                                    case COMPARISON_LESS_EQUAL:
-                                    case COMPARISON_GREATER:
-                                    case COMPARISON_GREATER_EQUAL:
-                                    case COMPARISON_AND_BITS:
-                                    case COMPARISON_OR_BITS:
-                                    case COMPARISON_XOR_BITS:
-                                    case NOT_BITS:
-                                    case TIMER:
-                                    case TIMER_NOT:
-                                    case COUNTER:
-                                    case COUNTER_NOT:
-                                    case MOVE:
-                                        defaultValue.append(previousGrid.getBlock().toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            defaultValue.append(LadderNumber.format(
-                                                    previousGrid.getBlockFunctions()[0].getValue(),
-                                                    previousGrid.getBlockFunctions()[0].getRadix()));
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        break;
-                                    case SET:
-                                        defaultValue.append(LadderBlock.SET.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case RESET:
-                                        defaultValue.append(LadderBlock.RESET.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case AND_BITS:
-                                    case OR_BITS:
-                                    case XOR_BITS:
-                                    case ADDITION:
-                                    case SUBTRACTION:
-                                    case MULTIPLICATION:
-                                    case DIVISION:
-                                    case AVERAGE:
-                                    case SHIFT_LEFT_BITS:
-                                    case SHIFT_RIGHT_BITS:
-                                    case SIGMOID:
-                                        defaultValue.append(previousGrid.getBlock().toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[0].isNumber()) {
-                                            defaultValue.append(LadderNumber.format(
-                                                    previousGrid.getBlockFunctions()[0].getValue(),
-                                                    previousGrid.getBlockFunctions()[0].getRadix()));
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[0].getAddress());
-                                        }
-                                        defaultValue.append(" ");
-                                        if (previousGrid.getBlockFunctions()[1].isNumber()) {
-                                            defaultValue.append(LadderNumber.format(
-                                                    previousGrid.getBlockFunctions()[1].getValue(),
-                                                    previousGrid.getBlockFunctions()[1].getRadix()));
-                                        } else {
-                                            defaultValue.append(previousGrid.getBlockFunctions()[1].getAddress());
-                                        }
-                                        break;
-                                    case RANDOM:
-                                        defaultValue.append(LadderBlock.RANDOM.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress());
-                                        break;
-                                    case SCRIPT:
-                                        defaultValue.append(LadderBlock.SCRIPT.toCommand());
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getAddress()).append(";");
-                                        defaultValue.append(" ");
-                                        defaultValue.append(previousGrid.getBlockScript());
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                changed = keyInput(defaultValue.toString(), previousGrid, previousGridPane);
-                                if (stage_ != null) {
-                                    stage_.requestFocus();
+                                String defaultCommand = formatGridCommand(previousGrid);
+                                if (ladders_.getDesignController() != null) {
+                                    ladders_.openCommandInput(this, scrollPane, defaultCommand, true, null);
+                                } else {
+                                    previousGridPane = findGridPane(previousGrid);
+                                    changed = keyInput(defaultCommand, previousGrid, previousGridPane);
+                                    if (stage_ != null) {
+                                        stage_.requestFocus();
+                                    }
                                 }
                             }
                         }
@@ -800,6 +771,9 @@ public class LadderPane extends GridPane {
                                 default:
                                     break;
                             }
+                            if (changed) {
+                                suppressNextSlashTyped_ = true;
+                            }
                         }
                     }
                     break;
@@ -893,9 +867,6 @@ public class LadderPane extends GridPane {
     }
 
     private boolean keyInput(String defaultValue, LadderGrid grid, LadderGridPane gridPane) {
-        LadderBlock block = LadderBlock.EMPTY;
-        String[] mInput, mBlock;
-        int cInput, columnIndex, idx, index;
         TextInputDialog alert = new TextInputDialog(defaultValue);
 
         alert.initOwner(stage_);
@@ -908,13 +879,28 @@ public class LadderPane extends GridPane {
         alert.setGraphic(null);
         Optional<String> result = alert.showAndWait();
 
-        if (result.isPresent()) {
-            mInput = PATTERN_INPUT.split(result.get().trim());
-            columnIndex = grid.getColumnIndex();
-            idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
-            for (cInput = 0; cInput < mInput.length; cInput++) {
-                switch (cInput) {
-                    case 0:
+        return result.filter(text -> applyBlockInput(text, grid, gridPane, null)).isPresent();
+    }
+
+    public boolean applyBlockInput(String inputText, LadderGrid grid, LadderGridPane gridPane) {
+        return applyBlockInput(inputText, grid, gridPane, null);
+    }
+
+    public boolean applyBlockInput(String inputText, LadderGrid grid, LadderGridPane gridPane, ScrollPane scrollPane) {
+        if ((ladders_ == null) || (ladderCommand_ == null) || (inputText == null)
+                || inputText.trim().isEmpty() || (grid == null) || (gridPane == null)) {
+            return false;
+        }
+        LadderBlock block = LadderBlock.EMPTY;
+        String[] mInput, mBlock;
+        int cInput, columnIndex, idx, index;
+
+        mInput = PATTERN_INPUT.split(inputText.trim());
+        columnIndex = grid.getColumnIndex();
+        idx = LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX;
+        for (cInput = 0; cInput < mInput.length; cInput++) {
+            switch (cInput) {
+                case 0:
                         // command address
                         mBlock = PATTERN_BLOCK.split(mInput[cInput]);
                         if ((columnIndex > 0) && (mInput.length >= 1) && (mBlock.length >= 2)) {
@@ -1285,7 +1271,7 @@ public class LadderPane extends GridPane {
                                 grid.setBlockScript(LadderGrid.LADDER_GRID_INITIAL_BLOCK_SCRIPT);
 
                                 // select
-                                ladderCommand_.blockChangeSelect(null, this, grid.getRightLadderGrid(), false);
+                                ladderCommand_.blockChangeSelect(scrollPane, this, grid.getRightLadderGrid(), false);
                                 break;
                             case COMPARISON_EQUAL:
                             case COMPARISON_NOT_EQUAL:
@@ -1329,7 +1315,7 @@ public class LadderPane extends GridPane {
                                 grid.setBlockScript(LadderGrid.LADDER_GRID_INITIAL_BLOCK_SCRIPT);
 
                                 // select
-                                ladderCommand_.blockChangeSelect(null, this, grid.getRightLadderGrid(), false);
+                                ladderCommand_.blockChangeSelect(scrollPane, this, grid.getRightLadderGrid(), false);
                                 break;
                             case OUT:
                             case OUT_NOT:
@@ -1535,7 +1521,7 @@ public class LadderPane extends GridPane {
                                 grid.setBlockScript(LadderGrid.LADDER_GRID_INITIAL_BLOCK_SCRIPT);
 
                                 // select
-                                ladderCommand_.blockChangeSelect(null, this, grid.getRightLadderGrid(), false);
+                                ladderCommand_.blockChangeSelect(scrollPane, this, grid.getRightLadderGrid(), false);
                                 break;
                             case LOAD:
                             case LOAD_NOT:
@@ -1604,9 +1590,11 @@ public class LadderPane extends GridPane {
                         }
                         break;
                 }
-            }
-            ladderCommand_.blockChangeRevised(ladder_, grid);
-            return ladderCommand_.blockChangeEnd(ladder_.getColumn(), ladder_.getRow());
+        }
+        ladderCommand_.blockChangeRevised(ladder_, grid);
+        if (ladderCommand_.blockChangeEnd(ladder_.getColumn(), ladder_.getRow())) {
+            isChanged_ = true;
+            return true;
         }
         return false;
     }

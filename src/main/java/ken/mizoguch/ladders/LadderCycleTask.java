@@ -7,8 +7,9 @@ package ken.mizoguch.ladders;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
+import java.util.function.LongSupplier;
 import javafx.concurrent.Task;
 import ken.mizoguch.console.Console;
 import ken.mizoguch.soem.Soem;
@@ -66,7 +67,7 @@ class LadderCycleTask extends Task<Void> {
             LadderIo cycleIo;
             Soem soem;
             Long registerSoemValue;
-            long waitTime, cycleStartTime;
+            long cycleStartTime;
             int index;
 
             controller = ladders_.getDesignController();
@@ -83,6 +84,9 @@ class LadderCycleTask extends Task<Void> {
             statistics = new LadderCycleStatistics(cycleStartTime);
             ladders_.updateCycleTimes(0L, 0L, 0L);
             errors = new LadderCycleErrors(LADDER_CYCLE_ERROR_LIMIT);
+            LadderCyclePacer pacer = new LadderCyclePacer();
+            LongSupplier idealCycleTimeSupplier = ladders_::getIdealCycleTime;
+            BooleanSupplier keepWaiting = () -> ladders_.isCycling() && !isCancelled();
 
             while (ladders_.isCycling() && !isCancelled()) {
                 boolean refreshView = false;
@@ -160,18 +164,9 @@ class LadderCycleTask extends Task<Void> {
                 }
 
                 // ideal cycletime
-                long idealCycleTime = ladders_.getIdealCycleTime();
-                if (idealCycleTime > 0) {
-                    waitTime = idealCycleTime - (System.nanoTime() - cycleStartTime);
-                    if (waitTime > 0) {
-                        try {
-                            TimeUnit.NANOSECONDS.sleep(waitTime);
-                        } catch (InterruptedException ex) {
-                            // the task has been interrupted : the cycle has to end,
-                            // otherwise the sleep would answer immediately again
-                            Thread.currentThread().interrupt();
-                            ladders_.setCycling(false);
-                        }
+                if (ladders_.getIdealCycleTime() > 0) {
+                    if (!pacer.waitUntil(cycleStartTime, idealCycleTimeSupplier, keepWaiting)) {
+                        ladders_.setCycling(false);
                     }
                 }
 

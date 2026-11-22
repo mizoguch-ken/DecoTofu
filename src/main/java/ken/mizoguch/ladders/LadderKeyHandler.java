@@ -28,6 +28,77 @@ class LadderKeyHandler {
     }
 
     /**
+     * Returns true only for key combinations handled directly by {@link #handle} or
+     * {@link LadderPane#onKeyPressed}, leaving all other combinations (such as menu-only
+     * accelerators) unconsumed for Scene accelerator dispatch.
+     */
+    static boolean isEditorKey(KeyEvent event) {
+        if ((event == null) || (event.getCode() == null)) {
+            return false;
+        }
+        boolean shift = event.isShiftDown();
+        boolean shortcut = event.isShortcutDown();
+        boolean alt = event.isAltDown();
+
+        return switch (event.getCode()) {
+            case TAB -> shortcut && !alt;
+            case F2, F4, N, O, T, Y, Z, C, F, V, X -> !shift && shortcut && !alt;
+            case S -> !shift && shortcut;
+            case ENTER -> !shift && !shortcut && !alt;
+            case LEFT, RIGHT -> (!shift && !shortcut && !alt)
+                    || (shift && !shortcut && !alt)
+                    || (!shift && shortcut && !alt)
+                    || (!shift && !shortcut && alt);
+            case UP, DOWN -> (!shift && !shortcut && !alt)
+                    || (shift && !shortcut && !alt)
+                    || (!shift && shortcut && !alt);
+            case SLASH -> (!shift && !shortcut && !alt)
+                    || (!shift && shortcut && !alt);
+            case DELETE -> (!shift && !shortcut && !alt)
+                    || (shift && !shortcut && !alt);
+            case INSERT -> shift && !shortcut && !alt;
+            default -> false;
+        };
+    }
+
+    static boolean isCommandTriggerChar(KeyEvent event) {
+        if ((event == null) || event.isShortcutDown() || event.isControlDown()
+                || event.isAltDown() || event.isMetaDown()) {
+            return false;
+        }
+        return isCommandTriggerText(event.getCharacter());
+    }
+
+    static boolean isCommandTriggerText(String text) {
+        if ((text == null) || (text.length() != 1)) {
+            return false;
+        }
+        char ch = text.charAt(0);
+        if (((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z'))) {
+            return true;
+        }
+        return (ch == ';') || (ch == '/') || (ch == '@') || (ch == '%')
+                || (ch == '=') || (ch == '<') || (ch == '>')
+                || (ch == '&') || (ch == '|') || (ch == '^');
+    }
+
+    boolean handleKeyTyped(LadderPane pane, KeyEvent event, ScrollPane scrollPane) {
+        if ((pane == null) || (event == null) || (ladders_.getTabs().selected() == null)) {
+            return false;
+        }
+        if (ladders_.isCommandInputActive()) {
+            return false;
+        }
+        if ("/".equals(event.getCharacter()) && pane.consumeSuppressedSlashTyped()) {
+            return true;
+        }
+        if (!isCommandTriggerChar(event)) {
+            return false;
+        }
+        return ladders_.openCommandInput(pane, scrollPane, event.getCharacter(), false, null);
+    }
+
+    /**
      *
      * @param pane pane of the ladder which has the focus
      * @param event key pressed on the pane
