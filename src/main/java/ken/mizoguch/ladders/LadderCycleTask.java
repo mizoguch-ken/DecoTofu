@@ -75,6 +75,7 @@ class LadderCycleTask extends Task<Void> {
             ioMap = ioStore.getIoMap();
             registerSoemIn = ladders_.getRegisterSoemIn();
             registerSoemOut = ladders_.getRegisterSoemOut();
+            LadderTelemetry telemetry = ladders_.getTelemetry();
 
             controller.runViewRunning(true);
 
@@ -85,6 +86,7 @@ class LadderCycleTask extends Task<Void> {
 
             while (ladders_.isCycling() && !isCancelled()) {
                 boolean refreshView = false;
+                String traceEvent = null;
                 try {
                     synchronized (lock) {
                         // soem
@@ -121,8 +123,14 @@ class LadderCycleTask extends Task<Void> {
 
                         // refresh view
                         refreshView = statistics.isViewRefreshDue(LadderDefaults.LADDER_VIEW_REFRESH_CYCLE_TIME);
+                        if (telemetry != null) {
+                            traceEvent = telemetry.onCycleComplete(ioStore, statistics.cycleTime());
+                        }
                     }
                     errors.clear();
+                    if ((telemetry != null) && (traceEvent != null)) {
+                        telemetry.notifyListener(traceEvent);
+                    }
                 } catch (Exception ex) {
                     // the error of a cycle does not stop the cycle thread : an
                     // error which is repeated stops the cycle, because the ladder
@@ -133,6 +141,12 @@ class LadderCycleTask extends Task<Void> {
                         Console.write(Ladders.class.getName(), "cycle error : " + ex, true);
                     }
                     errors.increase();
+                    if (telemetry != null) {
+                        String errEvent = telemetry.onCycleError(ex.toString(), statistics.cycleTime());
+                        if (errEvent != null) {
+                            telemetry.notifyListener(errEvent);
+                        }
+                    }
                     if (errors.isOverLimit()) {
                         Console.write(Ladders.class.getName(),
                                 "the ladder cycle is stopped after " + errors.count() + " errors", true);

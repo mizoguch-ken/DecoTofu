@@ -83,6 +83,7 @@ public class Ladders extends Service<Void> {
      * use as their live io
      */
     private final LadderIoStore ioStore_;
+    private final LadderTelemetry telemetry_ = new LadderTelemetry();
     private volatile long idealCycleTime_;
     private volatile long lastCycleTime_, minCycleTime_, maxCycleTime_;
     private volatile boolean isCycling_, isChanged_;
@@ -259,6 +260,10 @@ public class Ladders extends Service<Void> {
         return ioStore_;
     }
 
+    LadderTelemetry getTelemetry() {
+        return telemetry_;
+    }
+
     /**
      *
      * @return the store of the file of the ladders
@@ -416,6 +421,7 @@ public class Ladders extends Service<Void> {
             ladders_ = null;
             laddersSize_ = 0;
         }
+        telemetry_.resetCycleStats();
         updateCycleTimes(0L, 0L, 0L);
 
         tabLadder_.getTabs().clear();
@@ -1043,6 +1049,86 @@ public class Ladders extends Service<Void> {
      */
     public Path getFilePath() {
         return fileStore_.getFilePath();
+    }
+
+    public String snapshot(String filterJson) {
+        return telemetry_.snapshotJson(ioStore_, isCycling_, lastCycleTime_,
+                minCycleTime_, maxCycleTime_, filterJson);
+    }
+
+    public String addresses(boolean includeLocal) {
+        return telemetry_.addressesJson(ioStore_, includeLocal);
+    }
+
+    public String structure(boolean includeScripts) {
+        synchronized (lock_) {
+            if (ladders_ != null) {
+                return telemetry_.structureJson(ladders_, includeScripts);
+            }
+        }
+        if (Platform.isFxApplicationThread() && (tabLadder_ != null)) {
+            int size = tabLadder_.getTabs().size();
+            Ladder[] editorLadders = new Ladder[size];
+            for (int i = 0; i < size; i++) {
+                LadderPane pane = (LadderPane) ((ScrollPane) tabLadder_.getTabs().get(i).getContent())
+                        .getContent();
+                if (pane != null) {
+                    editorLadders[i] = pane.getLadder();
+                }
+            }
+            return telemetry_.structureJson(editorLadders, includeScripts);
+        }
+        return telemetry_.structureJson(null, includeScripts);
+    }
+
+    public String setValues(String valuesJson) {
+        if (ioStore_.isEmpty()) {
+            throw new IllegalStateException("Ladder IO is empty");
+        }
+        return telemetry_.setValues(valuesJson, this::setValue);
+    }
+
+    public String setWritableBounds(String boundsJson) {
+        return telemetry_.setWritableBounds(boundsJson);
+    }
+
+    public String getWritableBounds() {
+        return telemetry_.getWritableBoundsJson();
+    }
+
+    public String applySafeAction(String actionJson) {
+        if (ioStore_.isEmpty()) {
+            throw new IllegalStateException("Ladder IO is empty");
+        }
+        return telemetry_.applySafeAction(actionJson, this::setValue);
+    }
+
+    public String startTrace(String optionsJson) {
+        return telemetry_.startTrace(optionsJson);
+    }
+
+    public void stopTrace() {
+        telemetry_.stopTrace();
+    }
+
+    public void clearTrace() {
+        telemetry_.clearTrace();
+    }
+
+    public String trace(int limit) {
+        return telemetry_.traceJson(limit);
+    }
+
+    public String drainTrace(int limit) {
+        return telemetry_.drainTraceJson(limit);
+    }
+
+    public String drainObservations(int limit) {
+        return telemetry_.drainObservationsJson(limit);
+    }
+
+    public String recordFeedback(String feedbackJson) {
+        return telemetry_.recordFeedback(feedbackJson);
     }
 
     void writeLog(final String msg, final boolean err) {

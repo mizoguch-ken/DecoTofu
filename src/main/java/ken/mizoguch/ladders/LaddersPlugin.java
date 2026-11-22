@@ -6,7 +6,11 @@
 package ken.mizoguch.ladders;
 
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
+import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.image.Image;
 import javafx.scene.web.WebEngine;
@@ -24,6 +28,7 @@ public class LaddersPlugin implements WebViewerPlugin {
 
     private WebViewerPlugin webViewer_;
     private static final String FUNCTION_NAME = "ladders";
+    private static final int MAX_PENDING_TRACE_EVENTS = 64;
 
     private WebEngine webEngine_;
     private Worker.State state_;
@@ -31,6 +36,10 @@ public class LaddersPlugin implements WebViewerPlugin {
     private final Soem soem_;
     private final Ladders ladders_;
     private final javafx.stage.Stage stage_;
+    private final Object traceNotifyLock_ = new Object();
+    private final Deque<String> pendingTraceEvents_ = new ArrayDeque<>();
+    private String traceCallback_;
+    private boolean traceFlushScheduled_;
 
     /**
      *
@@ -517,6 +526,202 @@ public class LaddersPlugin implements WebViewerPlugin {
         return (filePath != null) ? filePath.toString() : null;
     }
 
+    public String snapshot() {
+        return snapshot(null);
+    }
+
+    public String snapshot(String filterJson) {
+        try {
+            return ladders_.snapshot(filterJson);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            write(FUNCTION_NAME, ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public String addresses() {
+        return addresses(false);
+    }
+
+    public String addresses(boolean includeLocal) {
+        try {
+            return ladders_.addresses(includeLocal);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            write(FUNCTION_NAME, ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public String structure() {
+        return structure(false);
+    }
+
+    public String structure(boolean includeScripts) {
+        try {
+            return ladders_.structure(includeScripts);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            write(FUNCTION_NAME, ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public String setValues(String valuesJson) {
+        try {
+            return ladders_.setValues(valuesJson);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            write(FUNCTION_NAME, ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public String setWritableBounds(String boundsJson) {
+        try {
+            return ladders_.setWritableBounds(boundsJson);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            write(FUNCTION_NAME, ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public String getWritableBounds() {
+        return ladders_.getWritableBounds();
+    }
+
+    public String applySafeAction(String actionJson) {
+        try {
+            return ladders_.applySafeAction(actionJson);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            write(FUNCTION_NAME, ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public String startTrace() {
+        return startTrace(null);
+    }
+
+    public String startTrace(String optionsJson) {
+        try {
+            return ladders_.startTrace(optionsJson);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            write(FUNCTION_NAME, ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public void stopTrace() {
+        ladders_.stopTrace();
+    }
+
+    public void clearTrace() {
+        ladders_.clearTrace();
+    }
+
+    public String trace() {
+        return trace(0);
+    }
+
+    public String trace(int limit) {
+        return ladders_.trace(limit);
+    }
+
+    public String drainTrace() {
+        return drainTrace(0);
+    }
+
+    public String drainTrace(int limit) {
+        return ladders_.drainTrace(limit);
+    }
+
+    public String drainObservations() {
+        return drainObservations(0);
+    }
+
+    public String drainObservations(int limit) {
+        return ladders_.drainObservations(limit);
+    }
+
+    public String recordFeedback(String feedbackJson) {
+        try {
+            return ladders_.recordFeedback(feedbackJson);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            write(FUNCTION_NAME, ex.getMessage(), true);
+            return null;
+        }
+    }
+
+    public Boolean setOnTraceEvent(String callbackName) {
+        if ((callbackName == null) || callbackName.trim().isEmpty()) {
+            synchronized (traceNotifyLock_) {
+                traceCallback_ = null;
+                pendingTraceEvents_.clear();
+            }
+            ladders_.getTelemetry().setEventListener(null);
+            return true;
+        }
+        String trimmed = callbackName.trim();
+        if (!LadderTelemetry.isValidCallbackName(trimmed)) {
+            write(FUNCTION_NAME, "invalid trace callback name [" + callbackName + "]", true);
+            return false;
+        }
+        synchronized (traceNotifyLock_) {
+            traceCallback_ = trimmed;
+        }
+        ladders_.getTelemetry().setEventListener(this::enqueueTraceEvent);
+        return true;
+    }
+
+    private void enqueueTraceEvent(String eventJson) {
+        if ((eventJson == null) || eventJson.isEmpty()) {
+            return;
+        }
+        boolean schedule = false;
+        synchronized (traceNotifyLock_) {
+            if (traceCallback_ == null) {
+                return;
+            }
+            while (pendingTraceEvents_.size() >= MAX_PENDING_TRACE_EVENTS) {
+                pendingTraceEvents_.removeFirst();
+            }
+            pendingTraceEvents_.addLast(eventJson);
+            if (!traceFlushScheduled_) {
+                traceFlushScheduled_ = true;
+                schedule = true;
+            }
+        }
+        if (schedule) {
+            try {
+                Platform.runLater(this::flushTraceEvents);
+            } catch (IllegalStateException ex) {
+                synchronized (traceNotifyLock_) {
+                    traceFlushScheduled_ = false;
+                    pendingTraceEvents_.clear();
+                }
+            }
+        }
+    }
+
+    private void flushTraceEvents() {
+        List<String> batch;
+        String callback;
+        synchronized (traceNotifyLock_) {
+            traceFlushScheduled_ = false;
+            callback = traceCallback_;
+            if ((callback == null) || pendingTraceEvents_.isEmpty()) {
+                pendingTraceEvents_.clear();
+                return;
+            }
+            batch = new ArrayList<>(pendingTraceEvents_);
+            pendingTraceEvents_.clear();
+        }
+        WebEngine engine = webEngine_;
+        if ((engine != null) && (state_ == Worker.State.SUCCEEDED)) {
+            for (String evJson : batch) {
+                engine.executeScript(callback + "(" + LadderTelemetry.GSON.toJson(evJson) + ");");
+            }
+        }
+    }
+
     @Override
     public void initialize(WebViewerPlugin webViewer) {
         webViewer_ = webViewer;
@@ -540,6 +745,13 @@ public class LaddersPlugin implements WebViewerPlugin {
 
     @Override
     public void close() {
+        synchronized (traceNotifyLock_) {
+            traceCallback_ = null;
+            pendingTraceEvents_.clear();
+        }
+        if (ladders_ != null) {
+            ladders_.getTelemetry().setEventListener(null);
+        }
     }
 
     @Override
