@@ -21,6 +21,7 @@ import javafx.scene.control.TreeTableView;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  * the files of the ladders of the editor : a new ladder, a ladder loaded from a json file, the
@@ -70,7 +71,8 @@ class LadderFileActions {
      */
     private void addGlobalRow() {
         ladders_.getTreeTableIo().getRoot().getChildren().add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
-                new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)));
+                new TreeItem<>(new LadderTreeTableIo(I18n.get("ladder.io.global").replace(" ", "_"),
+                        LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)));
         ladders_.getIoStore().addGlobalRow();
     }
 
@@ -102,7 +104,8 @@ class LadderFileActions {
         LadderJson backup;
 
         if (file == null) {
-            File fcfile = fileStore.getFileChooser("JSON", "*.json", null).showOpenDialog(ladders_.getStage());
+            File fcfile = fileStore.getFileChooser(I18n.get("ladder.fileFilter.json"), "*.json", null)
+                    .showOpenDialog(ladders_.getStage());
             if (fcfile == null) {
                 return null;
             }
@@ -121,7 +124,7 @@ class LadderFileActions {
         if (scriptCount > 0) {
             if (!confirmLadderScripts(scriptCount, file)) {
                 LadderFileStore.removeScripts(ladderJson);
-                ladders_.writeLog("ladder scripts removed [" + scriptCount + "] [" + file.getFileName() + "]", true);
+                ladders_.writeLog(I18n.get("log.ladder.scriptsRemoved", scriptCount, file.getFileName()), true);
             }
         }
 
@@ -140,9 +143,9 @@ class LadderFileActions {
         }
 
         // the file was readable but the ladder could not be restored : use the backup
-        ladders_.writeLog("load failed [" + file.getFileName() + "]", true);
+        ladders_.writeLog(I18n.get("log.ladder.loadFailed", file.getFileName()), true);
         if (!ladderRestoreBackup(backup, tabPane, treeTableView, ioMap, commentMap)) {
-            ladders_.writeLog("the ladder backup could not be restored", true);
+            ladders_.writeLog(I18n.get("log.ladder.backupRestoreFailed"), true);
         }
         return null;
     }
@@ -195,8 +198,8 @@ class LadderFileActions {
             // a dialog can not be shown from an other thread : the scripts are removed
             // because the user of the application can not confirm them, so a ladder which
             // is loaded without the user never runs javascript in the web page
-            ladders_.writeLog("ladder scripts are not confirmed : no dialog from an other thread [" + count + "] "
-                    + ((file != null) ? "[" + file.getFileName() + "]" : ""), true);
+            String fileTag = (file != null) ? " [" + file.getFileName() + "]" : "";
+            ladders_.writeLog(I18n.get("log.ladder.scriptsNotConfirmed", count, fileTag), true);
             return false;
         }
 
@@ -204,10 +207,10 @@ class LadderFileActions {
         if ((icons != null) && !icons.isEmpty()) {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons);
         }
-        alert.setTitle("Ladder");
+        alert.setTitle(I18n.get("ladder.dialog.ladder.title"));
         alert.getDialogPane().setHeaderText(null);
-        alert.getDialogPane().setContentText("Run Scripts Program? [" + count + "] "
-                + ((file != null) ? file.getFileName().toString() : ""));
+        alert.getDialogPane().setContentText(I18n.get("ladder.dialog.runScripts",
+                count, (file != null) ? file.getFileName().toString() : ""));
         alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
         result = alert.showAndWait();
         // a closed dialog never runs the scripts of a file
@@ -248,7 +251,8 @@ class LadderFileActions {
      * @return the saved file, null when the user closed the chooser or the save failed
      */
     private Path ladderSaveAs() {
-        File fcfile = ladders_.getFileStore().getFileChooser("JSON", "*.json", null).showSaveDialog(ladders_.getStage());
+        File fcfile = ladders_.getFileStore().getFileChooser(I18n.get("ladder.fileFilter.json"), "*.json", null)
+                .showSaveDialog(ladders_.getStage());
 
         if (fcfile != null) {
             return ladderSave(fcfile.toPath());
@@ -278,7 +282,8 @@ class LadderFileActions {
      * @return the exported file, null when the user closed the chooser
      */
     private Path ladderExportPdf() {
-        File fcfile = ladders_.getFileStore().getFileChooser("PDF", "*.pdf", ladders_.getFileStore().getFileBaseName())
+        File fcfile = ladders_.getFileStore().getFileChooser(I18n.get("ladder.fileFilter.pdf"),
+                "*.pdf", ladders_.getFileStore().getFileBaseName())
                 .showSaveDialog(ladders_.getStage());
 
         if (fcfile != null) {
@@ -392,9 +397,9 @@ class LadderFileActions {
      */
     private void fileNotFound(Path file) {
         if (file != null) {
-            ladders_.writeLog("File Not Found" + ": " + file.toString(), true);
+            ladders_.writeLog(I18n.get("log.ladder.fileNotFoundWithPath", file.toString()), true);
         } else {
-            ladders_.writeLog("File Not Found", true);
+            ladders_.writeLog(I18n.get("log.ladder.fileNotFound"), true);
         }
     }
 
@@ -414,9 +419,9 @@ class LadderFileActions {
             if ((icons != null) && !icons.isEmpty()) {
                 ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons);
             }
-            alert.setTitle("Ladder");
+            alert.setTitle(I18n.get("ladder.dialog.ladder.title"));
             alert.getDialogPane().setHeaderText(null);
-            alert.getDialogPane().setContentText("Save Changes Program?");
+            alert.getDialogPane().setContentText(I18n.get("ladder.dialog.saveChanges"));
             alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
             result = alert.showAndWait();
             // the dialog can be closed without an answer : it is a cancel, not an error
@@ -439,7 +444,7 @@ class LadderFileActions {
         }
         if (response == ButtonType.YES) {
             if (ladderSave() == null) {
-                ladders_.writeLog("save failed : the current ladder is kept", true);
+                ladders_.writeLog(I18n.get("log.ladder.saveFailed"), true);
                 return false;
             }
             return true;

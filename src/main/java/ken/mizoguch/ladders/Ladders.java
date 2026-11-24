@@ -28,6 +28,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.web.WebEngine;
 import javafx.stage.Stage;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.soem.Soem;
 
 /**
@@ -961,7 +962,7 @@ public class Ladders extends Service<Void> {
             // wait the end of the current cycle : never block the javafx application thread
             if (!Platform.isFxApplicationThread()) {
                 if (!awaitCycleStop(cycleStopTimeoutMillis())) {
-                    writeLog("the ladder cycle is still running", true);
+                    writeLog(I18n.get("log.ladder.cycleStillRunning"), true);
                 }
             }
         }
@@ -1103,7 +1104,7 @@ public class Ladders extends Service<Void> {
 
     public String setValues(String valuesJson) {
         if (ioStore_.isEmpty()) {
-            throw new IllegalStateException("Ladder IO is empty");
+            throw new IllegalStateException(I18n.get("log.ladder.ioEmpty"));
         }
         return telemetry_.setValues(valuesJson, this::setValue);
     }
@@ -1118,7 +1119,7 @@ public class Ladders extends Service<Void> {
 
     public String applySafeAction(String actionJson) {
         if (ioStore_.isEmpty()) {
-            throw new IllegalStateException("Ladder IO is empty");
+            throw new IllegalStateException(I18n.get("log.ladder.ioEmpty"));
         }
         return telemetry_.applySafeAction(actionJson, this::setValue);
     }

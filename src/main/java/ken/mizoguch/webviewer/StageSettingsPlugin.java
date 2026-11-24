@@ -19,6 +19,7 @@ import javafx.scene.image.Image;
 import javafx.scene.web.WebEngine;
 import javafx.stage.Stage;
 import ken.mizoguch.decotofu.DecoTofu;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.webviewer.plugin.WebViewerPlugin;
 
 /**
@@ -57,7 +58,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
                     }
                 }
             } else {
-                write(StageSettingsPlugin.class.getName(), "resource not found : LICENSES", true);
+                write(StageSettingsPlugin.class.getName(), I18n.get("log.stage.licensesNotFound"), true);
             }
         } catch (IOException ex) {
             writeStackTrace(StageSettingsPlugin.class.getName(), ex);
@@ -68,7 +69,7 @@ public class StageSettingsPlugin implements WebViewerPlugin {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons);
         }
         alert.setResizable(true);
-        alert.setTitle("LICENSES");
+        alert.setTitle(I18n.get("stage.licenses.title"));
         alert.getDialogPane().setHeaderText(null);
         textArea.setEditable(false);
         textArea.setWrapText(true);
@@ -81,14 +82,14 @@ public class StageSettingsPlugin implements WebViewerPlugin {
      */
     public void showVersion() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        String version = "VERSION " + getVersion();
+        String version = I18n.get("stage.version.content", getVersion());
 
         List<Image> icons = icons();
         if ((icons != null) && !icons.isEmpty()) {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons);
         }
         alert.setResizable(true);
-        alert.setTitle("VERSION");
+        alert.setTitle(I18n.get("stage.version.title"));
         alert.setHeaderText("DecoTofu");
         alert.setContentText(version);
         alert.show();
@@ -97,6 +98,18 @@ public class StageSettingsPlugin implements WebViewerPlugin {
     public String getVersion() {
         String implVersion = DecoTofu.class.getPackage().getImplementationVersion();
         return (implVersion != null) ? implVersion : "unknown";
+    }
+
+    public String getLanguage() {
+        return I18n.getLanguageSetting();
+    }
+
+    public String getResolvedLanguage() {
+        return I18n.getResolvedLanguage();
+    }
+
+    public boolean setLanguage(String language) {
+        return I18n.setLanguage(language);
     }
 
     public Boolean isFullScreen() {

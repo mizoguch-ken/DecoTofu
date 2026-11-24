@@ -6,6 +6,7 @@ package ken.mizoguch.soem;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import jnr.ffi.Memory;
 import jnr.ffi.Pointer;
 import jnr.ffi.Struct;
@@ -412,8 +413,8 @@ public class SoemSlaveInfo {
                 long val = pUsdo.getLongLong(0);
                 yield String.format("0x%016X / %s", val, Long.toUnsignedString(val));
             }
-            case ECT_REAL32 -> String.format("%f", pUsdo.getFloat(0));
-            case ECT_REAL64 -> String.format("%f", pUsdo.getDouble(0));
+            case ECT_REAL32 -> String.format(Locale.ROOT, "%f", pUsdo.getFloat(0));
+            case ECT_REAL64 -> String.format(Locale.ROOT, "%f", pUsdo.getDouble(0));
             case ECT_BIT1, ECT_BIT2, ECT_BIT3, ECT_BIT4, ECT_BIT5, ECT_BIT6, ECT_BIT7, ECT_BIT8 ->
                 String.format("0x%X", Byte.toUnsignedInt(pUsdo.getByte(0)));
             case ECT_VISIBLE_STRING -> (visibleString != null) ? visibleString : "";

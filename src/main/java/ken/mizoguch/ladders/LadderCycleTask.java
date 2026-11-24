@@ -12,6 +12,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import javafx.concurrent.Task;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.soem.Soem;
 
 /**
@@ -142,7 +143,7 @@ class LadderCycleTask extends Task<Void> {
                     if (errors.isFirst()) {
                         Console.writeStackTrace(Ladders.class.getName(), ex);
                     } else {
-                        Console.write(Ladders.class.getName(), "cycle error : " + ex, true);
+                        Console.write(Ladders.class.getName(), I18n.get("log.ladder.cycleError", ex), true);
                     }
                     errors.increase();
                     if (telemetry != null) {
@@ -153,7 +154,7 @@ class LadderCycleTask extends Task<Void> {
                     }
                     if (errors.isOverLimit()) {
                         Console.write(Ladders.class.getName(),
-                                "the ladder cycle is stopped after " + errors.count() + " errors", true);
+                                I18n.get("log.ladder.cycleStoppedAfterErrors", errors.count()), true);
                         ladders_.setCycling(false);
                     }
                 }

@@ -13,11 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
+import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.scene.Scene;
@@ -35,6 +38,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.ladders.LaddersPlugin;
 import ken.mizoguch.soem.SoemPlugin;
 import netscape.javascript.JSException;
@@ -62,6 +66,7 @@ public class WebViewer implements WebViewerPlugin {
      */
     private final List<URLClassLoader> pluginLoaders_ = new ArrayList<>();
     private final List<Stage> popupStages_ = new ArrayList<>();
+    private Consumer<Locale> languageListener_;
 
     private boolean ownsPlugins_;
 
@@ -147,11 +152,32 @@ public class WebViewer implements WebViewerPlugin {
             // web plugins
             addWebPlugins();
             ownsPlugins_ = true;
+            languageListener_ = this::notifyPluginLanguageChanged;
+            I18n.addListener(languageListener_);
         } catch (IOException ex) {
             writeStackTrace(WebViewer.class.getName(), ex);
         }
 
         addLoadWorkerListener();
+    }
+
+    private void notifyPluginLanguageChanged(Locale locale) {
+        Runnable task = () -> {
+            if (ownsPlugins_) {
+                for (int index = 0, size = plugins_.size(); index < size; index++) {
+                    try {
+                        plugins_.get(index).onLanguageChanged(locale);
+                    } catch (Exception ex) {
+                        writeStackTrace(WebViewer.class.getName(), ex);
+                    }
+                }
+            }
+        };
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+        } else {
+            Platform.runLater(task);
+        }
     }
 
     /**
@@ -295,6 +321,10 @@ public class WebViewer implements WebViewerPlugin {
             }
         }
         popupStages_.clear();
+        if (languageListener_ != null) {
+            I18n.removeListener(languageListener_);
+            languageListener_ = null;
+        }
         if (ownsPlugins_) {
             for (int index = 0, size = plugins_.size(); index < size; index++) {
                 try {
@@ -353,7 +383,7 @@ public class WebViewer implements WebViewerPlugin {
                 ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
             }
             alert.setResizable(true);
-            alert.setTitle("Alert");
+            alert.setTitle(I18n.get("web.alert.title"));
             alert.getDialogPane().setHeaderText(null);
             alert.getDialogPane().setContentText(event.getData());
             alert.showAndWait();
@@ -365,7 +395,7 @@ public class WebViewer implements WebViewerPlugin {
                 ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
             }
             alert.setResizable(true);
-            alert.setTitle("Confirm");
+            alert.setTitle(I18n.get("web.confirm.title"));
             alert.getDialogPane().setHeaderText(null);
             alert.getDialogPane().setContentText(param);
             Optional<ButtonType> result = alert.showAndWait();
@@ -378,7 +408,7 @@ public class WebViewer implements WebViewerPlugin {
                 ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
             }
             alert.setResizable(true);
-            alert.setTitle("Prompt");
+            alert.setTitle(I18n.get("web.prompt.title"));
             alert.getDialogPane().setHeaderText(null);
             alert.getDialogPane().setContentText(param.getMessage());
             Optional<String> result = alert.showAndWait();
@@ -431,6 +461,11 @@ public class WebViewer implements WebViewerPlugin {
     @Override
     public Path webPath() {
         return webPath_;
+    }
+
+    @Override
+    public Locale locale() {
+        return I18n.getLocale();
     }
 
     @Override

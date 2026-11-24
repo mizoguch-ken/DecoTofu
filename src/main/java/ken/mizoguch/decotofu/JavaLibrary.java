@@ -134,7 +134,7 @@ public class JavaLibrary {
             return false;
         }
         if (classLoader.getResource(zipPath) == null) {
-            Console.write(JavaLibrary.class.getName(), "resource not found : " + zipPath, true);
+            Console.write(JavaLibrary.class.getName(), I18n.get("log.javaLibrary.resourceNotFound", zipPath), true);
             return false;
         }
 
@@ -149,7 +149,7 @@ public class JavaLibrary {
 
             try (InputStream resourceStream = classLoader.getResourceAsStream(zipPath)) {
                 if (resourceStream == null) {
-                    Console.write(JavaLibrary.class.getName(), "resource not found : " + zipPath, true);
+                    Console.write(JavaLibrary.class.getName(), I18n.get("log.javaLibrary.resourceNotFound", zipPath), true);
                     return false;
                 }
                 try (ZipInputStream zipInputStream = new ZipInputStream(resourceStream)) {
@@ -199,7 +199,7 @@ public class JavaLibrary {
 
         if (!file.startsWith(destination)) {
             Console.write(JavaLibrary.class.getName(),
-                    "zip entry outside of destination directory : " + zipEntry.getName(), true);
+                    I18n.get("log.javaLibrary.zipSlip", zipEntry.getName()), true);
             return null;
         }
         return file;
@@ -239,7 +239,7 @@ public class JavaLibrary {
         }
 
         if (classLoader.getResource(resourcePath) == null) {
-            Console.write(JavaLibrary.class.getName(), "resource not found : " + resourcePath, true);
+            Console.write(JavaLibrary.class.getName(), I18n.get("log.javaLibrary.resourceNotFound", resourcePath), true);
             return false;
         }
 
@@ -297,7 +297,7 @@ public class JavaLibrary {
 
         try (InputStream resourceStream = classLoader.getResourceAsStream(resourcePath)) {
             if (resourceStream == null) {
-                Console.write(JavaLibrary.class.getName(), "resource not found : " + resourcePath, true);
+                Console.write(JavaLibrary.class.getName(), I18n.get("log.javaLibrary.resourceNotFound", resourcePath), true);
                 return false;
             }
 

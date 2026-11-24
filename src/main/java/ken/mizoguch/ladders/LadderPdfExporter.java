@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import org.apache.fontbox.ttf.TrueTypeCollection;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -117,7 +118,7 @@ class LadderPdfExporter {
         if ((file != null) && (ladderJson_ != null)) {
             InputStream fontStream = this.getClass().getClassLoader().getResourceAsStream("font/MyricaM.TTC");
             if (fontStream == null) {
-                Console.write(LadderPdfExporter.class.getName(), "font/MyricaM.TTC not found", true);
+                Console.write(LadderPdfExporter.class.getName(), I18n.get("log.ladder.fontNotFound"), true);
                 return null;
             }
             try (InputStream closeFontStream = fontStream;

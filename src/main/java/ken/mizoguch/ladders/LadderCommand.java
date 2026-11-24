@@ -26,6 +26,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  *
@@ -2677,7 +2678,7 @@ public class LadderCommand {
             boolean isEditing) {
         if ((jsonLadder == null) || (jsonLadder.getIdx() == null) || (jsonLadder.getName() == null)
                 || (jsonLadder.getColumn() == null) || (jsonLadder.getRow() == null)) {
-            writeLog("Data format unexpected error" + " [idx][name][column][row]", true);
+            writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[idx][name][column][row]"), true);
             return false;
         }
         return restoreBlocks(jsonLadder,
@@ -2809,29 +2810,29 @@ public class LadderCommand {
         int i;
 
         if ((jsonBlock == null) || (jsonBlock.getColumnIndex() == null) || (jsonBlock.getRowIndex() == null)) {
-            writeLog("Data format unexpected error" + " [columnIndex][rowIndex]", true);
+            writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[columnIndex][rowIndex]"), true);
             return false;
         }
         grid = pane.getLadder().findGrid(jsonBlock.getColumnIndex(), jsonBlock.getRowIndex());
         gridPane = pane.findGridPane(grid);
         if ((grid == null) || (gridPane == null)) {
-            writeLog("Data format unexpected error" + " [columnIndex][rowIndex]", true);
+            writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[columnIndex][rowIndex]"), true);
             return false;
         }
 
         if (jsonBlock.getBlock() == null) {
-            writeLog("Data format unexpected error" + " [block]", true);
+            writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[block]"), true);
             return false;
         }
         try {
             blockChangeBlock(pane.getLadder(), grid, gridPane, LadderBlock.valueOf(jsonBlock.getBlock()));
         } catch (IllegalArgumentException ex) {
-            writeLog("Data format unexpected error" + " [block]", true);
+            writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[block]"), true);
             return false;
         }
 
         if (jsonBlock.isVertical() == null) {
-            writeLog("Data format unexpected error" + " [vertical]", true);
+            writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[vertical]"), true);
             return false;
         }
         blockChangeVertical(pane.getLadder(), grid, gridPane, jsonBlock.isVertical());
@@ -2846,7 +2847,7 @@ public class LadderCommand {
         }
 
         if (jsonBlock.isVerticalOr() == null) {
-            writeLog("Data format unexpected error" + " [verticalOr]", true);
+            writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[verticalOr]"), true);
             return false;
         }
         blockChangeVerticalOr(pane.getLadder(), grid, gridPane, jsonBlock.isVerticalOr());
@@ -2872,7 +2873,7 @@ public class LadderCommand {
                 break;
             case BLOCK_COMMENT:
                 if (jsonBlock.getComment() == null) {
-                    writeLog("Data format unexpected error" + " [comment]", true);
+                    writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[comment]"), true);
                     return false;
                 }
                 blockChangeComment(pane.getLadder(), grid, gridPane, jsonBlock.getComment());
@@ -2900,7 +2901,7 @@ public class LadderCommand {
             case RESET:
             case RANDOM:
                 if (jsonBlock.getAddress() == null) {
-                    writeLog("Data format unexpected error" + " [address]", true);
+                    writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[address]"), true);
                     return false;
                 }
                 blockChangeAddress(pane.getLadder(), grid, gridPane, jsonBlock.getAddress());
@@ -2937,14 +2938,14 @@ public class LadderCommand {
             case COUNTER_NOT:
             case MOVE:
                 if (jsonBlock.getAddress() == null) {
-                    writeLog("Data format unexpected error" + " [address]", true);
+                    writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[address]"), true);
                     return false;
                 }
                 blockChangeAddress(pane.getLadder(), grid, gridPane, jsonBlock.getAddress());
 
                 if (!blockChangeFunction(pane.getLadder(), grid, gridPane, jsonBlock.getBlockFunctions())) {
-                    writeLog("Data format unexpected error"
-                            + " [blockFunctionAddress][blockFunctionValue][blockFunctionValueRadix]", true);
+                    writeLog(I18n.get("log.ladder.unexpectedDataFormat",
+                            "[blockFunctionAddress][blockFunctionValue][blockFunctionValueRadix]"), true);
                     return false;
                 }
 
@@ -2952,7 +2953,7 @@ public class LadderCommand {
                 break;
             case SCRIPT:
                 if (jsonBlock.getAddress() == null) {
-                    writeLog("Data format unexpected error" + " [address]", true);
+                    writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[address]"), true);
                     return false;
                 }
                 blockChangeAddress(pane.getLadder(), grid, gridPane, jsonBlock.getAddress());
@@ -2962,7 +2963,7 @@ public class LadderCommand {
                 }
 
                 if (jsonBlock.getBlockScript() == null) {
-                    writeLog("Data format unexpected error" + " [blockScript]", true);
+                    writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[blockScript]"), true);
                     return false;
                 }
                 blockChangeScript(pane.getLadder(), grid, gridPane, jsonBlock.getBlockScript());
@@ -3007,12 +3008,12 @@ public class LadderCommand {
 
                 if ((jsonComment == null) || (jsonComment.idx() == null) || (jsonComment.address() == null)
                         || (jsonComment.comment() == null)) {
-                    writeLog("Data format unexpected error" + " [idx][address][comment]", true);
+                    writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[idx][address][comment]"), true);
                     return false;
                 }
                 int idx = jsonComment.idx();
                 if ((idx < 0) || (idx >= commentMap.size()) || (idx >= ioMap.size())) {
-                    writeLog("Data format unexpected error" + " [idx]", true);
+                    writeLog(I18n.get("log.ladder.unexpectedDataFormat", "[idx]"), true);
                     return false;
                 }
                 changeComment(tabPane, treeTableView, ioMap, commentMap, idx, jsonComment.address(),

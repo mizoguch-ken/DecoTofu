@@ -24,6 +24,7 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -42,6 +43,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
@@ -51,6 +53,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
@@ -66,6 +69,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  *
@@ -196,6 +200,14 @@ public class DesignLaddersController implements Initializable {
     private MenuItem menuViewCollapseAllIo;
     @FXML
     private MenuItem menuViewClearFindResults;
+    @FXML
+    private Menu menuViewLanguage;
+    @FXML
+    private RadioMenuItem menuViewLanguageAuto;
+    @FXML
+    private RadioMenuItem menuViewLanguageEnglish;
+    @FXML
+    private RadioMenuItem menuViewLanguageJapanese;
     // menu tools
     @FXML
     private Menu menuTools;
@@ -518,6 +530,16 @@ public class DesignLaddersController implements Initializable {
     private List<MenuItem> contactCommandItems_;
     private List<MenuItem> outputCommandItems_;
     private Map<LadderCommandCatalog.Category, Menu> commandCategoryMenus_;
+    private ToggleGroup languageToggleGroup_;
+    private Consumer<Locale> languageListener_;
+    private long lastCycleTimeAvg_;
+    private long lastMinCycleTime_;
+    private long lastMaxCycleTime_;
+    private long lastIdealCycleTime_;
+    private boolean hasCycleTime_;
+    private boolean hasMinCycleTime_;
+    private boolean hasMaxCycleTime_;
+    private boolean hasIdealCycleTime_;
 
     static boolean isInvertibleBlock(LadderBlock block) {
         if (block == null) {
@@ -873,7 +895,7 @@ public class DesignLaddersController implements Initializable {
             ladders_.setTitle();
             closeCommandInput(true);
         } else {
-            lblCommandInputHint.setText("Invalid syntax — " + LadderCommandCatalog.hintForInput(text));
+            lblCommandInputHint.setText(I18n.get("ladder.input.invalidSyntax", LadderCommandCatalog.hintForInput(text)));
             lblCommandInputHint.setStyle("-fx-font-size: 11px; -fx-text-fill: #c62828;");
             txtCommandInput.requestFocus();
             txtCommandInput.deselect();
@@ -1081,7 +1103,10 @@ public class DesignLaddersController implements Initializable {
     }
 
     private void promptFindAddress() {
-        Optional<String> result = createUtilityInputDialog("Find Address", "Address or comment:", "").showAndWait();
+        Optional<String> result = createUtilityInputDialog(
+                I18n.get("ladder.dialog.findAddress.title"),
+                I18n.get("ladder.dialog.findAddress.prompt"),
+                "").showAndWait();
         if (stage_ != null) {
             stage_.requestFocus();
         }
@@ -1089,8 +1114,9 @@ public class DesignLaddersController implements Initializable {
     }
 
     private void promptIdealCycleTime() {
-        Optional<String> result = createUtilityInputDialog("Ideal Cycle Time",
-                "Ideal cycle time in nanoseconds (0 = fastest):",
+        Optional<String> result = createUtilityInputDialog(
+                I18n.get("ladder.dialog.idealCycleTime.title"),
+                I18n.get("ladder.dialog.idealCycleTime.prompt"),
                 Long.toString(ladders_.getIdealCycleTime())).showAndWait();
         if (stage_ != null) {
             stage_.requestFocus();
@@ -1101,14 +1127,15 @@ public class DesignLaddersController implements Initializable {
                 ladders_.setIdealCycleTime(parsed);
             } else {
                 Console.write(DesignLaddersController.class.getName(),
-                        "Ideal cycle time must be an integer >= 0 [" + text + "]", true);
+                        I18n.get("log.ladder.invalidIdealCycleTime", text), true);
             }
         });
     }
 
     private void promptHistoryLimit() {
-        Optional<String> result = createUtilityInputDialog("Undo History Limit",
-                "Max undo steps (-1 = unlimited, 0 = disabled):",
+        Optional<String> result = createUtilityInputDialog(
+                I18n.get("ladder.dialog.historyLimit.title"),
+                I18n.get("ladder.dialog.historyLimit.prompt"),
                 Integer.toString(ladders_.getHistoryGeneration())).showAndWait();
         if (stage_ != null) {
             stage_.requestFocus();
@@ -1119,7 +1146,7 @@ public class DesignLaddersController implements Initializable {
                 ladders_.setHistoryGeneration(parsed);
             } else {
                 Console.write(DesignLaddersController.class.getName(),
-                        "Undo history limit must be an integer >= -1 [" + text + "]", true);
+                        I18n.get("log.ladder.invalidHistoryLimit", text), true);
             }
         });
     }
@@ -1208,7 +1235,9 @@ public class DesignLaddersController implements Initializable {
         menuFileDifference.setOnAction((ActionEvent event) -> {
             // ladder
             try {
-                File fcfile = ladders_.getFileStore().getFileChooser("JSON", "*.json", null).showOpenDialog(stage_);
+                File fcfile = ladders_.getFileStore()
+                        .getFileChooser(I18n.get("ladder.fileFilter.json"), "*.json", null)
+                        .showOpenDialog(stage_);
                 if (fcfile != null) {
                     Path file = fcfile.toPath();
                     LadderJson originalJson = ladders_.ladderJsonOpen(file);
@@ -1226,7 +1255,7 @@ public class DesignLaddersController implements Initializable {
                         ladderDifferenceController.startUp(stage, ladders_);
                         ladderDifferenceController.diffarence(originalJson, file,
                                 ladders_.ladderJsonSave(tabLadder), ladders_.getFilePath());
-                        stage.setTitle("Difference");
+                        stage.setTitle(I18n.get("ladder.diff.title"));
                         stage.showAndWait();
                     }
                 }
@@ -1465,6 +1494,7 @@ public class DesignLaddersController implements Initializable {
             menuViewExpandAllIo.setDisable(!ioVisible || !hasIoRoots);
             menuViewCollapseAllIo.setDisable(!ioVisible || !hasIoRoots);
             menuViewClearFindResults.setDisable(tableIo.getItems().isEmpty());
+            updateLanguageMenuSelection();
         });
         menuViewIoPanel.setOnAction((ActionEvent event) -> {
             setIoPanelVisible(menuViewIoPanel.isSelected());
@@ -1489,6 +1519,18 @@ public class DesignLaddersController implements Initializable {
         menuViewClearFindResults.setOnAction((ActionEvent event) -> {
             tableIo.getItems().clear();
         });
+        languageToggleGroup_ = new ToggleGroup();
+        menuViewLanguageAuto.setToggleGroup(languageToggleGroup_);
+        menuViewLanguageEnglish.setToggleGroup(languageToggleGroup_);
+        menuViewLanguageJapanese.setToggleGroup(languageToggleGroup_);
+        menuViewLanguageAuto.setOnAction((ActionEvent event) -> I18n.setLanguage(I18n.LANG_AUTO));
+        menuViewLanguageEnglish.setOnAction((ActionEvent event) -> I18n.setLanguage(I18n.LANG_EN));
+        menuViewLanguageJapanese.setOnAction((ActionEvent event) -> I18n.setLanguage(I18n.LANG_JA));
+        updateLanguageMenuSelection();
+        if (languageListener_ == null) {
+            languageListener_ = locale -> runRefreshLocalizedUi();
+            I18n.addListener(languageListener_);
+        }
 
         // menu tools
         menuTools.setOnShowing((event) -> {
@@ -1779,6 +1821,143 @@ public class DesignLaddersController implements Initializable {
         });
     }
 
+    private void runRefreshLocalizedUi() {
+        if (Platform.isFxApplicationThread()) {
+            refreshLocalizedUi();
+        } else {
+            Platform.runLater(this::refreshLocalizedUi);
+        }
+    }
+
+    private void updateLanguageMenuSelection() {
+        if ((menuViewLanguageAuto == null) || (menuViewLanguageEnglish == null)
+                || (menuViewLanguageJapanese == null)) {
+            return;
+        }
+        String setting = I18n.getLanguageSetting();
+        if (I18n.LANG_EN.equals(setting)) {
+            menuViewLanguageEnglish.setSelected(true);
+        } else if (I18n.LANG_JA.equals(setting)) {
+            menuViewLanguageJapanese.setSelected(true);
+        } else {
+            menuViewLanguageAuto.setSelected(true);
+        }
+    }
+
+    private void refreshLocalizedUi() {
+        // menu file
+        menuFile.setText(I18n.get("menu.file"));
+        menuFileNew.setText(I18n.get("menu.file.new"));
+        menuFileOpen.setText(I18n.get("menu.file.open"));
+        menuFileOpenRecent.setText(I18n.get("menu.file.openRecent"));
+        menuFileRecentClear.setText(I18n.get("menu.file.recentClear"));
+        menuFileSave.setText(I18n.get("menu.file.save"));
+        menuFileSaveAs.setText(I18n.get("menu.file.saveAs"));
+        menuFileExportPdf.setText(I18n.get("menu.file.exportPdf"));
+        menuFileDifference.setText(I18n.get("menu.file.difference"));
+        menuFileClose.setText(I18n.get("menu.file.close"));
+
+        // menu edit
+        menuEdit.setText(I18n.get("menu.edit"));
+        menuEditUndo.setText(I18n.get("menu.edit.undo"));
+        menuEditRedo.setText(I18n.get("menu.edit.redo"));
+        menuEditCut.setText(I18n.get("menu.edit.cut"));
+        menuEditCopy.setText(I18n.get("menu.edit.copy"));
+        menuEditPaste.setText(I18n.get("menu.edit.paste"));
+        menuEditDelete.setText(I18n.get("menu.edit.delete"));
+        menuEditBlock.setText(I18n.get("menu.edit.block"));
+        menuEditInvertBlock.setText(I18n.get("menu.edit.invertBlock"));
+        menuEditCycleEdge.setText(I18n.get("menu.edit.cycleEdge"));
+        menuEditWire.setText(I18n.get("menu.edit.wire"));
+        menuEditWireLeft.setText(I18n.get("menu.edit.wireLeft"));
+        menuEditWireRight.setText(I18n.get("menu.edit.wireRight"));
+        menuEditWireUp.setText(I18n.get("menu.edit.wireUp"));
+        menuEditWireDown.setText(I18n.get("menu.edit.wireDown"));
+        menuEditInsertRow.setText(I18n.get("menu.edit.insertRow"));
+        menuEditDeleteRow.setText(I18n.get("menu.edit.deleteRow"));
+        menuEditFindUsages.setText(I18n.get("menu.edit.findUsages"));
+        menuEditFindAddress.setText(I18n.get("menu.edit.findAddress"));
+
+        // menu command
+        menuCommand.setText(I18n.get("menu.command"));
+        populateCommandMenu();
+
+        // menu tab
+        menuTab.setText(I18n.get("menu.tab"));
+        menuTabNew.setText(I18n.get("menu.tab.new"));
+        menuTabClose.setText(I18n.get("menu.tab.close"));
+        menuTabRename.setText(I18n.get("menu.tab.rename"));
+        menuTabMoveLeft.setText(I18n.get("menu.tab.moveLeft"));
+        menuTabMoveRight.setText(I18n.get("menu.tab.moveRight"));
+        menuTabPrevious.setText(I18n.get("menu.tab.previous"));
+        menuTabNext.setText(I18n.get("menu.tab.next"));
+
+        // menu view
+        menuView.setText(I18n.get("menu.view"));
+        menuViewIoPanel.setText(I18n.get("menu.view.ioPanel"));
+        menuViewStatusBar.setText(I18n.get("menu.view.statusBar"));
+        menuViewExpandAllIo.setText(I18n.get("menu.view.expandAllIo"));
+        menuViewCollapseAllIo.setText(I18n.get("menu.view.collapseAllIo"));
+        menuViewClearFindResults.setText(I18n.get("menu.view.clearFindResults"));
+        menuViewLanguage.setText(I18n.get("menu.view.language"));
+        menuViewLanguageAuto.setText(I18n.get("menu.view.language.auto"));
+        menuViewLanguageEnglish.setText(I18n.get("menu.view.language.en"));
+        menuViewLanguageJapanese.setText(I18n.get("menu.view.language.ja"));
+        updateLanguageMenuSelection();
+
+        // menu tools
+        menuTools.setText(I18n.get("menu.tools"));
+        menuToolsConnect.setText(I18n.get("menu.tools.connect"));
+        menuToolsRun.setText(I18n.get("menu.tools.run"));
+        menuToolsStop.setText(I18n.get("menu.tools.stop"));
+        menuToolsToggleValue.setText(I18n.get("menu.tools.toggleValue"));
+        menuToolsIdealCycleTime.setText(I18n.get("menu.tools.idealCycleTime"));
+        menuToolsHistoryLimit.setText(I18n.get("menu.tools.historyLimit"));
+        menuToolsScriptEnable.setText(I18n.get("menu.tools.scriptEnable"));
+
+        // inline command input
+        txtCommandInput.setPromptText(I18n.get("ladder.input.prompt"));
+        btnCommandInputOk.setText(I18n.get("ladder.input.ok"));
+        btnCommandInputCancel.setText(I18n.get("ladder.input.cancel"));
+        if (isCommandInputActive()) {
+            lblCommandInputHint.setText(LadderCommandCatalog.hintForInput(txtCommandInput.getText()));
+            lblCommandInputHint.setStyle("-fx-font-size: 11px; -fx-opacity: 0.85;");
+        }
+
+        // io headers & global root label
+        treeTableIoAddress.setText(I18n.get("ladder.col.address"));
+        treeTableIoComment.setText(I18n.get("ladder.col.comment"));
+        treeTableIoValue.setText(I18n.get("ladder.col.value"));
+        tableIoName.setText(I18n.get("ladder.col.name"));
+        tableIoAddress.setText(I18n.get("ladder.col.address"));
+        tableIoBlock.setText(I18n.get("ladder.col.block"));
+        tableIoPosition.setText(I18n.get("ladder.col.position"));
+        if (treeTableIo.getRoot() != null) {
+            ObservableList<TreeItem<LadderTreeTableIo>> roots = treeTableIo.getRoot().getChildren();
+            if ((roots != null) && (roots.size() > LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)) {
+                LadderTreeTableIo globalIo = roots.get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX).getValue();
+                if (globalIo != null) {
+                    globalIo.setAddress(I18n.get("ladder.io.global").replace(" ", "_"));
+                    treeTableIo.refresh();
+                }
+            }
+        }
+
+        // status bar
+        lblCycleTime.setText(hasCycleTime_
+                ? I18n.get("ladder.status.cycleTimeValue", lastCycleTimeAvg_)
+                : I18n.get("ladder.status.cycleTime"));
+        lblMinCycleTime.setText(hasMinCycleTime_
+                ? I18n.get("ladder.status.minCycleTimeValue", lastMinCycleTime_)
+                : I18n.get("ladder.status.minCycleTime"));
+        lblMaxCycleTime.setText(hasMaxCycleTime_
+                ? I18n.get("ladder.status.maxCycleTimeValue", lastMaxCycleTime_)
+                : I18n.get("ladder.status.maxCycleTime"));
+        lblIdealCycleTime.setText(hasIdealCycleTime_
+                ? I18n.get("ladder.status.idealCycleTimeValue", lastIdealCycleTime_)
+                : I18n.get("ladder.status.idealCycleTime"));
+    }
+
     private void runInitDesign() {
         if (Platform.isFxApplicationThread()) {
             initDesign();
@@ -1790,88 +1969,13 @@ public class DesignLaddersController implements Initializable {
     }
 
     private void initDesign() {
-        // menu file
-        menuFile.setText("File");
-        menuFileNew.setText("New");
-        menuFileOpen.setText("Open...");
-        menuFileOpenRecent.setText("Open Recent");
-        menuFileRecentClear.setText("Clear Recent");
-        menuFileSave.setText("Save");
-        menuFileSaveAs.setText("Save As...");
-        menuFileExportPdf.setText("Export as PDF...");
-        menuFileDifference.setText("Difference...");
-        menuFileClose.setText("Close");
-
-        // menu edit
-        menuEdit.setText("Edit");
-        menuEditUndo.setText("Undo");
-        menuEditRedo.setText("Redo");
-        menuEditCut.setText("Cut");
-        menuEditCopy.setText("Copy");
-        menuEditPaste.setText("Paste");
-        menuEditDelete.setText("Delete");
-        menuEditBlock.setText("Edit Block...");
-        menuEditInvertBlock.setText("Invert Block");
-        menuEditCycleEdge.setText("Cycle Edge");
-        menuEditWire.setText("Wire");
-        menuEditWireLeft.setText("Wire Left");
-        menuEditWireRight.setText("Wire Right");
-        menuEditWireUp.setText("Wire Up");
-        menuEditWireDown.setText("Wire Down");
-        menuEditInsertRow.setText("Insert Row");
-        menuEditDeleteRow.setText("Delete Row");
-        menuEditFindUsages.setText("Find Usages");
-        menuEditFindAddress.setText("Find Address...");
-
-        // menu command
-        menuCommand.setText("Command");
-
-        // menu tab
-        menuTab.setText("Tab");
-        menuTabNew.setText("New Tab");
-        menuTabClose.setText("Close Tab");
-        menuTabRename.setText("Rename Tab...");
-        menuTabMoveLeft.setText("Move Tab Left");
-        menuTabMoveRight.setText("Move Tab Right");
-        menuTabPrevious.setText("Previous Tab");
-        menuTabNext.setText("Next Tab");
-
-        // menu view
-        menuView.setText("View");
-        menuViewIoPanel.setText("I/O Panel");
         menuViewIoPanel.setSelected(splitIoLadder.getItems().contains(splitIoIo));
-        menuViewStatusBar.setText("Status Bar");
         menuViewStatusBar.setSelected(statusBar.isVisible());
-        menuViewExpandAllIo.setText("Expand All I/O");
-        menuViewCollapseAllIo.setText("Collapse All I/O");
-        menuViewClearFindResults.setText("Clear Find Results");
-
-        // menu tools
-        menuTools.setText("Tools");
-        menuToolsConnect.setText("Connect");
-        menuToolsRun.setText("Run");
-        menuToolsStop.setText("Stop");
         menuToolsStop.setDisable(true);
-        menuToolsToggleValue.setText("Toggle Block Value");
-        menuToolsIdealCycleTime.setText("Ideal Cycle Time...");
-        menuToolsHistoryLimit.setText("Undo History Limit...");
-        menuToolsScriptEnable.setText("Enable Scripts (SCR)");
         menuToolsScriptEnable.setSelected(ladders_.isScriptEnable());
-
-        // inline command input
-        btnCommandInputOk.setText("OK");
-        btnCommandInputCancel.setText("Cancel");
-
-        // io
         treeTableIo.setCache(true);
-        treeTableIoAddress.setText("Address");
-        treeTableIoComment.setText("Comment");
-        treeTableIoValue.setText("Value");
         tableIo.setCache(true);
-        tableIoName.setText("Name");
-        tableIoAddress.setText("Address");
-        tableIoBlock.setText("Block");
-        tableIoPosition.setText("Position");
+        refreshLocalizedUi();
     }
 
     /**
@@ -1920,9 +2024,11 @@ public class DesignLaddersController implements Initializable {
      */
     public void setIdealCycleTime(long idealCycleTime) {
         idealCycleTime_ = idealCycleTime;
+        lastIdealCycleTime_ = idealCycleTime;
+        hasIdealCycleTime_ = true;
         final long value = idealCycleTime;
         Platform.runLater(() -> {
-            lblIdealCycleTime.setText(Long.toString(value) + "ns(Ideal)");
+            lblIdealCycleTime.setText(I18n.get("ladder.status.idealCycleTimeValue", value));
         });
     }
 
@@ -1953,8 +2059,10 @@ public class DesignLaddersController implements Initializable {
      * @param minCycleTime
      */
     public void setMinCycleTime(long minCycleTime) {
+        lastMinCycleTime_ = minCycleTime;
+        hasMinCycleTime_ = true;
         Platform.runLater(() -> {
-            lblMinCycleTime.setText(Long.toString(minCycleTime) + "ns(Min)");
+            lblMinCycleTime.setText(I18n.get("ladder.status.minCycleTimeValue", minCycleTime));
         });
     }
 
@@ -1963,8 +2071,10 @@ public class DesignLaddersController implements Initializable {
      * @param maxCycleTime
      */
     public void setMaxCycleTime(long maxCycleTime) {
+        lastMaxCycleTime_ = maxCycleTime;
+        hasMaxCycleTime_ = true;
         Platform.runLater(() -> {
-            lblMaxCycleTime.setText(Long.toString(maxCycleTime) + "ns(Max)");
+            lblMaxCycleTime.setText(I18n.get("ladder.status.maxCycleTimeValue", maxCycleTime));
         });
     }
 
@@ -1979,8 +2089,10 @@ public class DesignLaddersController implements Initializable {
             Platform.runLater(() -> {
                 try {
                     // cycletime
-                    lblCycleTime.setText(Long.toString(cumulativeCycleTime
-                            / Math.max(1, cumulativeCycleTimeCount)) + "ns");
+                    long avg = cumulativeCycleTime / Math.max(1, cumulativeCycleTimeCount);
+                    lastCycleTimeAvg_ = avg;
+                    hasCycleTime_ = true;
+                    lblCycleTime.setText(I18n.get("ladder.status.cycleTimeValue", avg));
 
                     // io map
                     ioMap_ = ladders_.getIoMap();
@@ -2141,13 +2253,13 @@ public class DesignLaddersController implements Initializable {
             double parsed = Double.parseDouble(value);
             if (!Double.isFinite(parsed) || (parsed <= 0.0)) {
                 Console.write(DesignLaddersController.class.getName(),
-                        "properties : " + key + " is out of range [" + value + "]", true);
+                        I18n.get("log.properties.outOfRange", key, value), true);
                 return defaultValue;
             }
             return parsed;
         } catch (NumberFormatException ex) {
             Console.write(DesignLaddersController.class.getName(),
-                    "properties : " + key + " is not a number [" + value + "]", true);
+                    I18n.get("log.properties.notNumber", key, value), true);
             return defaultValue;
         }
     }
@@ -2169,7 +2281,7 @@ public class DesignLaddersController implements Initializable {
             return Integer.parseInt(value);
         } catch (NumberFormatException ex) {
             Console.write(DesignLaddersController.class.getName(),
-                    "properties : " + key + " is not an integer [" + value + "]", true);
+                    I18n.get("log.properties.notInt", key, value), true);
             return defaultValue;
         }
     }
@@ -2191,7 +2303,7 @@ public class DesignLaddersController implements Initializable {
             return Long.parseLong(value);
         } catch (NumberFormatException ex) {
             Console.write(DesignLaddersController.class.getName(),
-                    "properties : " + key + " is not a long number [" + value + "]", true);
+                    I18n.get("log.properties.notLong", key, value), true);
             return defaultValue;
         }
     }
@@ -2352,6 +2464,10 @@ public class DesignLaddersController implements Initializable {
         }
 
         // clean up
+        if (languageListener_ != null) {
+            I18n.removeListener(languageListener_);
+            languageListener_ = null;
+        }
         ladders_.cleanUp();
 
         return true;
@@ -2385,5 +2501,15 @@ public class DesignLaddersController implements Initializable {
         contactCommandItems_ = new ArrayList<>();
         outputCommandItems_ = new ArrayList<>();
         commandCategoryMenus_ = new EnumMap<>(LadderCommandCatalog.Category.class);
+        languageToggleGroup_ = null;
+        languageListener_ = null;
+        lastCycleTimeAvg_ = 0L;
+        lastMinCycleTime_ = 0L;
+        lastMaxCycleTime_ = 0L;
+        lastIdealCycleTime_ = 0L;
+        hasCycleTime_ = false;
+        hasMinCycleTime_ = false;
+        hasMaxCycleTime_ = false;
+        hasIdealCycleTime_ = false;
     }
 }

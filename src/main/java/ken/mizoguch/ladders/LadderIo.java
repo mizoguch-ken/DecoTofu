@@ -9,6 +9,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.web.WebEngine;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import netscape.javascript.JSException;
 
 /**
@@ -354,7 +355,7 @@ public class LadderIo {
             if (!isScriptLengthAcceptable(script_.length(), script.length())) {
                 // an abnormal length of script is refused : the javascript of a script
                 // block is executed in the web page with the apis of the application
-                Console.write(LadderIo.class.getName(), "script too long [" + address_ + "]", true);
+                Console.write(LadderIo.class.getName(), I18n.get("log.ladder.scriptTooLong", address_), true);
                 script_.setLength(0);
                 return false;
             }

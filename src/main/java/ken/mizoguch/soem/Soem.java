@@ -17,6 +17,7 @@ import jnr.ffi.LibraryLoader;
 import jnr.ffi.Memory;
 import jnr.ffi.Pointer;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.decotofu.JavaLibrary;
 
 /**
@@ -130,7 +131,7 @@ public class Soem {
                 runtime_ = runtime;
                 return true;
             } catch (UnsatisfiedLinkError ex) {
-                Console.write(Soem.class.getName(), "the library can not be loaded : " + libraryPath, true);
+                Console.write(Soem.class.getName(), I18n.get("log.soem.libraryLoadFailed", libraryPath), true);
                 soem_ = null;
                 runtime_ = null;
                 return null;
@@ -156,42 +157,42 @@ public class Soem {
         try {
             int maxSlave = soem.ec_max_slave();
             if (maxSlave != SoemEtherCATMain.EC_MAXSLAVE) {
-                Console.write(Soem.class.getName(), "SOEM ABI mismatch : EC_MAXSLAVE expected ["
-                        + SoemEtherCATMain.EC_MAXSLAVE + "] native [" + maxSlave + "]", true);
+                Console.write(Soem.class.getName(),
+                        I18n.get("log.soem.abiMaxSlave", SoemEtherCATMain.EC_MAXSLAVE, maxSlave), true);
                 return false;
             }
             int maxGroup = soem.ec_max_group();
             if (maxGroup != SoemEtherCATMain.EC_MAXGROUP) {
-                Console.write(Soem.class.getName(), "SOEM ABI mismatch : EC_MAXGROUP expected ["
-                        + SoemEtherCATMain.EC_MAXGROUP + "] native [" + maxGroup + "]", true);
+                Console.write(Soem.class.getName(),
+                        I18n.get("log.soem.abiMaxGroup", SoemEtherCATMain.EC_MAXGROUP, maxGroup), true);
                 return false;
             }
             long expectedParcel = SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCAT.ecx_parcelt(runtime));
             long actualParcel = soem.ec_sizeof_parcel();
             if (actualParcel != expectedParcel) {
-                Console.write(Soem.class.getName(), "SOEM ABI mismatch : sizeof(ecx_parcelt) expected ["
-                        + expectedParcel + "] native [" + actualParcel + "]", true);
+                Console.write(Soem.class.getName(),
+                        I18n.get("log.soem.abiParcelSize", expectedParcel, actualParcel), true);
                 return false;
             }
             long expectedSlave = SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCATMain.ec_slavet(runtime));
             long actualSlave = soem.ec_sizeof_slave();
             if (actualSlave != expectedSlave) {
-                Console.write(Soem.class.getName(), "SOEM ABI mismatch : sizeof(ec_slavet) expected ["
-                        + expectedSlave + "] native [" + actualSlave + "]", true);
+                Console.write(Soem.class.getName(),
+                        I18n.get("log.soem.abiSlaveSize", expectedSlave, actualSlave), true);
                 return false;
             }
             long expectedGroup = SoemEtherCATMain.ecx_contextt.alignedSize(new SoemEtherCATMain.ec_groupt(runtime));
             long actualGroup = soem.ec_sizeof_group();
             if (actualGroup != expectedGroup) {
-                Console.write(Soem.class.getName(), "SOEM ABI mismatch : sizeof(ec_groupt) expected ["
-                        + expectedGroup + "] native [" + actualGroup + "]", true);
+                Console.write(Soem.class.getName(),
+                        I18n.get("log.soem.abiGroupSize", expectedGroup, actualGroup), true);
                 return false;
             }
             long expectedContext = SoemEtherCATMain.ecx_contextt.expectedByteSize(runtime);
             long actualContext = soem.ec_sizeof_context();
             if (actualContext != expectedContext) {
-                Console.write(Soem.class.getName(), "SOEM ABI mismatch : sizeof(ecx_contextt) expected ["
-                        + expectedContext + "] native [" + actualContext + "]", true);
+                Console.write(Soem.class.getName(),
+                        I18n.get("log.soem.abiContextSize", expectedContext, actualContext), true);
                 return false;
             }
         } catch (UnsatisfiedLinkError ex) {
@@ -333,15 +334,13 @@ public class Soem {
                 if (!ecatThread.awaitTermination(ECAT_TERMINATION_WAIT_MILLIS)) {
                     // the native calls of the java tasks are still running : keep the native
                     // memory to avoid a crash
-                    Console.write(Soem.class.getName(),
-                            "the ecat tasks are still running : the native memory is not freed", true);
+                    Console.write(Soem.class.getName(), I18n.get("log.soem.ecatTasksRunning"), true);
                     return false;
                 }
                 // the thread of the process data is a thread of the shared library and not a
                 // java task : it has to be out of ecatthread() before the parcel is freed
                 if (!waitEcatThread(soem_, parcel)) {
-                    Console.write(Soem.class.getName(),
-                            "the ecat thread is still running : the native memory is not freed", true);
+                    Console.write(Soem.class.getName(), I18n.get("log.soem.ecatThreadRunning"), true);
                     return false;
                 }
                 // every native call is over : the slaves can be left in INIT state
@@ -394,11 +393,11 @@ public class Soem {
                 return false;
             }
             // the shared library can not wait the native thread on this platform
-            Console.write(Soem.class.getName(), "the ecat thread is not joinable : one cycle is waited", true);
+            Console.write(Soem.class.getName(), I18n.get("log.soem.ecatThreadNotJoinable"), true);
         } catch (UnsatisfiedLinkError ex) {
             // the shared library has no ec_wait_thread() : the worst time of one
             // cycle is waited instead of the end of the thread
-            Console.write(Soem.class.getName(), "ec_wait_thread() is not exported : one cycle is waited", true);
+            Console.write(Soem.class.getName(), I18n.get("log.soem.waitThreadNotExported"), true);
         }
         try {
             TimeUnit.MILLISECONDS.sleep((parcel.cycletime.get() / EC_NSEC_PER_MILLIS)
@@ -612,8 +611,9 @@ public class Soem {
             if (wkc > 0) {
                 int size = psize.getInt(0);
                 if ((size < 0) || (size > byteSize)) {
-                    Console.write(Soem.class.getName(), "SDOread : slave[" + slave + "] index[0x"
-                            + Integer.toHexString(index) + "] size[" + size + "] byteSize[" + byteSize + "]", true);
+                    Console.write(Soem.class.getName(),
+                            I18n.get("log.soem.sdoReadSizeMismatch", slave, Integer.toHexString(index), size, byteSize),
+                            true);
                     return null;
                 }
                 Byte[] result = new Byte[size];
@@ -744,7 +744,7 @@ public class Soem {
                 if (adapters.isEmpty()) {
                     // an empty answer is a machine without adapter or a shared
                     // library of an other build : the user has to know which one
-                    Console.write(Soem.class.getName(), "find_adapters : no adapter found", true);
+                    Console.write(Soem.class.getName(), I18n.get("log.soem.noAdapterFound"), true);
                 }
                 return gson_.toJson(adapters);
             } catch (IllegalArgumentException | ClassCastException | StackOverflowError | UnsatisfiedLinkError ex) {

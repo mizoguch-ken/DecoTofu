@@ -155,6 +155,7 @@
                 <configuration>
                     <!-- main contains module-info.java; run tests on the classpath -->
                     <useModulePath>false</useModulePath>
+                    <argLine>-Duser.language=en -Duser.country=US</argLine>
                 </configuration>
             </plugin>
         </plugins>

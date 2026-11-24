@@ -23,6 +23,7 @@ import javafx.concurrent.Task;
 import javax.swing.event.EventListenerList;
 import jnr.ffi.Pointer;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  *
@@ -188,9 +189,9 @@ public class SoemEcatThread extends Service<Void> {
                                 if ((sl.eep_man.get() == po2so.eep_man) && (sl.eep_id.get() == po2so.eep_id)) {
                                     sl.PO2SOconfig.PO2SOconfig.set((Pointer context, int slave) -> answerPo2so(slave));
                                 } else {
-                                    writeLog("PO2SO: EEP_MAN[" + sl.eep_man.get() + ":" + po2so.eep_man + "] & EEP_ID["
-                                            + sl.eep_id.get() + ":" + po2so.eep_id
-                                            + "] of Slave[" + index + "] are different ", true);
+                                    writeLog(I18n.get("log.soem.po2soMismatch",
+                                            sl.eep_man.get(), po2so.eep_man,
+                                            sl.eep_id.get(), po2so.eep_id, index), true);
                                     initFail();
                                     return false;
                                 }
@@ -202,7 +203,7 @@ public class SoemEcatThread extends Service<Void> {
                     // data of the slaves was not mapped
                     int map = soem_.ecx_config_map_group(context_, pIOmap, 0);
                     if (map <= 0) {
-                        writeLog("ecx_config_map_group() failed : [" + map + "]", true);
+                        writeLog(I18n.get("log.soem.configMapGroupFailed", map), true);
                         initFail();
                         return false;
                     }
@@ -212,7 +213,7 @@ public class SoemEcatThread extends Service<Void> {
                     state = soem_.ecx_statecheck(context_, 0, SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue(),
                             SoemEtherCATType.EC_TIMEOUTSTATE * 4);
                     if (state != SoemEtherCATType.ec_state.EC_STATE_SAFE_OP.intValue()) {
-                        writeLog("the slaves are not all in SAFE_OP : [" + state + "]", true);
+                        writeLog(I18n.get("log.soem.notSafeOp", state), true);
                     }
                     ecatCheck_ = new SoemEcatCheck(eventListenerList_, soem_, parcel_, context_, ecatLock_);
                     ecatCheck_.setExpectedWKC(
@@ -237,10 +238,10 @@ public class SoemEcatThread extends Service<Void> {
                     }
                     // the slaves did not reach OPERATIONAL : leave the native
                     // context as before init(), so start() can be tried again
-                    writeLog("the slaves are not in OPERATIONAL : [" + state + "]", true);
+                    writeLog(I18n.get("log.soem.notOperational", state), true);
                     initFail();
                 } else {
-                    writeLog("ecx_config_init() failed : no slave configured", true);
+                    writeLog(I18n.get("log.soem.configInitFailed"), true);
                     initFail();
                 }
             } catch (Exception ex) {
@@ -262,12 +263,12 @@ public class SoemEcatThread extends Service<Void> {
     private boolean openPort(String ifname, String ifname2) {
         if (ifname2 == null) {
             if (soem_.ecx_init(context_, ifname) <= 0) {
-                writeLog("ecx_init() failed on [" + ifname + "]", true);
+                writeLog(I18n.get("log.soem.initFailed", ifname), true);
                 return false;
             }
         } else {
             if (soem_.ecx_init_redundant(context_, soem_.ec_redport(context_), ifname, ifname2) <= 0) {
-                writeLog("ecx_init_redundant() failed on [" + ifname + "][" + ifname2 + "]", true);
+                writeLog(I18n.get("log.soem.initRedundantFailed", ifname, ifname2), true);
                 return false;
             }
         }
@@ -319,7 +320,7 @@ public class SoemEcatThread extends Service<Void> {
                 Console.writeStackTrace(SoemEcatThread.class.getName(), ex);
             } catch (TimeoutException ex) {
                 future.cancel(true);
-                writeLog("PO2SO : no answer of the java side for the Slave[" + slave + "]", true);
+                writeLog(I18n.get("log.soem.po2soNoAnswer", slave), true);
             }
         }
         return 0;
@@ -521,8 +522,7 @@ public class SoemEcatThread extends Service<Void> {
                     if (!exit_ && (soem_.ec_run(parcel_) != SoemOsal.TRUE)) {
                         // the native thread of the process data is not started : the
                         // cyclic process of the ecat can not run
-                        throw new IllegalStateException(
-                                "ec_run() failed : the thread of the process data is not started");
+                        throw new IllegalStateException(I18n.get("log.soem.ecRunFailed"));
                     }
                     while (!exit_) {
                         if (parcel_.isprocess.get() == SoemOsal.FALSE) {

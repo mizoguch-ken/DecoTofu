@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  * Low-overhead telemetry, structural/state inspection, bounded trace buffering,
@@ -178,7 +179,7 @@ class LadderTelemetry {
 
     String onCycleError(String message, long cycleTimeNs) {
         long cycle = cycleCount_.get();
-        String note = ((message == null) || message.isEmpty()) ? "Cycle error" : message;
+        String note = ((message == null) || message.isEmpty()) ? I18n.get("log.telemetry.cycleError") : message;
         synchronized (lock_) {
             long seq = ++nextSeq_;
             JsonObject ev = new JsonObject();
@@ -211,7 +212,7 @@ class LadderTelemetry {
         boolean reset = false;
 
         if ((optionsJson != null) && !optionsJson.trim().isEmpty()) {
-            JsonObject opts = parseObject(optionsJson, "Trace options");
+            JsonObject opts = parseObject(optionsJson, I18n.get("log.telemetry.label.traceOptions"));
             if (opts.has("maxEntries") && !opts.get("maxEntries").isJsonNull()) {
                 maxEntries = readInt(opts.get("maxEntries"), "maxEntries",
                         MIN_MAX_ENTRIES, MAX_MAX_ENTRIES);
@@ -223,7 +224,7 @@ class LadderTelemetry {
             if (opts.has("epsilon") && !opts.get("epsilon").isJsonNull()) {
                 epsilon = readFiniteDouble(opts.get("epsilon"), "epsilon");
                 if (epsilon < 0.0d) {
-                    throw new IllegalArgumentException("\"epsilon\" must be >= 0");
+                    throw new IllegalArgumentException(I18n.get("log.telemetry.epsilonNegative"));
                 }
             }
             if (opts.has("addresses") && !opts.get("addresses").isJsonNull()) {
@@ -506,7 +507,7 @@ class LadderTelemetry {
     }
 
     String setWritableBounds(String boundsJson) {
-        JsonObject obj = parseObject(boundsJson, "Writable bounds");
+        JsonObject obj = parseObject(boundsJson, I18n.get("log.telemetry.label.writableBounds"));
         Map<String, Bounds> parsed = new TreeMap<>();
         List<String> removals = new ArrayList<>();
         boolean clearAll = obj.isEmpty();
@@ -519,7 +520,7 @@ class LadderTelemetry {
                 continue;
             }
             if (!val.isJsonObject()) {
-                throw new IllegalArgumentException("Bounds for \"" + addr + "\" must be a JSON object");
+                throw new IllegalArgumentException(I18n.get("log.telemetry.boundsNotObject", addr));
             }
             JsonObject bo = val.getAsJsonObject();
             if (bo.has("allow") && !bo.get("allow").isJsonNull() && !readBoolean(bo.get("allow"), "allow")) {
@@ -527,12 +528,12 @@ class LadderTelemetry {
                 continue;
             }
             if (!bo.has("min") || !bo.has("max")) {
-                throw new IllegalArgumentException("Bounds for \"" + addr + "\" require \"min\" and \"max\"");
+                throw new IllegalArgumentException(I18n.get("log.telemetry.boundsRequireMinMax", addr));
             }
             double min = readFiniteDouble(bo.get("min"), "min");
             double max = readFiniteDouble(bo.get("max"), "max");
             if (min > max) {
-                throw new IllegalArgumentException("Bounds for \"" + addr + "\" have min > max");
+                throw new IllegalArgumentException(I18n.get("log.telemetry.boundsMinGtMax", addr));
             }
             parsed.put(addr, new Bounds(min, max));
         }
@@ -558,9 +559,9 @@ class LadderTelemetry {
 
     String applySafeAction(String actionJson, BiConsumer<String, Double> writer) {
         if (writer == null) {
-            throw new IllegalStateException("IO writer is unavailable");
+            throw new IllegalStateException(I18n.get("log.telemetry.ioWriterUnavailable"));
         }
-        JsonObject obj = parseObject(actionJson, "Action payload");
+        JsonObject obj = parseObject(actionJson, I18n.get("log.telemetry.label.actionPayload"));
         String inferenceId = optionalString(obj, "inferenceId");
         String prompt = optionalString(obj, "prompt");
         String note = optionalString(obj, "note");
@@ -574,7 +575,7 @@ class LadderTelemetry {
                     rawWrites.put(entry.getKey(), entry.getValue());
                 }
             } else {
-                preValidationError = "\"writes\" must be a JSON object";
+                preValidationError = I18n.get("log.telemetry.writesNotObject");
             }
         } else {
             for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
@@ -590,33 +591,33 @@ class LadderTelemetry {
         String rejectReason = preValidationError;
         if (rejectReason == null) {
             if (rawWrites.isEmpty()) {
-                rejectReason = "Action contains no target addresses";
+                rejectReason = I18n.get("log.telemetry.actionNoTargets");
             } else {
                 synchronized (lock_) {
                     for (Map.Entry<String, JsonElement> entry : rawWrites.entrySet()) {
                         String addr = entry.getKey();
                         if ((addr == null) || addr.trim().isEmpty() || !addr.equals(addr.trim())) {
-                            rejectReason = "Invalid address \"" + addr + "\"";
+                            rejectReason = I18n.get("log.telemetry.invalidAddress", addr);
                             break;
                         }
                         if (addr.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-                            rejectReason = "Local address \"" + addr + "\" is not permitted for safe actuation";
+                            rejectReason = I18n.get("log.telemetry.localAddressForbidden", addr);
                             break;
                         }
                         Bounds bounds = writableBounds_.get(addr);
                         if (bounds == null) {
-                            rejectReason = "Address \"" + addr + "\" is not allowlisted in writableBounds";
+                            rejectReason = I18n.get("log.telemetry.addressNotAllowlisted", addr);
                             break;
                         }
                         Double num = parseFiniteNumberOrNull(entry.getValue());
                         if (num == null) {
-                            rejectReason = "Value for \"" + addr + "\" must be a finite number";
+                            rejectReason = I18n.get("log.telemetry.valueNotFinite", addr);
                             break;
                         }
                         double v = num.doubleValue();
                         if ((v < bounds.min()) || (v > bounds.max())) {
-                            rejectReason = "Value " + v + " for \"" + addr + "\" outside bounds ["
-                                    + bounds.min() + ", " + bounds.max() + "]";
+                            rejectReason = I18n.get("log.telemetry.valueOutOfBounds",
+                                    v, addr, bounds.min(), bounds.max());
                             break;
                         }
                         validated.put(addr, num);
@@ -707,11 +708,11 @@ class LadderTelemetry {
 
     String setValues(String valuesJson, BiConsumer<String, Double> writer) {
         if (writer == null) {
-            throw new IllegalStateException("IO writer is unavailable");
+            throw new IllegalStateException(I18n.get("log.telemetry.ioWriterUnavailable"));
         }
-        JsonObject obj = parseObject(valuesJson, "Values payload");
+        JsonObject obj = parseObject(valuesJson, I18n.get("log.telemetry.label.valuesPayload"));
         if (obj.isEmpty()) {
-            throw new IllegalArgumentException("Values payload must not be empty");
+            throw new IllegalArgumentException(I18n.get("log.telemetry.valuesEmpty"));
         }
         Map<String, Double> parsed = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
@@ -728,7 +729,7 @@ class LadderTelemetry {
     }
 
     String recordFeedback(String feedbackJson) {
-        JsonObject obj = parseObject(feedbackJson, "Feedback payload");
+        JsonObject obj = parseObject(feedbackJson, I18n.get("log.telemetry.label.feedbackPayload"));
         String inferenceId = optionalString(obj, "inferenceId");
         String prompt = optionalString(obj, "prompt");
         String note = optionalString(obj, "note");
@@ -912,16 +913,16 @@ class LadderTelemetry {
 
     private static JsonObject parseObject(String json, String label) {
         if ((json == null) || json.trim().isEmpty()) {
-            throw new IllegalArgumentException(label + " must be a JSON object");
+            throw new IllegalArgumentException(I18n.get("log.telemetry.jsonMustBeObject", label));
         }
         try {
             JsonElement el = JsonParser.parseString(json.trim());
             if ((el == null) || !el.isJsonObject()) {
-                throw new IllegalArgumentException(label + " must be a JSON object");
+                throw new IllegalArgumentException(I18n.get("log.telemetry.jsonMustBeObject", label));
             }
             return el.getAsJsonObject();
         } catch (JsonSyntaxException ex) {
-            throw new IllegalArgumentException("Invalid JSON in " + label + ": " + ex.getMessage(), ex);
+            throw new IllegalArgumentException(I18n.get("log.telemetry.invalidJsonIn", label, ex.getMessage()), ex);
         }
     }
 
@@ -944,22 +945,23 @@ class LadderTelemetry {
                 }
                 return null;
             }
-            throw new IllegalArgumentException("Snapshot filter must be a JSON array or object");
+            throw new IllegalArgumentException(I18n.get("log.telemetry.snapshotFilterInvalidType"));
         } catch (JsonSyntaxException ex) {
-            throw new IllegalArgumentException("Invalid snapshot filter JSON: " + ex.getMessage(), ex);
+            throw new IllegalArgumentException(I18n.get("log.telemetry.snapshotFilterInvalidJson", ex.getMessage()),
+                    ex);
         }
     }
 
     private static List<String> readAddressList(JsonElement el, String key) {
         if ((el == null) || !el.isJsonArray()) {
-            throw new IllegalArgumentException("\"" + key + "\" must be a JSON array");
+            throw new IllegalArgumentException(I18n.get("log.telemetry.fieldNotArray", key));
         }
         JsonArray arr = el.getAsJsonArray();
         List<String> out = new ArrayList<>(arr.size());
         for (int i = 0; i < arr.size(); i++) {
             JsonElement item = arr.get(i);
             if ((item == null) || !item.isJsonPrimitive() || !item.getAsJsonPrimitive().isString()) {
-                throw new IllegalArgumentException("\"" + key + "\" entries must be strings");
+                throw new IllegalArgumentException(I18n.get("log.telemetry.fieldEntriesNotStrings", key));
             }
             out.add(requireGlobalAddress(item.getAsString()));
         }
@@ -968,10 +970,10 @@ class LadderTelemetry {
 
     private static String requireGlobalAddress(String addr) {
         if ((addr == null) || addr.trim().isEmpty() || !addr.equals(addr.trim())) {
-            throw new IllegalArgumentException("Invalid global address: " + addr);
+            throw new IllegalArgumentException(I18n.get("log.telemetry.invalidGlobalAddress", addr));
         }
         if (addr.startsWith(LadderDefaults.LADDER_LOCAL_ADDRESS_PREFIX)) {
-            throw new IllegalArgumentException("Local address is not allowed here: " + addr);
+            throw new IllegalArgumentException(I18n.get("log.telemetry.localAddressDisallowed", addr));
         }
         return addr;
     }
@@ -993,20 +995,18 @@ class LadderTelemetry {
     private static int readInt(JsonElement el, String key, int min, int max) {
         double d = readFiniteDouble(el, key);
         if ((d != Math.rint(d)) || (d < min) || (d > max)) {
-            throw new IllegalArgumentException("\"" + key + "\" must be an integer between "
-                    + min + " and " + max);
+            throw new IllegalArgumentException(I18n.get("log.telemetry.fieldIntRange", key, min, max));
         }
         return (int) d;
     }
 
     private static long readLong(JsonElement el, String key, long min, long max) {
         if ((el == null) || !el.isJsonPrimitive() || !el.getAsJsonPrimitive().isNumber()) {
-            throw new IllegalArgumentException("\"" + key + "\" must be a number");
+            throw new IllegalArgumentException(I18n.get("log.telemetry.fieldNotNumber", key));
         }
         double d = el.getAsDouble();
         if (!Double.isFinite(d) || (d != Math.rint(d)) || (d < min) || (d > max)) {
-            throw new IllegalArgumentException("\"" + key + "\" must be an integer between "
-                    + min + " and " + max);
+            throw new IllegalArgumentException(I18n.get("log.telemetry.fieldIntRange", key, min, max));
         }
         return el.getAsLong();
     }
@@ -1014,7 +1014,7 @@ class LadderTelemetry {
     private static double readFiniteDouble(JsonElement el, String key) {
         Double parsed = parseFiniteNumberOrNull(el);
         if (parsed == null) {
-            throw new IllegalArgumentException("\"" + key + "\" must be a finite number");
+            throw new IllegalArgumentException(I18n.get("log.telemetry.fieldNotFinite", key));
         }
         return parsed.doubleValue();
     }
@@ -1033,7 +1033,7 @@ class LadderTelemetry {
 
     private static boolean readBoolean(JsonElement el, String key) {
         if ((el == null) || !el.isJsonPrimitive() || !el.getAsJsonPrimitive().isBoolean()) {
-            throw new IllegalArgumentException("\"" + key + "\" must be a boolean");
+            throw new IllegalArgumentException(I18n.get("log.telemetry.fieldNotBoolean", key));
         }
         return el.getAsBoolean();
     }

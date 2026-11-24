@@ -16,9 +16,11 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
@@ -32,6 +34,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.decotofu.JavaLibrary;
 import ken.mizoguch.decotofu.PathResolver;
 import ken.mizoguch.decotofu.ShutdownHook;
@@ -66,6 +69,7 @@ public class DesignWebController implements Initializable {
     private Path currentPath_, webPath_, logPath_;
     private WebViewer webViewer_;
     private final AtomicBoolean cleaningUp_ = new AtomicBoolean(false);
+    private Consumer<Locale> languageListener_;
 
     /**
      * default window size used when properties.xml is absent or damaged
@@ -240,13 +244,13 @@ public class DesignWebController implements Initializable {
             double parsed = Double.parseDouble(value);
             if (!Double.isFinite(parsed) || (parsed <= 0.0)) {
                 Console.write(DesignWebController.class.getName(),
-                        "properties : " + key + " is out of range [" + value + "]", true);
+                        I18n.get("log.properties.outOfRange", key, value), true);
                 return defaultValue;
             }
             return parsed;
         } catch (NumberFormatException ex) {
             Console.write(DesignWebController.class.getName(),
-                    "properties : " + key + " is not a number [" + value + "]", true);
+                    I18n.get("log.properties.notNumber", key, value), true);
             return defaultValue;
         }
     }
@@ -256,6 +260,11 @@ public class DesignWebController implements Initializable {
             Properties properties = new Properties();
             try (InputStream inputStream = Files.newInputStream(propertyFile)) {
                 properties.loadFromXML(inputStream);
+
+                // language
+                if (!I18n.setLanguage(properties.getProperty("LANGUAGE", I18n.LANG_AUTO))) {
+                    I18n.setLanguage(I18n.LANG_AUTO);
+                }
 
                 // stage
                 stageSettings_.setStageMaximized(
@@ -270,6 +279,7 @@ public class DesignWebController implements Initializable {
                 Console.writeStackTrace(DesignWebController.class.getName(), ex);
             }
         }
+        I18n.setLanguage(I18n.LANG_AUTO);
         // stage
         stageSettings_.setStageMaximized(stageSettings_.isStageMaximized(), true);
         stageSettings_.setStageWidth(stageSettings_.getStageWidth(), true);
@@ -284,6 +294,9 @@ public class DesignWebController implements Initializable {
             }
             if (Files.isWritable(propertyFile)) {
                 Properties properties = new Properties();
+
+                // language
+                properties.setProperty("LANGUAGE", I18n.getLanguageSetting());
 
                 // stage
                 properties.setProperty("STAGE_MAXIMIZED", Boolean.toString(stageSettings_.isStageMaximized()));
@@ -346,6 +359,12 @@ public class DesignWebController implements Initializable {
         // load properties
         initProperties();
         loadProperties(currentPath_.resolve("properties.xml"));
+        languageListener_ = locale -> {
+            if (currentPath_ != null) {
+                saveProperties(currentPath_.resolve("properties.xml"));
+            }
+        };
+        I18n.addListener(languageListener_);
 
         // add Event
         addEventDesign();
@@ -392,6 +411,10 @@ public class DesignWebController implements Initializable {
             return true;
         }
         try {
+            if (languageListener_ != null) {
+                I18n.removeListener(languageListener_);
+                languageListener_ = null;
+            }
             // ladder
             if (ladders_ != null) {
                 if (!ladders_.getDesignController().cleanUp()) {
@@ -407,7 +430,7 @@ public class DesignWebController implements Initializable {
             final long cycleWaitMillis = 2000;
             if ((ladders_ != null) && !ladders_.awaitCycleStop(cycleWaitMillis)) {
                 Console.write(DesignWebController.class.getName(),
-                        "the ladder cycle is still running : the native memory may be still used", true);
+                        I18n.get("log.web.ladderCycleRunning"), true);
             }
 
             if (webViewer_ != null) {

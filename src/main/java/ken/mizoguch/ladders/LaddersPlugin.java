@@ -16,6 +16,7 @@ import javafx.scene.image.Image;
 import javafx.scene.web.WebEngine;
 import javafx.stage.Stage;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.decotofu.PathResolver;
 import ken.mizoguch.soem.Soem;
 import ken.mizoguch.webviewer.plugin.WebViewerPlugin;
@@ -491,7 +492,7 @@ public class LaddersPlugin implements WebViewerPlugin {
         Path filePath = PathResolver.resolvePagePath(LaddersPlugin.class, path);
 
         if (filePath == null) {
-            write(FUNCTION_NAME, "incorrect file path [" + path + "]", true);
+            write(FUNCTION_NAME, I18n.get("log.ladder.incorrectFilePath", path), true);
             return false;
         }
         return ladders_.fileOpen(filePath);
@@ -661,7 +662,7 @@ public class LaddersPlugin implements WebViewerPlugin {
         }
         String trimmed = callbackName.trim();
         if (!LadderTelemetry.isValidCallbackName(trimmed)) {
-            write(FUNCTION_NAME, "invalid trace callback name [" + callbackName + "]", true);
+            write(FUNCTION_NAME, I18n.get("log.ladder.invalidTraceCallback", callbackName), true);
             return false;
         }
         synchronized (traceNotifyLock_) {

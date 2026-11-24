@@ -22,6 +22,7 @@ import javafx.scene.input.MouseDragEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  *
@@ -873,7 +874,7 @@ public class LadderPane extends GridPane {
         if ((icons_ != null) && !icons_.isEmpty()) {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons_);
         }
-        alert.setTitle("Input");
+        alert.setTitle(I18n.get("ladder.input.title"));
         alert.setHeaderText(null);
         alert.setContentText(null);
         alert.setGraphic(null);

@@ -15,10 +15,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
@@ -35,6 +37,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  *
@@ -96,6 +99,8 @@ public class DesignLaddersDifferenceController implements Initializable {
 
     private Stage stage_;
     private Ladders ladders_;
+    private Path pathOriginal_, pathRevised_;
+    private Consumer<Locale> languageListener_;
     private final Map<String, Deltab> deltabs_ = new HashMap<>();
 
     private void addEventDesign() {
@@ -104,6 +109,20 @@ public class DesignLaddersDifferenceController implements Initializable {
             splitIoLadderOriginal.setDividerPositions(0.382);
             splitIoLadderRevised.setDividerPositions(0.382);
         });
+        stage_.setOnHidden((WindowEvent event) -> {
+            if (languageListener_ != null) {
+                I18n.removeListener(languageListener_);
+                languageListener_ = null;
+            }
+        });
+        languageListener_ = locale -> {
+            if (Platform.isFxApplicationThread()) {
+                refreshLocalizedUi();
+            } else {
+                Platform.runLater(this::refreshLocalizedUi);
+            }
+        };
+        I18n.addListener(languageListener_);
 
         // split
         splitIoLadderOriginal.getDividers().get(0).positionProperty()
@@ -177,13 +196,39 @@ public class DesignLaddersDifferenceController implements Initializable {
     private void initDesign() {
         // io
         treeTableIoOriginal.setCache(true);
-        labelIoLadderOriginal.setText("Reference");
-        treeTableIoAddressOriginal.setText("Address");
-        treeTableIoCommentOriginal.setText("Comment");
         treeTableIoRevised.setCache(true);
-        labelIoLadderRevised.setText("Current");
-        treeTableIoAddressRevised.setText("Address");
-        treeTableIoCommentRevised.setText("Comment");
+        refreshLocalizedUi();
+    }
+
+    private void refreshLocalizedUi() {
+        if (stage_ != null) {
+            stage_.setTitle(I18n.get("ladder.diff.title"));
+        }
+        if (pathOriginal_ == null) {
+            labelIoLadderOriginal.setText(I18n.get("ladder.diff.reference"));
+        } else {
+            labelIoLadderOriginal.setText(I18n.get("ladder.diff.referenceWithPath", pathOriginal_.toString()));
+        }
+        treeTableIoAddressOriginal.setText(I18n.get("ladder.col.address"));
+        treeTableIoCommentOriginal.setText(I18n.get("ladder.col.comment"));
+
+        if (pathRevised_ == null) {
+            labelIoLadderRevised.setText(I18n.get("ladder.diff.current"));
+        } else {
+            labelIoLadderRevised.setText(I18n.get("ladder.diff.currentWithPath", pathRevised_.toString()));
+        }
+        treeTableIoAddressRevised.setText(I18n.get("ladder.col.address"));
+        treeTableIoCommentRevised.setText(I18n.get("ladder.col.comment"));
+
+        String globalLabel = I18n.get("ladder.io.global").replace(" ", "_");
+        if ((treeTableIoOriginal.getRoot() != null) && !treeTableIoOriginal.getRoot().getChildren().isEmpty()) {
+            treeTableIoOriginal.getRoot().getChildren().get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)
+                    .getValue().setAddress(globalLabel);
+        }
+        if ((treeTableIoRevised.getRoot() != null) && !treeTableIoRevised.getRoot().getChildren().isEmpty()) {
+            treeTableIoRevised.getRoot().getChildren().get(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)
+                    .getValue().setAddress(globalLabel);
+        }
     }
 
     /**
@@ -199,35 +244,30 @@ public class DesignLaddersDifferenceController implements Initializable {
             int columnIndex, columnSize, rowIndex, rowSize;
             int index, size, index2, size2;
 
+            pathOriginal_ = pathOriginal;
+            pathRevised_ = pathRevised;
+            refreshLocalizedUi();
+
             // original ladder
-            if (pathOriginal == null) {
-                labelIoLadderOriginal.setText("Reference");
-            } else {
-                labelIoLadderOriginal.setText("Reference" + "(" + pathOriginal.toString() + ")");
-            }
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMapOriginal = new CopyOnWriteArrayList<>();
             CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMapOriginal = new CopyOnWriteArrayList<>();
             List<String> jsonOriginal = new ArrayList<>();
 
             // original global
+            String globalLabel = I18n.get("ladder.io.global").replace(" ", "_");
             treeTableIoOriginal.getRoot().getChildren().add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
-                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)));
+                    new TreeItem<>(new LadderTreeTableIo(globalLabel, LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)));
             ioMapOriginal.add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
             commentMapOriginal.add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
 
             // revised ladder
-            if (pathRevised == null) {
-                labelIoLadderRevised.setText("Current");
-            } else {
-                labelIoLadderRevised.setText("Current" + "(" + pathRevised.toString() + ")");
-            }
             CopyOnWriteArrayList<ConcurrentHashMap<String, LadderIo>> ioMapRevised = new CopyOnWriteArrayList<>();
             CopyOnWriteArrayList<ConcurrentHashMap<String, String>> commentMapRevised = new CopyOnWriteArrayList<>();
             List<String> jsonRevised = new ArrayList<>();
 
             // revised global
             treeTableIoRevised.getRoot().getChildren().add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX,
-                    new TreeItem<>(new LadderTreeTableIo("Global".replace(" ", "_"), LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)));
+                    new TreeItem<>(new LadderTreeTableIo(globalLabel, LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX)));
             ioMapRevised.add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
             commentMapRevised.add(LadderDefaults.LADDER_GLOBAL_ADDRESS_INDEX, new ConcurrentHashMap<>());
 

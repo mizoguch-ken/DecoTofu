@@ -21,6 +21,7 @@ import javafx.scene.image.Image;
 import javafx.scene.web.WebEngine;
 import javafx.stage.Stage;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.decotofu.PathResolver;
 import ken.mizoguch.webviewer.plugin.WebViewerPlugin;
 import netscape.javascript.JSException;
@@ -105,12 +106,12 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         Path path = PathResolver.resolvePagePath(SoemPlugin.class, libraryPath);
 
         if (path == null) {
-            write(FUNCTION_NAME, "incorrect library path [" + libraryPath + "]", true);
+            write(FUNCTION_NAME, I18n.get("log.soem.incorrectLibraryPath", libraryPath), true);
             return false;
         }
         if (!Files.exists(path)) {
-            write(FUNCTION_NAME, "library not found [" + libraryPath + "] in [" + PathResolver.userPath()
-                    + "] or in [" + PathResolver.applicationDirectory(SoemPlugin.class) + "]", true);
+            write(FUNCTION_NAME, I18n.get("log.soem.libraryNotFound", libraryPath, PathResolver.userPath(),
+                    PathResolver.applicationDirectory(SoemPlugin.class)), true);
             return false;
         }
         // Soem.load() answers null when the library can not be loaded : the web page gets
@@ -137,7 +138,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
      */
     public Boolean po2so(int slave, long eep_man, long eep_id, String func) {
         if ((func != null) && !isScriptFunction(func)) {
-            write(FUNCTION_NAME, "invalid script function [" + func + "]", true);
+            write(FUNCTION_NAME, I18n.get("log.soem.invalidScriptFunction", func), true);
             return false;
         }
         Callable<Integer> fnc = () -> {
@@ -247,7 +248,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         if (func == null) {
             func_.remove(event);
         } else if (!isScriptFunction(func)) {
-            write(FUNCTION_NAME, "invalid script function [" + func + "]", true);
+            write(FUNCTION_NAME, I18n.get("log.soem.invalidScriptFunction", func), true);
             return;
         } else {
             func_.put(event, func);
@@ -530,7 +531,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
     private void runScript(String func, String args) {
         if (!isScriptFunction(func)) {
             if (func != null) {
-                Console.write(SoemPlugin.class.getName(), "invalid script function [" + func + "]", true);
+                Console.write(SoemPlugin.class.getName(), I18n.get("log.soem.invalidScriptFunction", func), true);
             }
             return;
         }
@@ -579,7 +580,7 @@ public class SoemPlugin implements WebViewerPlugin, SoemPluginListener {
         if (Boolean.FALSE.equals(soem_.close(this))) {
             // a native call of SOEM is still running : the native memory of the
             // ecat was not freed, Soem.close() writes the reason in the console
-            Console.write(SoemPlugin.class.getName(), "the ecat is not closed", true);
+            Console.write(SoemPlugin.class.getName(), I18n.get("log.soem.ecatNotClosed"), true);
         }
     }
 

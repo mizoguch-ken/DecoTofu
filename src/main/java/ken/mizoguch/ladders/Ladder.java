@@ -18,6 +18,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableView;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  *
@@ -752,7 +753,7 @@ public class Ladder {
      */
     private boolean writeRunIoError(String address) {
         if (runIoErrorSet_.add(address)) {
-            writeLog("no io [" + address + "]", true);
+            writeLog(I18n.get("log.ladder.noIo", address), true);
         }
         return false;
     }
@@ -1048,8 +1049,7 @@ public class Ladder {
      * @param grid
      */
     private void writeNumericAddressError(LadderGrid grid) {
-        writeLog("Numeric only error in address" + " [" + grid.getColumnIndex()
-                + ":" + grid.getRowIndex() + "]", true);
+        writeLog(I18n.get("log.ladder.numericAddress", grid.getColumnIndex(), grid.getRowIndex()), true);
         isConnectFailed_ = true;
     }
 
@@ -1059,8 +1059,7 @@ public class Ladder {
      * @param grid
      */
     private void writeConnectError(LadderGrid grid) {
-        writeLog("Connection failed" + " [" + grid.getColumnIndex()
-                + ":" + grid.getRowIndex() + "]", true);
+        writeLog(I18n.get("log.ladder.connectionFailed", grid.getColumnIndex(), grid.getRowIndex()), true);
         isConnectFailed_ = true;
     }
 
@@ -1071,9 +1070,8 @@ public class Ladder {
      * @param next the block the route goes to
      */
     private void writeConnectError(LadderGrid grid, LadderGrid next) {
-        writeLog("Connection failed" + " [" + grid.getColumnIndex()
-                + ":" + grid.getRowIndex() + "]->[" + next.getColumnIndex() + ":"
-                + next.getRowIndex() + "]", true);
+        writeLog(I18n.get("log.ladder.connectionFailedEdge", grid.getColumnIndex(), grid.getRowIndex(),
+                next.getColumnIndex(), next.getRowIndex()), true);
         isConnectFailed_ = true;
     }
 

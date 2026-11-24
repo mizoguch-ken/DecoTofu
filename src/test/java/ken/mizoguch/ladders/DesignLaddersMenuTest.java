@@ -121,6 +121,10 @@ class DesignLaddersMenuTest {
         assertFalse(fxmlIds.contains("menuEditSelectUp"));
         assertFalse(fxmlIds.contains("menuEditSelectRight"));
         assertFalse(fxmlIds.contains("menuEditSelectDown"));
+        assertTrue(fxmlIds.contains("menuViewLanguage"));
+        assertTrue(fxmlIds.contains("menuViewLanguageAuto"));
+        assertTrue(fxmlIds.contains("menuViewLanguageEnglish"));
+        assertTrue(fxmlIds.contains("menuViewLanguageJapanese"));
 
         Set<String> controllerFxmlFields = new HashSet<>();
         for (Field field : DesignLaddersController.class.getDeclaredFields()) {

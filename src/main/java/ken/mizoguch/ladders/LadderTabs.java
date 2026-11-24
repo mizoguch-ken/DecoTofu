@@ -17,6 +17,7 @@ import javafx.scene.control.TreeTableView;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import ken.mizoguch.decotofu.I18n;
 
 /**
  * the tabs of the editor of the ladders : a tab shows the grid of a ladder, and the name of the tab
@@ -92,7 +93,7 @@ class LadderTabs {
             ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().addAll(icons);
         }
 
-        alert.setTitle("Rename");
+        alert.setTitle(I18n.get("ladder.dialog.rename.title"));
         alert.setHeaderText(null);
         alert.setContentText(null);
         alert.setGraphic(null);
@@ -112,7 +113,7 @@ class LadderTabs {
                 ladders_.setTitle();
                 return true;
             } else {
-                ladders_.writeLog("Duplicate names", true);
+                ladders_.writeLog(I18n.get("log.ladder.duplicateNames"), true);
             }
         }
         return false;
@@ -139,7 +140,7 @@ class LadderTabs {
             ladders_.setTitle();
             return true;
         } else {
-            ladders_.writeLog("Duplicate names", true);
+            ladders_.writeLog(I18n.get("log.ladder.duplicateNames"), true);
         }
         return false;
     }

@@ -65,8 +65,10 @@ java -jar target/DecoTofu.jar
   * **初期 HTML ページ (`web/index.html`)**: 起動時に自動で読み込まれます。存在しない場合は、`<title>DecoTofu</title>` と空の `<body>` を持つテンプレートから自動生成されます。
 * **Window Title**: Synchronized with the `<title>` of the loaded HTML page.
   * **ウィンドウタイトル**: 読み込まれた HTML ページの `<title>` がウィンドウタイトルになります。
-* **Window Settings (`properties.xml`)**: Persists `STAGE_MAXIMIZED`, `STAGE_WIDTH`, and `STAGE_HEIGHT`. If `properties.xml` contains a corrupted value, it is reported to the console and replaced with its default value (`640.0` × `480.0`).
-  * **ウィンドウ設定 (`properties.xml`)**: `STAGE_MAXIMIZED`、`STAGE_WIDTH`、`STAGE_HEIGHT` を保存します。破損した値がある場合はコンソールに報告され、既定値（`640.0` × `480.0`）が使用されます。
+* **Window Settings (`properties.xml`)**: Persists `STAGE_MAXIMIZED`, `STAGE_WIDTH`, `STAGE_HEIGHT`, and `LANGUAGE` (`auto` / `en` / `ja`). If `properties.xml` contains a corrupted value, it is reported to the console and replaced with its default value (`640.0` × `480.0`, `LANGUAGE` `auto`).
+  * **ウィンドウ設定 (`properties.xml`)**: `STAGE_MAXIMIZED`、`STAGE_WIDTH`、`STAGE_HEIGHT`、および `LANGUAGE`（`auto` / `en` / `ja`）を保存します。破損した値がある場合はコンソールに報告され、既定値（`640.0` × `480.0`、`LANGUAGE` は `auto`）が使用されます。
+* **Multilingual Support (`en` / `ja`)**: UI menus, dialogs, ladder command catalog, diff viewer, console logs, and `WebPlugins` messages support English and Japanese, automatically following the OS display locale (`auto`) or switching live via the Ladder Editor `View > Language` menu and `stage.setLanguage(...)` (propagated via system property `decotofu.language` and `WebViewerPlugin.onLanguageChanged(Locale)`).
+  * **多言語対応 (`en` / `ja`)**: 各種メニュー、ダイアログ、ラダーコマンド一覧、差分比較画面、コンソールログ、および `WebPlugins` プラグインのメッセージが英語・日本語に対応しています。初期設定は OS の表示ロケール（`auto`）に従い、ラダーエディタの「表示 > 言語」メニューおよび `stage.setLanguage(...)` から実行時に動的に切り替えられます（システムプロパティ `decotofu.language` および `WebViewerPlugin.onLanguageChanged(Locale)` 経由でプラグインへ即時反映されます）。
 * **Application Directory Resolution**: Uses the current working directory if it contains `properties.xml` or `web`; otherwise resolves from the directory containing `DecoTofu.jar` (or its classes directory, searching up to 3 parent directories), falling back to `java.class.path` (up to 3 parents) and finally `user.dir`.
   * **アプリケーションディレクトリの解決**: カレントディレクトリに `properties.xml` または `web` が存在する場合はカレントディレクトリを使用し、存在しない場合は `DecoTofu.jar`（またはクラスディレクトリ）から最大 3 階層親までのディレクトリを検索し、見つからない場合は `java.class.path`（最大 3 階層親まで）、最終的に `user.dir` を使用します。
 * **Console Logging (`log/`)**: If a `log` directory exists in the application directory, console output and stack traces are written to `log/Console_yyyyMMddHHmmss.txt`.
@@ -301,13 +303,14 @@ function setup() {
 }
 ```
 
-#### Function Reference / 関数リファレンス (38 API methods)
+#### Function Reference / 関数リファレンス (41 API methods)
 
 | Signature / シグネチャ | Description / 説明 |
 | :--- | :--- |
 | `String stage.getVersion()` | Returns DecoTofu `Implementation-Version` from the JAR manifest, or `"unknown"` when running unpacked classes outside a packaged JAR.<br>JAR マニフェストのバージョン文字列を返します（未パッケージ実行時は `"unknown"`）。 |
 | `void stage.showVersion()` | Opens a non-blocking `INFORMATION` dialog titled `"VERSION"` displaying `"DecoTofu"` / `"VERSION <version>"`.<br>バージョン情報ダイアログを非ブロッキングで表示します。 |
 | `void stage.showLicenses()` | Opens a non-blocking resizable dialog displaying third-party license texts from classpath resource `LICENSES` (UTF-8).<br>第三者ライセンス全文（`LICENSES`）を表示するダイアログを開きます。 |
+| `String stage.getLanguage()` / `String stage.getResolvedLanguage()` / `Boolean stage.setLanguage(String lang)` | Gets or sets the configured language (`"auto"` / `"en"` / `"ja"`), or queries the active resolved language (`"en"` / `"ja"`). Switches DecoTofu UI, console logs, and plugins live.<br>設定言語（`"auto"` / `"en"` / `"ja"`）および実際に適用されている解決済み言語（`"en"` / `"ja"`）を取得・変更します。変更は画面・ログ・プラグインへ即時に反映されます。 |
 | `Boolean stage.isShowing()` / `void stage.show()` / `void stage.hide()` | Queries, shows, or hides the main window (`null` if uninitialized).<br>メインウィンドウの表示状態取得・表示・非表示を行います。 |
 | `Boolean stage.isFocused()` / `void stage.requestFocus()` | Queries focus state or requests window focus (`null` if uninitialized).<br>フォーカス状態の取得およびフォーカス要求を行います。 |
 | `String stage.getTitle()` / `void stage.setTitle(String title)` | Gets or sets the main window title (`null` if uninitialized).<br>メインウィンドウのタイトルを取得・設定します。 |

@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import javafx.stage.FileChooser;
 import ken.mizoguch.console.Console;
+import ken.mizoguch.decotofu.I18n;
 import ken.mizoguch.decotofu.JavaLibrary;
 
 /**
@@ -95,7 +96,7 @@ class LadderFileStore {
                     }
                     filePath_ = path;
                 } catch (InvalidPathException ex) {
-                    writeLog("properties : WORK_FILE_PATH is not a valid path [" + workFilePath + "]", true);
+                    writeLog(I18n.get("log.properties.invalidWorkFilePath", workFilePath), true);
                 }
             }
         }
@@ -129,7 +130,7 @@ class LadderFileStore {
                     return gson_.fromJson(Files.readString(file, StandardCharsets.UTF_8), LadderJson.class);
                 } catch (JsonParseException ex) {
                     // the file is not a valid ladder json : the caller keeps the current ladder
-                    writeLog("json parse error [" + file.getFileName() + "]", true);
+                    writeLog(I18n.get("log.ladder.jsonParseError", file.getFileName()), true);
                     Console.writeStackTrace(Ladders.class.getName(), ex);
                 } catch (IOException ex) {
                     Console.writeStackTrace(Ladders.class.getName(), ex);

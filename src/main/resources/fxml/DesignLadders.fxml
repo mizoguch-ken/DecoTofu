@@ -7,6 +7,7 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.RadioMenuItem?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.SplitPane?>
@@ -222,6 +223,14 @@
                   <MenuItem fx:id="menuViewExpandAllIo" mnemonicParsing="false" text="Expand All I/O" />
                   <MenuItem fx:id="menuViewCollapseAllIo" mnemonicParsing="false" text="Collapse All I/O" />
                   <MenuItem fx:id="menuViewClearFindResults" mnemonicParsing="false" text="Clear Find Results" />
+                  <SeparatorMenuItem mnemonicParsing="false" />
+                  <Menu fx:id="menuViewLanguage" mnemonicParsing="false" text="Language">
+                     <items>
+                        <RadioMenuItem fx:id="menuViewLanguageAuto" mnemonicParsing="false" selected="true" text="Auto (System)" />
+                        <RadioMenuItem fx:id="menuViewLanguageEnglish" mnemonicParsing="false" text="English" />
+                        <RadioMenuItem fx:id="menuViewLanguageJapanese" mnemonicParsing="false" text="日本語" />
+                     </items>
+                  </Menu>
                </items>
             </Menu>
             <Menu fx:id="menuTools" mnemonicParsing="false" text="Tools">
